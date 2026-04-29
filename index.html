@@ -531,20 +531,18 @@ function scanLoop(timestamp) {
 let isModalOpen = false;
 
 // ════════════════════════════════════════════
-// 1. ฟังก์ชันจัดการเมื่อสแกน QR Code สำเร็จ
+// 1. ฟังก์ชันจัดการเมื่อสแกน QR Code (ไม่เด้งป๊อปอัปตอนโหลด)
 // ════════════════════════════════════════════
 function handleScan(regId) {
-  // ถ้ากำลังโหลด หรือ Pop-up เปิดอยู่ ให้ข้ามไปเลย (ป้องกันสแกนซ้ำ)
+  // ถ้ากำลังโหลด หรือ Pop-up เปิดค้างอยู่ จะไม่สแกนเพิ่ม
   if (processing || isModalOpen) return; 
   
   processing = true;
   if (navigator.vibrate) navigator.vibrate(80);
-  stats.total++; 
-  updateStats(); 
   
-  // เรียก Pop-up ขึ้นมาทับทันทีในสถานะ "กำลังโหลด"
-  showModalLoading(regId);
-
+  // อัปเดต UI ว่ากำลังดึงข้อมูล (แต่ยังไม่เปิดป๊อปอัป)
+  setBadge("active", "กำลังตรวจสอบข้อมูล...");
+  
   // ส่งข้อมูลไปหลังบ้าน
   fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'checkin', regId: regId }) })
   .then(res => res.json())
@@ -553,7 +551,7 @@ function handleScan(regId) {
 }
 
 // ════════════════════════════════════════════
-// 2. ฟังก์ชันจัดการเมื่อกรอกรหัสเอง
+// 2. ฟังก์ชันจัดการเมื่อกรอกรหัสเอง (ไม่เด้งป๊อปอัปตอนโหลด)
 // ════════════════════════════════════════════
 function manualCheckin() {
   const input = document.getElementById("manual-input");
@@ -561,16 +559,16 @@ function manualCheckin() {
   const regId = (input.value || "").trim().toUpperCase();
   
   if (!regId) { input.focus(); return; }
+  if (processing || isModalOpen) return; 
   
+  processing = true;
   btn.classList.add("loading"); 
   btn.disabled = true; 
   input.disabled = true;
-  stats.total++; 
-  updateStats(); 
   lastCode = regId;
   
-  // เรียก Pop-up ขึ้นมาทับทันที
-  showModalLoading(regId);
+  // อัปเดต UI ว่ากำลังดึงข้อมูล
+  setBadge("active", "กำลังตรวจสอบข้อมูล...");
 
   fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'checkin', regId: regId }) })
   .then(res => res.json()).then(data => {
@@ -583,38 +581,15 @@ function manualCheckin() {
 }
 
 // ════════════════════════════════════════════
-// 3. สถานะ Pop-up: กำลังตรวจสอบ (ทับหน้าจอทันที)
-// ════════════════════════════════════════════
-function showModalLoading(regId) {
-  isModalOpen = true;
-  const modal = document.getElementById("result-modal");
-  
-  // แต่งหน้าตา Pop-up ให้อยู่ในโหมดโหลด
-  modal.querySelector('.modal-content').style.borderTop = "6px solid var(--text-dim)";
-  document.getElementById("modal-icon").textContent = "⏳";
-  document.getElementById("modal-title").textContent = "กำลังตรวจสอบข้อมูล...";
-  document.getElementById("modal-title").style.color = "var(--text)";
-  document.getElementById("modal-body").innerHTML = `รหัส: <strong>${regId}</strong><br>โปรดรอสักครู่...`;
-  
-  // ซ่อนปุ่มตกลงไว้ก่อนระหว่างรอข้อมูล
-  const btnClose = modal.querySelector('.btn-close-modal');
-  if(btnClose) btnClose.style.display = "none";
-  
-  // โชว์ Pop-up ทับกล้องทันที
-  modal.classList.add("show");
-  setBadge("active", "กำลังบันทึกข้อมูล...");
-}
-
-// ════════════════════════════════════════════
-// 4. สถานะ Pop-up: แสดงผลลัพธ์ (สำเร็จ/ซ้ำ/ไม่พบ)
+// 3. สถานะ Pop-up: แสดงผลลัพธ์ (จะเด้งขึ้นมาก็ต่อเมื่อเสร็จแล้วเท่านั้น)
 // ════════════════════════════════════════════
 function onCheckInResult(res) {
+  stats.total++; // นับยอดสแกนเมื่อได้ผลลัพธ์กลับมา
   const modal = document.getElementById("result-modal");
   const mIcon = document.getElementById("modal-icon");
   const mTitle = document.getElementById("modal-title");
   const mBody = document.getElementById("modal-body");
   
-  // แสดงปุ่ม "ตกลง" ให้กดปิดได้
   const btnClose = modal.querySelector('.btn-close-modal');
   if(btnClose) btnClose.style.display = "block"; 
 
@@ -644,18 +619,24 @@ function onCheckInResult(res) {
   }
 
   updateStats();
+  
+  // เมื่อข้อมูลพร้อม ค่อยเด้งป๊อปอัปขึ้นมาทับหน้าจอ
+  isModalOpen = true; 
+  modal.classList.add("show"); 
   setBadge("idle", "รอปิดหน้าต่าง...");
 }
 
 // ════════════════════════════════════════════
-// 5. สถานะ Pop-up: กรณีเน็ตหลุด / ขัดข้อง
+// 4. สถานะ Pop-up: กรณีเน็ตหลุด / ขัดข้อง
 // ════════════════════════════════════════════
 function onCheckInError(err) {
+  stats.total++;
+  stats.err++; 
+  
   const modal = document.getElementById("result-modal");
   const btnClose = modal.querySelector('.btn-close-modal');
   if(btnClose) btnClose.style.display = "block";
   
-  stats.err++; 
   modal.querySelector('.modal-content').style.borderTop = "6px solid var(--danger)";
   document.getElementById("modal-icon").textContent = "❌";
   document.getElementById("modal-title").textContent = "ข้อผิดพลาดเครือข่าย";
@@ -663,17 +644,21 @@ function onCheckInError(err) {
   document.getElementById("modal-body").innerHTML = "ไม่สามารถเชื่อมต่อฐานข้อมูลได้<br>โปรดลองใหม่อีกครั้ง";
   
   updateStats(); 
+  
+  // เด้งป๊อปอัปแจ้งเตือน Error
+  isModalOpen = true; 
+  modal.classList.add("show"); 
   setBadge("idle", "รอปิดหน้าต่าง...");
 }
 
 // ════════════════════════════════════════════
-// 6. ฟังก์ชันเมื่อเจ้าหน้าที่กดปุ่ม "ตกลง (สแกนต่อ)"
+// 5. ฟังก์ชันเมื่อเจ้าหน้าที่กดปุ่ม "ตกลง (สแกนต่อ)"
 // ════════════════════════════════════════════
 function closeResultModal() {
   document.getElementById("result-modal").classList.remove("show");
-  isModalOpen = false; // ปลดล็อคระบบ ให้กลับมาสแกนได้
+  isModalOpen = false; // ปลดล็อคให้กล้องกลับมาสแกนคนต่อไปได้
   processing = false;
-  lastCode = ""; // เคลียร์รหัสล่าสุดทิ้ง เพื่อให้สแกนรหัสเดิมซ้ำได้ถ้าจำเป็น
+  lastCode = ""; // เคลียร์รหัสทิ้งเพื่อให้สแกนรหัสเดิมได้ถ้าจำเป็น
   setBadge("active", "กำลังสแกน...");
 }
 function showResult(type, icon, msg, detail, regId) {
