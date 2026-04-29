@@ -31,6 +31,35 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
+  /* ══════════════ RESULT POPUP (MODAL) ══════════════ */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px); z-index: 2000;
+    display: none; align-items: center; justify-content: center;
+    padding: 20px; animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-content {
+    background: var(--surface); border-radius: 16px; padding: 30px;
+    width: 100%; max-width: 360px; text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.17, 0.84, 0.44, 1);
+  }
+  .modal-overlay.show .modal-content { transform: translateY(0); }
+
+  .modal-icon { font-size: 64px; margin-bottom: 15px; display: block; }
+  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+  .modal-body { font-size: 15px; color: var(--text-dim); margin-bottom: 25px; line-height: 1.6; }
+  
+  .btn-close-modal {
+    width: 100%; padding: 14px; border: none; border-radius: 10px;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 16px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-close-modal:hover { background: var(--accent2); }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
   /* ══════════════ TAB NAV ══════════════ */
   .tab-nav {
@@ -254,7 +283,14 @@
 </style>
 </head>
 <body>
-
+<div class="modal-overlay" id="result-modal">
+  <div class="modal-content">
+    <span class="modal-icon" id="modal-icon">✅</span>
+    <h3 class="modal-title" id="modal-title">เช็คอินสำเร็จ</h3>
+    <p class="modal-body" id="modal-body">คุณสมชาย ใจดี<br>บันทึกข้อมูลเรียบร้อยแล้ว</p>
+    <button class="btn-close-modal" onclick="closeResultModal()">ตกลง (สแกนต่อ)</button>
+  </div>
+</div>
 <nav class="tab-nav">
   <button class="tab-btn active" onclick="switchTab('checkin')" id="tab-checkin">
     📸 เข้าร่วมกิจกรรม
@@ -490,8 +526,11 @@ function scanLoop(timestamp) {
   animFrame = requestAnimationFrame(scanLoop);
 }
 
-function handleScan(regId) {
-  if (processing) return; processing = true;
+ffunction handleScan(regId) {
+  if (processing || isModalOpen) return; // ถ้ากำลังประมวลผลหรือป๊อปอัปเปิดอยู่ จะไม่สแกนเพิ่ม
+  
+  processing = true;
+  setBadge("active", "กำลังตรวจสอบ...");
   setBadge("active","กำลังบันทึกข้อมูล..."); if (navigator.vibrate) navigator.vibrate(80);
   stats.total++; updateStats(); showResultLoading(regId);
   fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'checkin', regId: regId }) })
@@ -510,12 +549,56 @@ function manualCheckin() {
   }).catch(err => { btn.classList.remove("loading"); btn.disabled = false; input.disabled = false; onCheckInError(err); });
 }
 
+// 1. เพิ่มตัวแปรสถานะล็อค
+let isModalOpen = false;
+
+// 2. ปรับปรุงฟังก์ชันรับผลการสแกน
 function onCheckInResult(res) {
-  if (res.status === "checkin_ok") { stats.ok++; showResult("ok","✅",res.message, res.time ? "เวลาเข้างาน: "+res.time : "", lastCode); } 
-  else if (res.status === "already_checkin") { stats.dup++; showResult("warning","⚠️",res.message,"ผู้ใช้นี้ได้เข้าร่วมกิจกรรมไปแล้ว",lastCode); } 
-  else { stats.err++; showResult("error","❌",res.message,"โปรดตรวจสอบรหัสอีกครั้ง",lastCode); }
-  updateStats(); setBadge("active","กำลังสแกน..."); scheduleReset();
+  isModalOpen = true; // ล็อคระบบสแกน
+  const modal = document.getElementById("result-modal");
+  const mIcon = document.getElementById("modal-icon");
+  const mTitle = document.getElementById("modal-title");
+  const mBody = document.getElementById("modal-body");
+
+  if (res.status === "checkin_ok") {
+    stats.ok++;
+    modal.querySelector('.modal-content').style.borderTop = "6px solid var(--success)";
+    mIcon.textContent = "✅";
+    mTitle.textContent = "เช็คอินสำเร็จ";
+    mTitle.style.color = "var(--success)";
+    mBody.innerHTML = `<strong>${res.name}</strong><br>เวลาเข้างาน: ${res.time}`;
+  } 
+  else if (res.status === "already_checkin") {
+    stats.dup++;
+    modal.querySelector('.modal-content').style.borderTop = "6px solid var(--warning)";
+    mIcon.textContent = "⚠️";
+    mTitle.textContent = "สแกนซ้ำ";
+    mTitle.style.color = "var(--warning)";
+    mBody.innerHTML = `<strong>${res.name}</strong><br>เคยบันทึกข้อมูลไปแล้วครับ`;
+  } 
+  else {
+    stats.err++;
+    modal.querySelector('.modal-content').style.borderTop = "6px solid var(--danger)";
+    mIcon.textContent = "❌";
+    mTitle.textContent = "ไม่พบข้อมูล";
+    mTitle.style.color = "var(--danger)";
+    mBody.innerHTML = res.message || "ไม่พบรหัสนี้ในระบบลงทะเบียน";
+  }
+
+  updateStats();
+  modal.classList.add("show"); // แสดง Pop-up
+  setBadge("idle", "รอปิดหน้าต่าง...");
 }
+
+// 3. ฟังก์ชันปิด Pop-up เพื่อสแกนต่อ
+function closeResultModal() {
+  document.getElementById("result-modal").classList.remove("show");
+  isModalOpen = false; // ปลดล็อคระบบ
+  processing = false; 
+  lastCode = ""; // ล้างรหัสล่าสุดเพื่อให้สแกนคนเดิมซ้ำได้ถ้าจำเป็น (หลังปิดป๊อปอัป)
+  setBadge("active", "กำลังสแกน...");
+}
+
 function onCheckInError(err) {
   stats.err++; showResult("error","❌","ข้อผิดพลาดทางเครือข่าย","ไม่สามารถเชื่อมต่อระบบฐานข้อมูลได้",lastCode);
   updateStats(); setBadge("active","กำลังสแกน..."); scheduleReset();
