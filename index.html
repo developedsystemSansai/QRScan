@@ -662,22 +662,66 @@ function closeCamera() {
   setBadge("idle","พร้อมใช้งาน");
 }
 
-function scanLoop() {
+// ════════════════════════════════════════════
+// ตัวแปรสำหรับการจัดการเฟรมเรตสแกน (เพิ่มเข้ามาใหม่)
+// ════════════════════════════════════════════
+const SCAN_FPS = 15; // สแกน 15 ครั้งต่อวินาทีก็เพียงพอแล้ว
+const SCAN_INTERVAL = 1000 / SCAN_FPS;
+let lastScanTime = 0;
+
+// ════════════════════════════════════════════
+// ฟังก์ชันสแกน QR Code (ฉบับรีดประสิทธิภาพสูงสุด)
+// ════════════════════════════════════════════
+function scanLoop(timestamp) {
   if (!scanning) return;
+
+  // 1. Throttling: ควบคุมความถี่ในการสแกน ไม่ให้ทำงานหนัก 60fps
+  if (timestamp - lastScanTime < SCAN_INTERVAL) {
+    animFrame = requestAnimationFrame(scanLoop);
+    return;
+  }
+  lastScanTime = timestamp;
+
   if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
-    canvasEl.width = videoEl.videoWidth; canvasEl.height = videoEl.videoHeight;
+    const w = videoEl.videoWidth;
+    const h = videoEl.videoHeight;
+    
+    // 2. Downscaling: ลดขนาดความละเอียดลงให้ไม่เกิน 600px เพื่อให้ประมวลผลเร็วขึ้น
+    const maxDimension = 600;
+    const scale = Math.min(maxDimension / w, maxDimension / h, 1);
+    
+    canvasEl.width = w * scale;
+    canvasEl.height = h * scale;
+    
+    // วาดภาพวิดีโอที่ถูกย่อขนาดลงบน Canvas
     ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
-    const imageData = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts:"dontInvert" });
+
+    // 3. Cropping: ตัดภาพเฉพาะตรงกลาง (บริเวณกล่อง Viewfinder) มาสแกน
+    // สมมติว่ากรอบสแกนอยู่ตรงกลาง กินพื้นที่ประมาณ 65% ของหน้าจอ
+    const cropSize = Math.min(canvasEl.width, canvasEl.height) * 0.65;
+    const startX = (canvasEl.width - cropSize) / 2;
+    const startY = (canvasEl.height - cropSize) / 2;
+
+    // ดึงข้อมูลพิกเซลเฉพาะบริเวณตรงกลางที่ตัดมา
+    const imageData = ctx.getImageData(startX, startY, cropSize, cropSize);
+    
+    // ส่งให้ jsQR ประมวลผลเฉพาะจุด (ทำงานเร็วขึ้นมหาศาล)
+    const code = jsQR(imageData.data, imageData.width, imageData.height, { 
+      inversionAttempts: "dontInvert" // ไม่พยายามสลับสีขาว-ดำ ช่วยให้ทำงานเร็วขึ้นไปอีก
+    });
+
     if (code) {
       const now = Date.now(), data = code.data.trim();
+      // เช็ค Cooldown ป้องกันการสแกนซ้ำรัวๆ
       if (!processing && (data !== lastCode || now - lastCodeTime > COOLDOWN_MS)) {
         lastCode = data;
         lastCodeTime = now;
-        handleScan(data);
+        handleScan(data); // เรียก API ส่งข้อมูลไป Google Sheet
       }
     }
   }
+  
+  // เรียกตัวเองวนซ้ำเพื่อสแกนเฟรมต่อไป
   animFrame = requestAnimationFrame(scanLoop);
 }
 
