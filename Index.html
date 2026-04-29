@@ -6,7 +6,6 @@
 <title>ระบบสัมมนา – โรงพยาบาลสันทราย</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
-
   :root {
     --bg:        #0d0f1a;
     --surface:   #151929;
@@ -43,7 +42,8 @@
 
   /* ══════════════ TAB NAV ══════════════ */
   .tab-nav {
-    position: sticky; top: 0; z-index: 100;
+    position: sticky; top: 0;
+    z-index: 100;
     background: rgba(13,15,26,.92);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
@@ -121,7 +121,8 @@
   .header .subtitle { font-size: 12px; color: var(--text-dim); }
 
   .status-badge {
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center;
+    gap: 6px;
     padding: 5px 14px; border-radius: 99px;
     font-size: 12px; font-weight: 600; margin-top: 10px; transition: all .3s;
   }
@@ -145,15 +146,16 @@
 
   .viewfinder {
     position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center;
+    justify-content: center;
     pointer-events: none;
   }
   .vf-frame { width: 55%; aspect-ratio: 1/1; position: relative; display: none; }
   .vf-frame.active { display: block; }
   .vf-corner { position: absolute; width: 22px; height: 22px; border-color: var(--accent); border-style: solid; border-width: 0; }
   .vf-corner.tl { top:0;    left:0;  border-top-width:3px;    border-left-width:3px;  border-radius: 4px 0 0 0; }
-  .vf-corner.tr { top:0;    right:0; border-top-width:3px;    border-right-width:3px; border-radius: 0 4px 0 0; }
-  .vf-corner.bl { bottom:0; left:0;  border-bottom-width:3px; border-left-width:3px;  border-radius: 0 0 0 4px; }
+  .vf-corner.tr { top:0; right:0; border-top-width:3px;    border-right-width:3px; border-radius: 0 4px 0 0; }
+  .vf-corner.bl { bottom:0; left:0;  border-bottom-width:3px; border-left-width:3px; border-radius: 0 0 0 4px; }
   .vf-corner.br { bottom:0; right:0; border-bottom-width:3px; border-right-width:3px; border-radius: 0 0 4px 0; }
   .vf-scan-line {
     position: absolute; left:5%; right:5%; height:2px;
@@ -176,7 +178,8 @@
   .btn-row { width: 100%; display: flex; gap: 12px; }
   .btn {
     flex: 1; padding: 14px 16px; border: none; border-radius: 14px;
-    font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px; font-weight: 600;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     gap: 8px; transition: all .2s; position: relative; overflow: hidden;
   }
@@ -234,44 +237,23 @@
 
   /* ─── Manual Input ─── */
   .manual-wrap { width: 100%; }
-  .manual-divider {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 12px;
-  }
-  .manual-divider::before, .manual-divider::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
-  }
+  .manual-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .manual-divider::before, .manual-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
   .manual-divider span { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
   .manual-row { display: flex; gap: 10px; }
   .manual-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 13px 14px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    outline: none;
-    transition: border-color .2s;
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 13px 14px; color: var(--text);
+    font-family: var(--mono); font-size: 13px; outline: none; transition: border-color .2s;
   }
   .manual-input::placeholder { color: var(--text-dim); opacity: .6; }
   .manual-input:focus { border-color: var(--accent); }
   .btn-manual {
-    flex-shrink: 0;
-    padding: 0 20px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--success), #00a87e);
-    color: #fff;
-    font-family: 'Sarabun', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    transition: all .2s;
-    box-shadow: 0 3px 14px rgba(0,200,150,.3);
-    min-height: 48px;
+    flex-shrink: 0; padding: 0 20px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--success), #00a87e); color: #fff;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .2s; box-shadow: 0 3px 14px rgba(0,200,150,.3); min-height: 48px;
   }
   .btn-manual:active { transform: scale(.96); }
   .btn-manual:disabled { opacity: .45; cursor: not-allowed; transform: none; }
@@ -280,26 +262,14 @@
   .btn-manual.loading .spinner-sm { display: block; }
 
   /* ══════════════ DASHBOARD PANEL ══════════════ */
-  #panel-dashboard {
-    position: relative; z-index: 1;
-    padding: 20px 16px 40px;
-    max-width: 960px;
-    margin: 0 auto;
-  }
-
-  .dash-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
-  }
+  #panel-dashboard { position: relative; z-index: 1; padding: 20px 16px 40px; max-width: 960px; margin: 0 auto; }
+  .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
   .dash-title { font-size: 18px; font-weight: 700; }
   .dash-title span { color: var(--accent); }
-
   .btn-refresh {
-    display: flex; align-items: center; gap: 7px;
-    padding: 9px 16px; border-radius: 10px;
-    background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text-dim); font-family: 'Sarabun', sans-serif;
-    font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
   }
   .btn-refresh:hover { background: var(--border); color: var(--text); }
   .btn-refresh:disabled { opacity:.5; cursor:not-allowed; }
@@ -308,28 +278,14 @@
   .btn-refresh.loading .refresh-icon { display:none; }
 
   /* KPI Cards */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px 16px;
-    position: relative;
-    overflow: hidden;
-    transition: transform .2s;
-  }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 16px; position: relative; overflow: hidden; transition: transform .2s; }
   .kpi-card:hover { transform: translateY(-2px); }
   .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:3px 3px 0 0; }
   .kpi-card.blue::before   { background: linear-gradient(90deg, var(--accent), #3d6fd4); }
   .kpi-card.green::before  { background: linear-gradient(90deg, var(--success), #00a87e); }
   .kpi-card.yellow::before { background: linear-gradient(90deg, var(--warning), #d4891e); }
   .kpi-card.purple::before { background: linear-gradient(90deg, var(--accent2), #5a3fc0); }
-
   .kpi-icon { font-size: 24px; margin-bottom: 8px; display: block; }
   .kpi-value { font-size: 32px; font-weight: 700; font-family: var(--mono); line-height: 1; }
   .kpi-card.blue   .kpi-value { color: var(--accent); }
@@ -339,54 +295,27 @@
   .kpi-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
   /* Progress Bar */
-  .progress-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 20px;
-  }
+  .progress-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 20px; }
   .progress-section h3 { font-size: 14px; font-weight: 600; color: var(--text-dim); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .05em; }
   .progress-bar-wrap { margin-bottom: 4px; }
   .progress-label-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
   .progress-bar-bg { width: 100%; height: 10px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
-  .progress-bar-fill {
-    height: 100%; border-radius: 99px;
-    background: linear-gradient(90deg, var(--success), #00a87e);
-    transition: width .8s cubic-bezier(.4,0,.2,1);
-  }
+  .progress-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--success), #00a87e); transition: width .8s cubic-bezier(.4,0,.2,1); }
   .progress-pct { font-size: 28px; font-weight: 700; font-family: var(--mono); color: var(--success); margin-top: 10px; }
   .progress-pct small { font-size: 14px; color: var(--text-dim); font-family: 'Sarabun', sans-serif; font-weight: 400; }
 
   /* Two-col layout */
-  .dash-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 20px;
-  }
+  .dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
   @media (max-width: 600px) { .dash-cols { grid-template-columns: 1fr; } }
 
   /* Recent check-ins list */
-  .dash-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
-    overflow: hidden;
-  }
+  .dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; overflow: hidden; }
   .dash-card h3 { font-size: 13px; font-weight: 600; color: var(--text-dim); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .05em; }
-
   .checkin-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
   .checkin-list::-webkit-scrollbar { width: 4px; }
   .checkin-list::-webkit-scrollbar-track { background: var(--surface2); border-radius: 4px; }
   .checkin-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  .checkin-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 10px; border-radius: 10px; background: var(--surface2);
-    animation: slideUp .3s ease;
-  }
+  .checkin-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; background: var(--surface2); animation: slideUp .3s ease; }
   .checkin-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
   .checkin-name { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .checkin-time { font-size: 10px; color: var(--text-dim); font-family: var(--mono); white-space: nowrap; }
@@ -396,12 +325,7 @@
   .chart-wrap { width: 100%; }
   .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 100px; width: 100%; }
   .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .bar-fill {
-    width: 100%; border-radius: 4px 4px 0 0;
-    background: linear-gradient(180deg, var(--accent), #3d6fd4);
-    transition: height .7s cubic-bezier(.4,0,.2,1);
-    min-height: 2px;
-  }
+  .bar-fill { width: 100%; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--accent), #3d6fd4); transition: height .7s cubic-bezier(.4,0,.2,1); min-height: 2px; }
   .bar-lbl { font-size: 9px; color: var(--text-dim); font-family: var(--mono); }
 
   /* Not-checked-in list */
@@ -409,10 +333,7 @@
   .pending-list::-webkit-scrollbar { width: 4px; }
   .pending-list::-webkit-scrollbar-track { background: var(--surface2); border-radius: 4px; }
   .pending-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  .pending-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px; border-radius: 10px; background: var(--surface2);
-  }
+  .pending-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface2); }
   .pending-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); flex-shrink: 0; }
   .pending-name { font-size: 13px; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pending-badge { font-size: 10px; color: var(--text-dim); font-family: var(--mono); background: var(--border); padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
@@ -430,35 +351,10 @@
   .dash-error { text-align: center; padding: 40px 20px; }
   .dash-error .err-icon { font-size: 40px; margin-bottom: 12px; }
   .dash-error p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
-
-  /* ══════════════ CAMERA PERMISSION MODAL ══════════════ */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(13, 15, 26, 0.85);
-    backdrop-filter: blur(5px); z-index: 999;
-    display: none; align-items: center; justify-content: center;
-    padding: 20px; opacity: 0; transition: opacity 0.3s ease;
-  }
-  .modal-overlay.show { display: flex; opacity: 1; }
-  
-  .modal-content {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 28px 24px; max-width: 340px; width: 100%;
-    text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-    transform: translateY(20px); transition: transform 0.3s ease;
-  }
-  .modal-overlay.show .modal-content { transform: translateY(0); }
-  
-  .modal-icon-lg { font-size: 54px; margin-bottom: 12px; }
-  .modal-content h3 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-  .modal-content p { font-size: 13px; color: var(--text-dim); margin-bottom: 24px; line-height: 1.6; }
-  
-  .modal-actions { display: flex; gap: 12px; }
-  .modal-actions .btn { padding: 12px; font-size: 14px; }
 </style>
 </head>
 <body>
 
-<!-- ═══ TAB NAV ═══ -->
 <nav class="tab-nav">
   <button class="tab-btn active" onclick="switchTab('checkin')" id="tab-checkin">
     📷 เช็คอิน QR
@@ -468,11 +364,7 @@
   </button>
 </nav>
 
-<!-- ═══════════════════════════════════ -->
-<!-- PANEL 1: CHECK-IN                   -->
-<!-- ═══════════════════════════════════ -->
 <div id="panel-checkin" class="panel active">
-
   <div class="header">
     <span class="header-icon">🔬</span>
     <h1>เช็คอินสัมมนา</h1>
@@ -510,7 +402,6 @@
     </button>
   </div>
 
-  <!-- ─── Manual Input ─── -->
   <div class="manual-wrap">
     <div class="manual-divider"><span>หรือกรอกรหัสด้วยตนเอง</span></div>
     <div class="manual-row">
@@ -561,15 +452,10 @@
   </div>
 
   <p class="footer">ระบบเช็คอินสัมมนา · โรงพยาบาลสันทราย<br>ใช้กล้องหลังของอุปกรณ์เพื่อประสิทธิภาพสูงสุด</p>
-
 </div>
 
 
-<!-- ═══════════════════════════════════ -->
-<!-- PANEL 2: DASHBOARD                  -->
-<!-- ═══════════════════════════════════ -->
 <div id="panel-dashboard" class="panel">
-
   <div class="dash-header">
     <div class="dash-title">📊 Dashboard <span>สัมมนา</span></div>
     <button class="btn-refresh" id="btn-refresh" onclick="loadDashboard()">
@@ -581,7 +467,6 @@
 
   <p class="last-update" id="last-update">–</p>
 
-  <!-- KPI -->
   <div class="kpi-grid" id="kpi-grid">
     <div class="kpi-card blue skeleton skel-kpi"></div>
     <div class="kpi-card green skeleton skel-kpi"></div>
@@ -589,7 +474,6 @@
     <div class="kpi-card purple skeleton skel-kpi"></div>
   </div>
 
-  <!-- Progress -->
   <div class="progress-section" id="progress-section">
     <h3>อัตราการเข้าร่วม</h3>
     <div class="progress-bar-wrap">
@@ -604,10 +488,7 @@
     <div class="progress-pct" id="prog-pct">0% <small>เช็คอิน</small></div>
   </div>
 
-  <!-- Two columns -->
   <div class="dash-cols">
-
-    <!-- Recent Check-ins -->
     <div class="dash-card">
       <h3>✅ เช็คอินล่าสุด</h3>
       <div class="checkin-list" id="checkin-list">
@@ -617,17 +498,14 @@
       </div>
     </div>
 
-    <!-- Hourly chart -->
     <div class="dash-card">
       <h3>⏱ เช็คอินรายชั่วโมง</h3>
       <div class="chart-wrap">
         <div class="bar-chart" id="hourly-chart"></div>
       </div>
     </div>
-
   </div>
 
-  <!-- Pending -->
   <div class="dash-card">
     <h3>⏳ ยังไม่ได้เช็คอิน <span id="pending-count" style="color:var(--warning);font-family:var(--mono)"></span></h3>
     <div class="pending-list" id="pending-list" style="margin-top:10px">
@@ -636,24 +514,36 @@
       <div class="skel-row skeleton"></div>
     </div>
   </div>
-
-</div>
-<div class="modal-overlay" id="camera-modal">
-  <div class="modal-content">
-    <div class="modal-icon-lg">📸</div>
-    <h3>ขออนุญาตเข้าถึงกล้อง</h3>
-    <p>ระบบจำเป็นต้องใช้กล้องของคุณเพื่อทำการสแกน QR Code สำหรับเช็คอินเข้างานสัมมนา</p>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeCameraModal()">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="acceptCameraPermission()">อนุญาต (Allow)</button>
-    </div>
-  </div>
 </div>
 
-<!-- jsQR -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <script>
+// =========================================================================
+// 🚨 วาง URL Web App ของคุณ (ที่ได้จาก Google Apps Script) ตรงนี้ในเครื่องหมาย ""
+// =========================================================================
+const WEB_APP_URL = "https://script.google.com/macros/s/xxxxxxxxxxxxx/exec";
+
+// ════════════════════════════════════════════
+// GLOBAL VARIABLES & DOM
+// ════════════════════════════════════════════
+let stream = null, animFrame = null, scanning = false, processing = false;
+let lastCode = "", lastCodeTime = 0;
+const COOLDOWN_MS = 4000;
+const stats = { total:0, ok:0, dup:0, err:0 };
+
+const videoEl     = document.getElementById("camera-feed");
+const canvasEl    = document.getElementById("scan-canvas");
+const ctx         = canvasEl.getContext("2d", { willReadFrequently: true });
+const btnOpen     = document.getElementById("btn-open");
+const btnClose    = document.getElementById("btn-close");
+const placeholder = document.getElementById("cam-placeholder");
+const vfFrame     = document.getElementById("vf-frame");
+const vfLine      = document.getElementById("vf-line");
+const vfHint      = document.getElementById("vf-hint");
+const statusBadge = document.getElementById("status-badge");
+const statusText  = document.getElementById("status-text");
+
 // ════════════════════════════════════════════
 // TAB SWITCHING
 // ════════════════════════════════════════════
@@ -666,107 +556,60 @@ function switchTab(tab) {
 }
 
 // ════════════════════════════════════════════
-// CHECK-IN (original logic — unchanged)
+// CAMERA CONTROLS (THE ULTIMATE FUNCTION)
 // ════════════════════════════════════════════
-let stream = null, animFrame = null, scanning = false, processing = false;
-let lastCode = "", lastCodeTime = 0;
-const COOLDOWN_MS = 4000;
-const stats = { total:0, ok:0, dup:0, err:0 };
-
-const videoEl     = document.getElementById("camera-feed");
-const canvasEl    = document.getElementById("scan-canvas");
-const ctx         = canvasEl.getContext("2d");
-const btnOpen     = document.getElementById("btn-open");
-const btnClose    = document.getElementById("btn-close");
-const placeholder = document.getElementById("cam-placeholder");
-const vfFrame     = document.getElementById("vf-frame");
-const vfLine      = document.getElementById("vf-line");
-const vfHint      = document.getElementById("vf-hint");
-const statusBadge = document.getElementById("status-badge");
-const statusText  = document.getElementById("status-text");
-// ════════════════════════════════════════════
-// CAMERA CONTROLS & MODAL
-// ════════════════════════════════════════════
-// ════════════════════════════════════════════
-// SMART CAMERA OPENER (ใช้ง่ายและเสถียรที่สุด)
-// ════════════════════════════════════════════
-
-// ════════════════════════════════════════════
-// ฟังก์ชันเปิดกล้องแบบ One-Tap (เด้ง Allow ทันที)
-// ════════════════════════════════════════════
-
-// ════════════════════════════════════════════
-// THE ULTIMATE CAMERA FUNCTION (ฟังก์ชันเปิดกล้องแบบครอบคลุม)
-// ════════════════════════════════════════════
-
 async function openCamera() {
-  // 1. อัปเดต UI ให้อยู่ในสถานะกำลังโหลด
   setButtonLoading(btnOpen, true);
   setBadge("active", "กำลังเตรียมกล้อง...");
 
-  // 2. เคลียร์การเชื่อมต่อกล้องเดิม (ถ้ามีค้างอยู่) เพื่อป้องกัน Error กล้องถูกใช้งานซ้ำ
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-  }
+  if (stream) { stream.getTracks().forEach(track => track.stop()); }
 
   let newStream = null;
   let lastError = null;
 
-  // 3. กำหนดแผนการเรียกกล้อง 
-  // แผน A: กล้องหลัง (Environment) 
-  // แผน B: กล้องพื้นฐาน (สำหรับ PC หรือกรณีแผน A พัง)
   const strategies = [
     { video: { facingMode: { ideal: "environment" } } },
     { video: true }
   ];
 
-  // 4. วนลูปพยายามเปิดกล้องตามแผนที่วางไว้
   for (const constraints of strategies) {
     try {
-      // คำสั่งนี้จะเด้งหน้าต่างขออนุญาต (Allow) หากผู้ใช้ยังไม่เคยอนุญาต
       newStream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (newStream) break; // ถ้าสำเร็จให้หยุดลูปทันที
+      if (newStream) break; 
     } catch (err) {
       lastError = err;
       console.warn("ข้ามเงื่อนไขกล้อง:", constraints, err.name);
     }
   }
 
-  // 5. ตรวจสอบผลลัพธ์ว่าเปิดกล้องได้หรือไม่
   if (!newStream) {
     setButtonLoading(btnOpen, false);
     setBadge("idle", "พร้อมใช้งาน");
-    // เรียกฟังก์ชันจัดการ Error แบบครอบคลุม
     handleComprehensiveCameraError(lastError);
     return;
   }
 
-  // 6. เมื่อเปิดกล้องสำเร็จ นำภาพขึ้นแสดงบนหน้าจอ
   try {
     stream = newStream;
     videoEl.srcObject = stream;
     
-    // บังคับตั้งค่าสำหรับ iOS เพื่อไม่ให้จอดำหรือเด้งเต็มจอ
     videoEl.setAttribute("playsinline", "true");
     videoEl.setAttribute("autoplay", "true");
     videoEl.setAttribute("muted", "true");
 
     await videoEl.play();
 
-    // แสดงผลหน้าจอ UI กล้อง
     videoEl.style.display = "block";
     if (placeholder) placeholder.style.display = "none";
     if (vfFrame) vfFrame.classList.add("active");
     if (vfLine) vfLine.classList.add("active");
     if (vfHint) vfHint.classList.add("active");
 
-    // ปรับสถานะปุ่ม
     setButtonLoading(btnOpen, false);
     btnOpen.disabled = true;
     btnClose.disabled = false;
     setBadge("active", "กำลังสแกน...");
 
-    // เริ่มต้นลูปการสแกน QR Code
     scanning = true;
     scanLoop();
 
@@ -778,11 +621,7 @@ async function openCamera() {
   }
 }
 
-// ════════════════════════════════════════════
-// ฟังก์ชันวิเคราะห์และแจ้งเตือน Error แบบเข้าใจง่าย
-// ════════════════════════════════════════════
 function handleComprehensiveCameraError(err) {
-  // 1. ดักจับการเปิดผ่าน In-App Browser (LINE, Facebook, IG)
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   const isInApp = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Line") > -1);
 
@@ -791,9 +630,7 @@ function handleComprehensiveCameraError(err) {
     return;
   }
 
-  // 2. แยกแยะ Error ปกติ
   let msg = "❌ ไม่สามารถใช้งานกล้องได้\n";
-  
   if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
     msg = "⚠️ คุณยังไม่ได้อนุญาตให้ใช้กล้อง (หรือเคยบล็อกไว้)\n\nวิธีแก้:\n1. กดไอคอน 🎚️ หรือ 'aA' ตรงแถบ URL\n2. ไปที่ 'การตั้งค่าเว็บไซต์ (Site Settings)'\n3. ตั้งค่ากล้องเป็น 'อนุญาต (Allow)'\n4. รีเฟรชหน้าเว็บ 1 ครั้ง";
   } 
@@ -806,74 +643,22 @@ function handleComprehensiveCameraError(err) {
   else {
     msg += "\nข้อผิดพลาดทางเทคนิค: " + (err.message || err.name);
   }
-  
   alert(msg);
-}
-
-// ฟังก์ชันเสริมสำหรับแจ้งเตือน Error ให้เข้าใจง่าย
-function handleCameraError(err) {
-  let msg = "❌ ไม่สามารถเข้าถึงกล้องได้";
-  if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-    msg = "⚠️ กรุณาอนุญาต (Allow) การเข้าถึงกล้อง\nโดยกดที่ไอคอนตั้งค่าข้างแถบ URL ครับ";
-  } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-    msg = "❌ ไม่พบอุปกรณ์กล้องในเครื่องของคุณ";
-  }
-  alert(msg);
-}
-
-// 2. ปิด Pop-up ถ้ายกเลิก
-function closeCameraModal() {
-  document.getElementById('camera-modal').classList.remove('show');
-}
-
-// 3. เมื่อผู้ใช้กด "อนุญาต" บน Pop-up
-async function acceptCameraPermission() {
-  // ปิด Pop-up
-  closeCameraModal();
-  
-  // แสดงสถานะโหลดที่ปุ่มหลัก
-  setButtonLoading(btnOpen, true);
-  setBadge("active", "กำลังขอสิทธิ์กล้อง...");
-
-  try {
-    // บรรทัดนี้จะทำให้เบราว์เซอร์เด้งขอสิทธิ์ (ถ้ายังไม่เคยอนุญาต) ทันทีเพราะเกิดจากการกดปุ่มของผู้ใช้
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:"environment", width:{ideal:1280}, height:{ideal:1280} }
-    });
-
-    videoEl.srcObject = stream;
-    await videoEl.play();
-    videoEl.style.display = "block";
-    placeholder.style.display = "none";
-    vfFrame.classList.add("active");
-    vfLine.classList.add("active");
-    vfHint.classList.add("active");
-    
-    setButtonLoading(btnOpen, false);
-    btnOpen.disabled = true;
-    btnClose.disabled = false;
-    setBadge("active", "กำลังสแกน...");
-    scanning = true;
-    scanLoop();
-    
-  } catch(err) {
-    setButtonLoading(btnOpen, false);
-    showResult("error","❌","ไม่สามารถเปิดกล้องได้","ผู้ใช้อาจปฏิเสธการเข้าถึง หรือไม่มีกล้อง","");
-    setBadge("idle","พร้อมใช้งาน");
-  }
 }
 
 function closeCamera() {
   scanning = false;
   if (animFrame) cancelAnimationFrame(animFrame);
   if (stream) stream.getTracks().forEach(t => t.stop());
-  stream = null; animFrame = null;
+  stream = null;
+  animFrame = null;
   videoEl.style.display = "none"; videoEl.srcObject = null;
   placeholder.style.display = "flex";
   vfFrame.classList.remove("active");
   vfLine.classList.remove("active");
   vfHint.classList.remove("active");
-  btnOpen.disabled = false; btnClose.disabled = true;
+  btnOpen.disabled = false;
+  btnClose.disabled = true;
   setBadge("idle","พร้อมใช้งาน");
 }
 
@@ -887,7 +672,8 @@ function scanLoop() {
     if (code) {
       const now = Date.now(), data = code.data.trim();
       if (!processing && (data !== lastCode || now - lastCodeTime > COOLDOWN_MS)) {
-        lastCode = data; lastCodeTime = now;
+        lastCode = data;
+        lastCodeTime = now;
         handleScan(data);
       }
     }
@@ -895,19 +681,89 @@ function scanLoop() {
   animFrame = requestAnimationFrame(scanLoop);
 }
 
+// ════════════════════════════════════════════
+// API CONNECTORS (FETCH TO GOOGLE APPS SCRIPT)
+// ════════════════════════════════════════════
 function handleScan(regId) {
   if (processing) return;
   processing = true;
   setBadge("active","กำลังตรวจสอบ...");
   if (navigator.vibrate) navigator.vibrate(80);
   stats.total++; updateStats();
-  google.script.run
-    .withSuccessHandler(onCheckInResult)
-    .withFailureHandler(onCheckInError)
-    .processCheckIn(regId);
   showResultLoading(regId);
+
+  fetch(WEB_APP_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'checkin', regId: regId })
+  })
+  .then(response => response.json())
+  .then(data => onCheckInResult(data))
+  .catch(err => {
+    console.error("API Error:", err);
+    onCheckInError(err);
+  });
 }
 
+function manualCheckin() {
+  const input  = document.getElementById("manual-input");
+  const btn    = document.getElementById("btn-manual");
+  const regId  = (input.value || "").trim().toUpperCase();
+  if (!regId) {
+    input.focus();
+    input.style.borderColor = "var(--danger)";
+    setTimeout(() => { input.style.borderColor = ""; }, 1500);
+    return;
+  }
+
+  btn.classList.add("loading");
+  btn.disabled = true;
+  input.disabled = true;
+
+  stats.total++;
+  updateStats();
+  lastCode = regId;
+
+  fetch(WEB_APP_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'checkin', regId: regId })
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.classList.remove("loading");
+    btn.disabled = false;
+    input.disabled = false;
+    input.value = "";
+    input.focus();
+    onCheckInResult(data);
+  })
+  .catch(err => {
+    btn.classList.remove("loading");
+    btn.disabled = false;
+    input.disabled = false;
+    onCheckInError(err);
+  });
+}
+
+function loadDashboard() {
+  const btn = document.getElementById("btn-refresh");
+  btn.classList.add("loading");
+  btn.disabled = true;
+
+  fetch(WEB_APP_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'dashboard' })
+  })
+  .then(res => res.json())
+  .then(data => renderDashboard(data))
+  .catch(err => {
+    console.error("Dashboard API Error:", err);
+    renderDashboardError(err);
+  });
+}
+
+// ════════════════════════════════════════════
+// UI UPDATERS
+// ════════════════════════════════════════════
 function onCheckInResult(res) {
   if (res.status === "checkin_ok") {
     stats.ok++;
@@ -925,7 +781,8 @@ function onCheckInResult(res) {
 function onCheckInError(err) {
   stats.err++;
   showResult("error","❌","เกิดข้อผิดพลาด","ไม่สามารถเชื่อมต่อฐานข้อมูลได้",lastCode);
-  updateStats(); setBadge("active","กำลังสแกน..."); scheduleReset();
+  updateStats();
+  setBadge("active","กำลังสแกน..."); scheduleReset();
 }
 
 function showResult(type, icon, msg, detail, regId) {
@@ -938,7 +795,8 @@ function showResult(type, icon, msg, detail, regId) {
   document.getElementById("result-reg-id").style.display = regId ? "block" : "none";
   const bar = document.getElementById("countdown-bar");
   const fill = document.getElementById("countdown-fill");
-  bar.classList.add("active"); fill.style.width = "100%";
+  bar.classList.add("active");
+  fill.style.width = "100%";
   requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = "0%"; }));
 }
 
@@ -979,70 +837,12 @@ function setButtonLoading(btn, loading) {
   btn.disabled = loading;
 }
 
-// ─── Manual Check-in ───
-function manualCheckin() {
-  const input  = document.getElementById("manual-input");
-  const btn    = document.getElementById("btn-manual");
-  const regId  = (input.value || "").trim().toUpperCase();
-
-  if (!regId) {
-    input.focus();
-    input.style.borderColor = "var(--danger)";
-    setTimeout(() => { input.style.borderColor = ""; }, 1500);
-    return;
-  }
-
-  btn.classList.add("loading");
-  btn.disabled = true;
-  input.disabled = true;
-
-  stats.total++;
-  updateStats();
-  lastCode = regId;
-
-  google.script.run
-    .withSuccessHandler(function(res) {
-      btn.classList.remove("loading");
-      btn.disabled = false;
-      input.disabled = false;
-      input.value = "";
-      input.focus();
-      onCheckInResult(res);
-    })
-    .withFailureHandler(function(err) {
-      btn.classList.remove("loading");
-      btn.disabled = false;
-      input.disabled = false;
-      onCheckInError(err);
-    })
-    .processCheckIn(regId);
-}
-
-// ════════════════════════════════════════════
-// DASHBOARD
-// ════════════════════════════════════════════
-let dashLoaded = false;
-
-function loadDashboard() {
-  const btn = document.getElementById("btn-refresh");
-  btn.classList.add("loading");
-  btn.disabled = true;
-
-  google.script.run
-    .withSuccessHandler(renderDashboard)
-    .withFailureHandler(renderDashboardError)
-    .getDashboardData();
-}
-
 function renderDashboard(d) {
   const btn = document.getElementById("btn-refresh");
   btn.classList.remove("loading");
   btn.disabled = false;
-
-  // Timestamp
   document.getElementById("last-update").textContent = "อัปเดตล่าสุด: " + d.lastUpdate;
 
-  // KPI
   const pct = d.total > 0 ? Math.round((d.checkedIn / d.total) * 100) : 0;
   document.getElementById("kpi-grid").innerHTML = `
     <div class="kpi-card blue">
@@ -1066,15 +866,10 @@ function renderDashboard(d) {
       <div class="kpi-label">ส่งอีเมลแล้ว</div>
     </div>
   `;
-
-  // Progress bar
   document.getElementById("prog-label").textContent = d.checkedIn + " / " + d.total;
   document.getElementById("prog-pct").innerHTML = pct + '% <small>เช็คอิน</small>';
-  setTimeout(() => {
-    document.getElementById("prog-fill").style.width = pct + "%";
-  }, 100);
+  setTimeout(() => { document.getElementById("prog-fill").style.width = pct + "%"; }, 100);
 
-  // Recent check-ins
   const list = document.getElementById("checkin-list");
   if (d.recentCheckins && d.recentCheckins.length > 0) {
     list.innerHTML = d.recentCheckins.map(r =>
@@ -1088,7 +883,6 @@ function renderDashboard(d) {
     list.innerHTML = '<div class="no-data">ยังไม่มีการเช็คอิน</div>';
   }
 
-  // Hourly chart
   const chart = document.getElementById("hourly-chart");
   if (d.hourly && d.hourly.length > 0) {
     const maxVal = Math.max(...d.hourly.map(h => h.count), 1);
@@ -1103,7 +897,6 @@ function renderDashboard(d) {
     chart.innerHTML = '<div class="no-data" style="width:100%;font-size:12px">ยังไม่มีข้อมูล</div>';
   }
 
-  // Pending list
   const pending = document.getElementById("pending-list");
   document.getElementById("pending-count").textContent = d.pending ? "("+d.pending.length+")" : "";
   if (d.pending && d.pending.length > 0) {
@@ -1117,8 +910,6 @@ function renderDashboard(d) {
   } else {
     pending.innerHTML = '<div class="no-data">🎉 ทุกคนเช็คอินครบแล้ว!</div>';
   }
-
-  dashLoaded = true;
 }
 
 function renderDashboardError(err) {
@@ -1133,9 +924,7 @@ function renderDashboardError(err) {
 }
 
 function escHtml(s) {
-  return String(s || "")
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;");
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 </script>
 </body>
