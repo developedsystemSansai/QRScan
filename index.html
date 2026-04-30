@@ -530,13 +530,8 @@ body {
 .bar-fill:hover::before { opacity:1; }
 .bar-lbl   { font-size:8px; color:var(--text-3); font-family:var(--mono); }
 
-.pd-list { display:flex; flex-direction:column; gap:5px; max-height:240px; overflow-y:auto; }
-.pd-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--radius-sm); background:var(--surface2); }
-.pd-dot  { width:7px; height:7px; border-radius:50%; background:var(--gold); flex-shrink:0; }
-.pd-name { font-size:13px; font-weight:500; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pd-id   { font-size:10px; color:var(--text-3); font-family:var(--mono); background:var(--bg2); padding:2px 7px; border-radius:5px; border:1px solid var(--border); }
-.pd-act  { padding:4px 10px; border:1px solid rgba(26,122,94,.3); border-radius:6px; background:var(--green-lt); color:var(--green); font-family:var(--sans); font-size:11px; font-weight:700; cursor:pointer; flex-shrink:0; transition:all .15s; }
-.pd-act:hover { background:var(--green); color:#fff; }
+/* ── (pending section removed) ── */
+
 
 .no-data  { font-size:13px; color:var(--text-3); text-align:center; padding:20px 0; }
 .skel     { background:linear-gradient(90deg,var(--bg2) 25%,var(--border) 50%,var(--bg2) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:var(--radius-sm); }
@@ -890,13 +885,14 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
 /* ═══════════════════════════════════════════════════
    MISSION GROUP DISPLAY
    ═══════════════════════════════════════════════════ */
-.mg-section { margin-top:18px; }
+.mg-section { margin-top:20px; }
 .mg-section-hd {
-  display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px; flex-wrap:wrap; gap:8px;
 }
 .mg-section-hd h2 {
-  font-size:12px; font-weight:700; color:var(--text-3);
-  text-transform:uppercase; letter-spacing:.08em; display:flex; align-items:center; gap:7px;
+  font-size:16px; font-weight:700; color:var(--text);
+  display:flex; align-items:center; gap:8px; margin:0;
 }
 .mg-section-hd h2 span { color:var(--primary); }
 .mg-view-toggle {
