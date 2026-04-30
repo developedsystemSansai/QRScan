@@ -603,13 +603,232 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
   border-bottom:1px solid var(--border); margin-bottom:4px;
 }
 
-
-  display:flex; align-items:center; justify-content:space-between;
-  background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius-lg); padding:14px 18px; margin-bottom:16px;
-  text-decoration:none; transition:all .2s; box-shadow:var(--shadow-sm);
+/* ═══════════════════════════════════════════════════
+   ACTIVITY ZONE
+   ═══════════════════════════════════════════════════ */
+.activity-zone {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:18px;
 }
-.dash-register-link:hover { border-color:var(--primary); background:var(--primary-lt); }
+@media(max-width:700px){ .activity-zone{ grid-template-columns:1fr; } }
+
+/* ── Live Feed Panel ── */
+.feed-panel {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  box-shadow:var(--shadow-sm);
+  display:flex;
+  flex-direction:column;
+  min-height:320px;
+  position:relative;
+}
+.feed-header {
+  background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  padding:14px 16px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  border-bottom:2px solid var(--primary);
+}
+.feed-title-row { display:flex; align-items:center; gap:8px; }
+.feed-pulse-dot {
+  width:9px; height:9px; border-radius:50%;
+  background:#22d3ee;
+  box-shadow:0 0 0 0 rgba(34,211,238,.6);
+  animation:livering 1.8s ease infinite;
+  flex-shrink:0;
+}
+@keyframes livering{
+  0%{box-shadow:0 0 0 0 rgba(34,211,238,.6)}
+  70%{box-shadow:0 0 0 8px rgba(34,211,238,0)}
+  100%{box-shadow:0 0 0 0 rgba(34,211,238,0)}
+}
+.feed-title {
+  font-size:11px; font-weight:800; letter-spacing:.12em;
+  color:#e2e8f5; text-transform:uppercase; font-family:var(--mono);
+}
+.feed-sub { font-size:10px; color:rgba(255,255,255,.4); font-family:var(--mono); }
+
+.feed-stream {
+  flex:1; overflow-y:auto; padding:10px;
+  display:flex; flex-direction:column; gap:6px;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+}
+.feed-item {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 11px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  animation:feedSlideIn .35s cubic-bezier(.16,1,.3,1);
+  position:relative; overflow:hidden;
+  transition:border-color .2s;
+}
+.feed-item:hover { border-color:var(--primary); }
+.feed-item.is-new {
+  border-color:rgba(34,211,238,.5);
+  background:linear-gradient(135deg, rgba(34,211,238,.04), rgba(26,95,122,.04));
+}
+.feed-item.is-new::before {
+  content:'NEW';
+  position:absolute; top:5px; right:8px;
+  font-size:8px; font-weight:800; letter-spacing:.12em;
+  color:#22d3ee; font-family:var(--mono); opacity:.9;
+}
+@keyframes feedSlideIn{
+  from{opacity:0;transform:translateY(-10px) scale(.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.feed-avatar {
+  width:36px; height:36px; border-radius:12px;
+  display:grid; place-items:center;
+  font-size:14px; font-weight:800; flex-shrink:0;
+  color:#fff; position:relative;
+}
+.feed-avatar::after {
+  content:'✓';
+  position:absolute; bottom:-3px; right:-3px;
+  width:14px; height:14px; border-radius:50%;
+  background:var(--green); border:2px solid var(--surface);
+  font-size:7px; font-weight:900; color:#fff;
+  display:grid; place-items:center;
+}
+.feed-info { flex:1; min-width:0; }
+.feed-name {
+  font-size:13px; font-weight:700; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.3;
+}
+.feed-meta {
+  font-size:10px; color:var(--text-3); font-family:var(--mono);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.feed-time-badge {
+  font-size:11px; font-family:var(--mono); font-weight:700;
+  color:var(--primary); background:var(--primary-lt);
+  padding:3px 7px; border-radius:6px;
+  border:1px solid rgba(26,95,122,.15); flex-shrink:0;
+}
+.feed-skel {
+  height:54px; border-radius:10px;
+  background:linear-gradient(90deg,var(--bg2) 25%,var(--border) 50%,var(--bg2) 75%);
+  background-size:200% 100%; animation:shimmer 1.4s infinite;
+}
+.feed-empty {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:10px; padding:30px;
+}
+.feed-empty.hidden { display:none; }
+.feed-empty-ico { font-size:36px; opacity:.4; }
+.feed-empty-txt { font-size:12px; color:var(--text-3); text-align:center; }
+
+.av-0{background:linear-gradient(135deg,#1a5f7a,#3b9dc9)}
+.av-1{background:linear-gradient(135deg,#1a7a5e,#22a47d)}
+.av-2{background:linear-gradient(135deg,#7c5cbf,#a07dd4)}
+.av-3{background:linear-gradient(135deg,#b83535,#d95f5f)}
+.av-4{background:linear-gradient(135deg,#c9882a,#e8a838)}
+.av-5{background:linear-gradient(135deg,#0e7490,#22d3ee)}
+.av-6{background:linear-gradient(135deg,#4f46e5,#818cf8)}
+.av-7{background:linear-gradient(135deg,#be185d,#f472b6)}
+
+/* ── Seat Map Panel ── */
+.seat-panel {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  box-shadow:var(--shadow-sm);
+  display:flex;
+  flex-direction:column;
+  min-height:320px;
+}
+.seat-header {
+  padding:13px 16px 11px;
+  background:linear-gradient(135deg, #0f2027 0%, #1a2a35 100%);
+  border-bottom:2px solid var(--gold);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.seat-title {
+  font-size:11px; font-weight:800; letter-spacing:.12em;
+  color:#e2e8f5; text-transform:uppercase; font-family:var(--mono);
+}
+.seat-legend {
+  display:flex; align-items:center; gap:4px;
+  font-size:9.5px; color:rgba(255,255,255,.5); font-family:var(--mono);
+}
+.sl-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.sl-in  { background:var(--green); box-shadow:0 0 6px rgba(26,122,94,.6); }
+.sl-out { background:var(--border2); }
+
+.seat-stage {
+  margin:12px 16px 4px;
+  background:linear-gradient(180deg,rgba(26,95,122,.15) 0%, rgba(26,95,122,.03) 100%);
+  border:1.5px solid rgba(26,95,122,.25);
+  border-radius:var(--radius-sm);
+  padding:5px;
+  text-align:center;
+}
+.stage-label {
+  font-size:9px; font-weight:700; letter-spacing:.1em;
+  color:var(--primary); text-transform:uppercase; font-family:var(--mono); opacity:.75;
+}
+.seat-map {
+  flex:1; padding:4px 16px 6px;
+  display:flex; flex-direction:column; gap:4px; justify-content:center;
+}
+.seat-row {
+  display:flex; gap:3px; justify-content:center; align-items:center;
+}
+.seat-row-label {
+  font-size:8px; font-family:var(--mono); color:var(--text-3);
+  width:12px; text-align:center; flex-shrink:0; opacity:.6;
+}
+.seat {
+  width:20px; height:17px; border-radius:4px 4px 2px 2px;
+  border:1px solid var(--border);
+  background:var(--bg2);
+  transition:background .5s cubic-bezier(.16,1,.3,1), border-color .5s, box-shadow .5s;
+  flex-shrink:0;
+}
+.seat.checked {
+  background:linear-gradient(160deg, #22a47d, #1a7a5e);
+  border-color:rgba(26,122,94,.45);
+  box-shadow:0 2px 6px rgba(26,122,94,.3);
+}
+.seat.just-checked {
+  animation:seatPop .55s cubic-bezier(.16,1,.3,1);
+}
+@keyframes seatPop{
+  0%{transform:scale(1)}
+  45%{transform:scale(1.5);background:linear-gradient(160deg,#22d3ee,#22a47d);box-shadow:0 4px 14px rgba(34,211,238,.5)}
+  100%{transform:scale(1)}
+}
+.seat-stats-row {
+  display:flex; align-items:center; justify-content:center;
+  padding:10px 16px 13px; gap:0;
+  border-top:1px solid var(--border);
+  background:var(--surface2);
+}
+.seat-stat { flex:1; text-align:center; }
+.ss-num {
+  display:block; font-size:20px; font-weight:800;
+  font-family:var(--mono); line-height:1.2;
+}
+.ss-num.sn-green { color:var(--green); }
+.ss-num.sn-amber { color:var(--gold); }
+.ss-num.sn-pct   { color:var(--primary); }
+.ss-lbl { font-size:9.5px; color:var(--text-3); letter-spacing:.04em; font-weight:600; }
+.seat-divider { width:1px; height:30px; background:var(--border); }
+
+/* ── ci-list kept for backward compat (hidden, replaced by feed) ── */
+#ci-list { display:none; }
+
+.dash-register-link {
 .drl-left { display:flex; align-items:center; gap:12px; }
 .drl-ico  { font-size:24px; }
 .drl-text strong { display:block; font-size:14px; font-weight:700; color:var(--text); }
@@ -1034,36 +1253,64 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
     <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
   </div>
 
-  <div class="dash-cols">
-    <div class="dash-card">
-      <h3>✅ เช็คอินล่าสุด</h3>
-      <div class="ci-list" id="ci-list">
-        <div class="skel skel-row"></div>
-        <div class="skel skel-row"></div>
-        <div class="skel skel-row"></div>
-      </div>
-    </div>
-    <div class="dash-card">
-      <h3>📈 สถิติเช็คอินตามช่วงเวลา</h3>
-      <div id="hourly-summary" style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-        <div class="skel skel-row"></div>
-        <div class="skel skel-row"></div>
-        <div class="skel skel-row"></div>
-      </div>
-    </div>
-  </div>
+  <!-- ═══════════════════════════════════════════════════
+       ACTIVITY ZONE: Live Feed + Seat Map
+       ═══════════════════════════════════════════════════ -->
+  <div class="activity-zone">
 
-  <div class="dash-card" style="margin-bottom:16px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <h3 style="margin-bottom:0">⏳ ยังไม่ได้เช็คอิน <span id="pd-count"></span></h3>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input type="text" id="pd-search" class="pd-search-input" placeholder="🔍 ค้นชื่อ..." oninput="filterPending(this.value)">
+    <!-- LEFT: Live Activity Feed -->
+    <div class="feed-panel">
+      <div class="feed-header">
+        <div class="feed-title-row">
+          <span class="feed-pulse-dot"></span>
+          <span class="feed-title">LIVE · เช็คอินล่าสุด</span>
+        </div>
+        <span class="feed-sub" id="feed-sub">กำลังโหลด...</span>
+      </div>
+      <div class="feed-stream" id="feed-stream">
+        <div class="feed-skel"></div>
+        <div class="feed-skel" style="opacity:.7"></div>
+        <div class="feed-skel" style="opacity:.45"></div>
+      </div>
+      <div class="feed-empty hidden" id="feed-empty">
+        <div class="feed-empty-ico">🎯</div>
+        <div class="feed-empty-txt">รอเช็คอินครั้งแรก...</div>
       </div>
     </div>
-    <div class="pd-list" id="pd-list" style="margin-top:4px">
-      <div class="skel skel-row"></div>
-      <div class="skel skel-row"></div>
+
+    <!-- RIGHT: Seat Map Visualization -->
+    <div class="seat-panel">
+      <div class="seat-header">
+        <span class="seat-title">SEAT MAP · สถานะที่นั่ง</span>
+        <span class="seat-legend">
+          <span class="sl-dot sl-in"></span>เช็คอินแล้ว
+          <span class="sl-dot sl-out" style="margin-left:8px"></span>รอ
+        </span>
+      </div>
+      <div class="seat-stage">
+        <div class="stage-label">▲ STAGE / จอภาพ</div>
+      </div>
+      <div class="seat-map" id="seat-map">
+        <!-- Generated by JS -->
+      </div>
+      <div class="seat-stats-row">
+        <div class="seat-stat">
+          <span class="ss-num" id="ss-in">–</span>
+          <span class="ss-lbl">ที่นั่งเต็ม</span>
+        </div>
+        <div class="seat-divider"></div>
+        <div class="seat-stat">
+          <span class="ss-num" id="ss-out">–</span>
+          <span class="ss-lbl">ที่นั่งว่าง</span>
+        </div>
+        <div class="seat-divider"></div>
+        <div class="seat-stat">
+          <span class="ss-num" id="ss-pct">–</span>
+          <span class="ss-lbl">% เต็ม</span>
+        </div>
+      </div>
     </div>
+
   </div>
 
   <div class="mg-section">
@@ -1610,7 +1857,7 @@ function loadDashboard() {
     document.getElementById("last-update").textContent="อัปเดต: "+d.lastUpdate;
     const pct = d.total>0 ? Math.round(d.checkedIn/d.total*100) : 0;
 
-    // KPI — 3 cards only (ลบ emailSent ออก)
+    // KPI — 3 cards
     document.getElementById("kpi-grid").innerHTML=`
       <div class="kpi-card kc-blue"><span class="kpi-ico">👥</span><div class="kpi-val">${d.total}</div><div class="kpi-lbl">ลงทะเบียนทั้งหมด</div></div>
       <div class="kpi-card kc-mint"><span class="kpi-ico">✅</span><div class="kpi-val">${d.checkedIn}</div><div class="kpi-lbl">เช็คอินแล้ว</div></div>
@@ -1620,19 +1867,11 @@ function loadDashboard() {
     document.getElementById("prog-pct").innerHTML = pct+'% <small>เช็คอิน</small>';
     setTimeout(()=>{ document.getElementById("prog-fill").style.width=pct+"%"; },120);
 
-    // Recent check-ins
-    const ciList=document.getElementById("ci-list");
-    ciList.innerHTML = d.recentCheckins && d.recentCheckins.length
-      ? d.recentCheckins.map(r=>`<div class="ci-item"><div class="ci-dot"></div><div class="ci-name">${escHtml(r.name)}</div><div class="ci-time">${escHtml(r.time)}</div></div>`).join("")
-      : '<div class="no-data">ยังไม่มีการเช็คอิน</div>';
+    // NEW: Live feed
+    renderFeed(d.recentCheckins || []);
 
-    // Hourly summary — แสดงเป็น block สรุปแต่ละช่วง (เช้า/กลางวัน/บ่าย)
-    renderHourlySummary(d.hourly || []);
-
-    // Pending list — พร้อม filter
-    _allPending = d.pending || [];
-    document.getElementById("pd-count").textContent=_allPending.length ? "("+_allPending.length+")" : "";
-    renderPending(_allPending, "");
+    // NEW: Seat map
+    renderSeatMap(d.total, d.checkedIn);
 
     renderMissionGroups(d.missionGroups || []);
     document.getElementById("mg-update-time").textContent = d.lastUpdate || "–";
@@ -1642,79 +1881,136 @@ function loadDashboard() {
   });
 }
 
-let _allPending = [];
+// ─── Live Activity Feed ───────────────────────────
+const AV_COLORS = ["av-0","av-1","av-2","av-3","av-4","av-5","av-6","av-7"];
+let _lastCheckinCount = 0;
 
-function filterPending(q) { renderPending(_allPending, q); }
+function renderFeed(checkins) {
+  const stream  = document.getElementById("feed-stream");
+  const empty   = document.getElementById("feed-empty");
+  const feedSub = document.getElementById("feed-sub");
 
-function renderPending(list, q) {
-  const pdList=document.getElementById("pd-list");
-  const filtered = q ? list.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.regId.toLowerCase().includes(q.toLowerCase())) : list;
-  if (!filtered.length) {
-    pdList.innerHTML = q
-      ? '<div class="no-data">ไม่พบชื่อ "'+escHtml(q)+'"</div>'
-      : '<div class="no-data">🎉 ทุกคนเช็คอินครบแล้ว!</div>';
+  if (!checkins || !checkins.length) {
+    stream.innerHTML = "";
+    empty.classList.remove("hidden");
+    feedSub.textContent = "0 คน";
     return;
   }
-  pdList.innerHTML = filtered.map(p=>`<div class="pd-item"><div class="pd-dot"></div><div class="pd-name">${escHtml(p.name)}</div><div class="pd-id">${escHtml(p.regId)}</div><button class="pd-act" onclick="checkInFromSearch('${escAttr(p.regId)}')">เช็คอิน</button></div>`).join("");
+
+  empty.classList.add("hidden");
+  feedSub.textContent = checkins.length + " คน";
+
+  const isFirstLoad = _lastCheckinCount === 0;
+  const newCount    = checkins.length - _lastCheckinCount;
+  _lastCheckinCount = checkins.length;
+
+  // Build items newest-first (already sorted by API)
+  const html = checkins.slice(0,30).map((r, i) => {
+    const initial  = (r.name||"?").charAt(0).toUpperCase();
+    const avCls    = AV_COLORS[r.name ? r.name.charCodeAt(0) % AV_COLORS.length : i % AV_COLORS.length];
+    const isNew    = !isFirstLoad && i < newCount;
+    const dept     = r.dept || "";
+    const metaTxt  = dept ? escHtml(dept) : escHtml(r.regId||"");
+    return `<div class="feed-item${isNew?' is-new':''}">
+      <div class="feed-avatar ${avCls}">${escHtml(initial)}</div>
+      <div class="feed-info">
+        <div class="feed-name">${escHtml(r.name)}</div>
+        <div class="feed-meta">${metaTxt}</div>
+      </div>
+      <div class="feed-time-badge">${escHtml(r.time||"–")}</div>
+    </div>`;
+  }).join("");
+
+  stream.innerHTML = html;
+  stream.scrollTop = 0;
+
+  // Highlight new items briefly
+  if (!isFirstLoad && newCount > 0) {
+    setTimeout(()=>{
+      stream.querySelectorAll(".feed-item.is-new").forEach(el=>{
+        el.classList.remove("is-new");
+      });
+    }, 4000);
+  }
 }
 
-function renderHourlySummary(hourly) {
-  const el = document.getElementById("hourly-summary");
-  if (!hourly || !hourly.length) {
-    el.innerHTML = '<div class="no-data" style="font-size:12px">ยังไม่มีการเช็คอิน</div>';
+// ─── Seat Map ────────────────────────────────────
+let _seatAnimated = false;
+
+function renderSeatMap(total, checkedIn) {
+  const map    = document.getElementById("seat-map");
+  const ssIn   = document.getElementById("ss-in");
+  const ssOut  = document.getElementById("ss-out");
+  const ssPct  = document.getElementById("ss-pct");
+
+  const t = total || 0;
+  const c = checkedIn || 0;
+  const pct = t > 0 ? Math.round(c/t*100) : 0;
+
+  ssIn.textContent  = c;
+  ssOut.textContent = t - c;
+  ssPct.textContent = pct + "%";
+
+  if (t === 0) {
+    map.innerHTML = '<div style="text-align:center;padding:24px;font-size:12px;color:var(--text-3)">ยังไม่มีผู้ลงทะเบียน</div>';
     return;
   }
-  // Group into 3 periods: เช้า (07-11), กลางวัน (11-13), บ่าย (13-18)
-  const periods = [
-    { label:"🌅 เช้า", range:"07:00 – 10:59", hours:["07","08","09","10"] },
-    { label:"☀️ สาย", range:"11:00 – 12:59", hours:["11","12"] },
-    { label:"🌤 บ่าย", range:"13:00 – 18:00", hours:["13","14","15","16","17","18"] }
-  ];
-  const hourMap = {};
-  hourly.forEach(h => { hourMap[h.hour.substring(0,2)] = h.count; });
-  const maxTotal = Math.max(...periods.map(p => p.hours.reduce((s,h)=>(s+(hourMap[h]||0)),0)), 1);
+
+  // Build seat grid — max 80 seats shown, map t total into grid
+  const maxShow  = Math.min(t, 80);
+  const perRow   = maxShow <= 20 ? 5 : maxShow <= 40 ? 8 : maxShow <= 60 ? 10 : 12;
+  const rows     = Math.ceil(maxShow / perRow);
+  const rowLabels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  // Which seat indices are checked (spread evenly if total > maxShow)
+  const checkedSet = new Set();
+  if (t <= maxShow) {
+    // Direct mapping: first c seats checked
+    for (let i=0; i<c; i++) checkedSet.add(i);
+  } else {
+    // Scale down
+    const ratio = maxShow / t;
+    const cShow = Math.round(c * ratio);
+    for (let i=0; i<cShow; i++) checkedSet.add(i);
+  }
 
   let html = "";
-  // Show individual hours that have data, grouped
-  const activeHours = hourly.filter(h=>h.count>0);
-  if (activeHours.length === 0) {
-    // Show all-zero periods
-    periods.forEach(p => {
-      const total = 0;
-      const pct = 0;
-      html += `<div class="hourly-block">
-        <div class="hourly-range"><strong>${p.label}</strong><br><span style="font-size:9px">${p.range}</span></div>
-        <div class="hourly-bar-bg"><div class="hourly-bar-fill" style="width:0%"></div></div>
-        <div class="hourly-count" style="color:var(--text-3)">0</div>
-      </div>`;
-    });
-  } else {
-    periods.forEach(p => {
-      const total = p.hours.reduce((s,h)=>(s+(hourMap[h]||0)),0);
-      const pct   = Math.round(total/maxTotal*100);
-      // Sub-hours detail
-      const subItems = p.hours.filter(h=>hourMap[h]>0).map(h=>`${h}:xx → ${hourMap[h]} คน`).join("  ·  ");
-      html += `<div class="hourly-block" title="${subItems||'ไม่มีข้อมูล'}">
-        <div class="hourly-range"><strong>${p.label}</strong><br><span style="font-size:9px;color:var(--text-3)">${p.range}</span></div>
-        <div class="hourly-bar-bg"><div class="hourly-bar-fill" style="width:${pct}%"></div></div>
-        <div class="hourly-count">${total>0?total:'–'}</div>
-      </div>`;
-    });
-    // Peak hour badge
-    let peakH="", peakC=0;
-    activeHours.forEach(h=>{ if(h.count>peakC){ peakC=h.count; peakH=h.hour; }});
-    if (peakH) {
-      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-3);text-align:right">
-        ⏰ ช่วงเวลาที่เข้าร่วมมากที่สุด: <strong style="color:var(--primary)">${escHtml(peakH)}</strong> (${peakC} คน)
-      </div>`;
+  let seatIdx = 0;
+  for (let r=0; r<rows; r++) {
+    const rowLabel = rowLabels[r] || String(r+1);
+    const seatsInRow = (r === rows-1 && maxShow%perRow!==0) ? maxShow%perRow : perRow;
+    html += `<div class="seat-row"><div class="seat-row-label">${escHtml(rowLabel)}</div>`;
+    for (let s=0; s<seatsInRow; s++) {
+      const isChecked = checkedSet.has(seatIdx);
+      html += `<div class="seat${isChecked?' checked':''}"></div>`;
+      seatIdx++;
     }
+    html += "</div>";
   }
-  el.innerHTML = html;
-  // Animate bars
-  setTimeout(()=>{
-    el.querySelectorAll(".hourly-bar-fill").forEach(b=>{ const w=b.style.width; b.style.width="0"; requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.width=w; })); });
-  }, 50);
+
+  map.innerHTML = html;
+
+  // Animate seats in on first load
+  if (!_seatAnimated) {
+    _seatAnimated = true;
+    const seats = map.querySelectorAll(".seat.checked");
+    seats.forEach((s,i) => {
+      s.style.opacity="0"; s.style.transform="scale(0)";
+      setTimeout(()=>{
+        s.style.transition="opacity .3s ease, transform .35s cubic-bezier(.16,1,.3,1)";
+        s.style.opacity="1"; s.style.transform="scale(1)";
+      }, 50 + i*18);
+    });
+  }
 }
+
+// Keep old stubs so nothing breaks
+let _allPending = [];
+function filterPending(q) {}
+function renderPending(list, q) {}
+function renderHourlySummary(hourly) {}
+
+
 
 // Fullscreen toggle
 function toggleFullscreen() {
