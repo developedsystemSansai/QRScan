@@ -547,8 +547,63 @@ body {
 .dash-err .ei { font-size:36px; margin-bottom:10px; }
 .dash-err p   { font-size:13px; color:var(--text-2); line-height:1.65; }
 
-/* Register link in dashboard */
-.dash-register-link {
+.btn-fullscreen {
+  display:flex; align-items:center; gap:6px; padding:9px 14px;
+  border:1.5px solid var(--primary); border-radius:var(--radius);
+  background:var(--primary-lt); color:var(--primary);
+  font-family:var(--sans); font-size:13px; font-weight:700;
+  cursor:pointer; transition:all .18s; box-shadow:var(--shadow-sm);
+}
+.btn-fullscreen:hover { background:var(--primary); color:#fff; }
+
+/* Fullscreen mode */
+body.dash-fullscreen .top-bar { display:none; }
+body.dash-fullscreen #panel-checkin,
+body.dash-fullscreen #panel-walkin,
+body.dash-fullscreen #panel-search { display:none !important; }
+body.dash-fullscreen #panel-dashboard { display:block !important; }
+body.dash-fullscreen { background:#1a2030; }
+body.dash-fullscreen #panel-dashboard { background:#1a2030; max-width:100%; padding:16px 20px 40px; }
+body.dash-fullscreen .dash-toprow { background:rgba(26,95,122,.15); border-radius:var(--radius-lg); padding:12px 16px; margin-bottom:20px; border:1px solid rgba(26,95,122,.3); }
+body.dash-fullscreen .tab-nav { display:none; }
+body.dash-fullscreen .dash-exit-hint { display:block; }
+body.dash-fullscreen .btn-fullscreen { background:rgba(255,80,80,.15); border-color:rgba(255,80,80,.5); color:#ff6060; }
+body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
+
+.dash-exit-hint { display:none; font-size:11px; color:var(--text-3); text-align:center; margin-top:-10px; margin-bottom:12px; }
+
+/* KPI 3 cols */
+.kpi-3col { grid-template-columns:repeat(3,1fr) !important; }
+@media(max-width:640px) { .kpi-3col { grid-template-columns:1fr 1fr !important; } }
+
+/* Hourly summary blocks */
+.hourly-block {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 12px; border-radius:var(--radius-sm);
+  background:var(--surface2); border:1px solid var(--border);
+}
+.hourly-range { font-size:11.5px; font-family:var(--mono); color:var(--text-3); min-width:80px; }
+.hourly-bar-bg { flex:1; height:10px; background:var(--bg2); border-radius:99px; overflow:hidden; }
+.hourly-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg, var(--primary), #3b9dc9); transition:width .8s cubic-bezier(.4,0,.2,1); }
+.hourly-count { font-size:12px; font-family:var(--mono); font-weight:700; color:var(--primary); min-width:24px; text-align:right; }
+
+/* Pending search input */
+.pd-search-input {
+  background:var(--surface2); border:1.5px solid var(--border2);
+  border-radius:var(--radius-sm); padding:6px 12px;
+  font-family:var(--sans); font-size:12px; color:var(--text);
+  outline:none; transition:border-color .2s, box-shadow .2s; width:150px;
+}
+.pd-search-input:focus { border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-glow); }
+
+/* Pending item group header */
+.pd-group-hd {
+  font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-3); padding:6px 4px 4px; margin-top:4px;
+  border-bottom:1px solid var(--border); margin-bottom:4px;
+}
+
+
   display:flex; align-items:center; justify-content:space-between;
   background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius-lg); padding:14px 18px; margin-bottom:16px;
@@ -940,9 +995,14 @@ body {
       <div class="dash-title">📊 Dashboard <em>สัมมนา</em></div>
       <div class="last-update" id="last-update">–</div>
     </div>
-    <button class="btn-refresh" id="btn-refresh" onclick="loadDashboard()">
-      <span class="ri">🔄</span> รีเฟรช
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-refresh" id="btn-refresh" onclick="loadDashboard()">
+        <span class="ri">🔄</span> รีเฟรช
+      </button>
+      <button class="btn-fullscreen" id="btn-fullscreen" onclick="toggleFullscreen()" title="เต็มหน้าจอ">
+        <span id="fs-icon">⛶</span> เต็มจอ
+      </button>
+    </div>
   </div>
 
   <a id="dash-reg-link" href="#" class="dash-register-link" target="_blank" rel="noopener">
@@ -956,11 +1016,10 @@ body {
     <div class="drl-arrow">→</div>
   </a>
 
-  <div class="kpi-grid" id="kpi-grid">
+  <div class="kpi-grid kpi-3col" id="kpi-grid">
     <div class="kpi-card kc-blue skel skel-kpi"></div>
     <div class="kpi-card kc-mint skel skel-kpi"></div>
     <div class="kpi-card kc-amber skel skel-kpi"></div>
-    <div class="kpi-card kc-purple skel skel-kpi"></div>
   </div>
 
   <div class="prog-section">
@@ -985,16 +1044,23 @@ body {
       </div>
     </div>
     <div class="dash-card">
-      <h3>⏱ เช็คอินรายชั่วโมง</h3>
-      <div class="bar-chart" id="bar-chart">
-        <div class="no-data" style="width:100%;font-size:12px">กำลังโหลด...</div>
+      <h3>📈 สถิติเช็คอินตามช่วงเวลา</h3>
+      <div id="hourly-summary" style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <div class="skel skel-row"></div>
+        <div class="skel skel-row"></div>
+        <div class="skel skel-row"></div>
       </div>
     </div>
   </div>
 
-  <div class="dash-card">
-    <h3>⏳ ยังไม่ได้เช็คอิน <span id="pd-count"></span></h3>
-    <div class="pd-list" id="pd-list" style="margin-top:10px">
+  <div class="dash-card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h3 style="margin-bottom:0">⏳ ยังไม่ได้เช็คอิน <span id="pd-count"></span></h3>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" id="pd-search" class="pd-search-input" placeholder="🔍 ค้นชื่อ..." oninput="filterPending(this.value)">
+      </div>
+    </div>
+    <div class="pd-list" id="pd-list" style="margin-top:4px">
       <div class="skel skel-row"></div>
       <div class="skel skel-row"></div>
     </div>
@@ -1543,31 +1609,31 @@ function loadDashboard() {
     btn.classList.remove("loading"); btn.disabled=false;
     document.getElementById("last-update").textContent="อัปเดต: "+d.lastUpdate;
     const pct = d.total>0 ? Math.round(d.checkedIn/d.total*100) : 0;
+
+    // KPI — 3 cards only (ลบ emailSent ออก)
     document.getElementById("kpi-grid").innerHTML=`
       <div class="kpi-card kc-blue"><span class="kpi-ico">👥</span><div class="kpi-val">${d.total}</div><div class="kpi-lbl">ลงทะเบียนทั้งหมด</div></div>
       <div class="kpi-card kc-mint"><span class="kpi-ico">✅</span><div class="kpi-val">${d.checkedIn}</div><div class="kpi-lbl">เช็คอินแล้ว</div></div>
-      <div class="kpi-card kc-amber"><span class="kpi-ico">⏳</span><div class="kpi-val">${d.notCheckedIn}</div><div class="kpi-lbl">ยังไม่เช็คอิน</div></div>
-      <div class="kpi-card kc-purple"><span class="kpi-ico">📧</span><div class="kpi-val">${d.emailSent}</div><div class="kpi-lbl">ส่งอีเมลแล้ว</div></div>`;
+      <div class="kpi-card kc-amber"><span class="kpi-ico">⏳</span><div class="kpi-val">${d.notCheckedIn}</div><div class="kpi-lbl">ยังไม่เช็คอิน</div></div>`;
+
     document.getElementById("prog-label").textContent = d.checkedIn+" / "+d.total;
     document.getElementById("prog-pct").innerHTML = pct+'% <small>เช็คอิน</small>';
     setTimeout(()=>{ document.getElementById("prog-fill").style.width=pct+"%"; },120);
+
+    // Recent check-ins
     const ciList=document.getElementById("ci-list");
     ciList.innerHTML = d.recentCheckins && d.recentCheckins.length
       ? d.recentCheckins.map(r=>`<div class="ci-item"><div class="ci-dot"></div><div class="ci-name">${escHtml(r.name)}</div><div class="ci-time">${escHtml(r.time)}</div></div>`).join("")
       : '<div class="no-data">ยังไม่มีการเช็คอิน</div>';
-    const chart=document.getElementById("bar-chart");
-    if (d.hourly && d.hourly.length) {
-      const maxV=Math.max(...d.hourly.map(h=>h.count),1);
-      chart.innerHTML=d.hourly.map(h=>{
-        const pctH=Math.round(h.count/maxV*100);
-        return `<div class="bar-grp"><div class="bar-fill" style="height:${pctH}%" data-count="${h.count}"></div><div class="bar-lbl">${escHtml(h.hour.substring(0,2))}</div></div>`;
-      }).join("");
-    } else { chart.innerHTML='<div class="no-data" style="width:100%;font-size:12px">ไม่มีข้อมูล</div>'; }
-    document.getElementById("pd-count").textContent=d.pending ? "("+d.pending.length+")" : "";
-    const pdList=document.getElementById("pd-list");
-    pdList.innerHTML = d.pending && d.pending.length
-      ? d.pending.map(p=>`<div class="pd-item"><div class="pd-dot"></div><div class="pd-name">${escHtml(p.name)}</div><div class="pd-id">${escHtml(p.regId)}</div><button class="pd-act" onclick="checkInFromSearch('${escAttr(p.regId)}')">เช็คอิน</button></div>`).join("")
-      : '<div class="no-data">🎉 ทุกคนเช็คอินครบแล้ว!</div>';
+
+    // Hourly summary — แสดงเป็น block สรุปแต่ละช่วง (เช้า/กลางวัน/บ่าย)
+    renderHourlySummary(d.hourly || []);
+
+    // Pending list — พร้อม filter
+    _allPending = d.pending || [];
+    document.getElementById("pd-count").textContent=_allPending.length ? "("+_allPending.length+")" : "";
+    renderPending(_allPending, "");
+
     renderMissionGroups(d.missionGroups || []);
     document.getElementById("mg-update-time").textContent = d.lastUpdate || "–";
   }, function(err) {
@@ -1575,6 +1641,105 @@ function loadDashboard() {
     document.getElementById("kpi-grid").innerHTML=`<div class="dash-err" style="grid-column:1/-1"><div class="ei">⚠️</div><p>โหลดข้อมูลไม่ได้<br><small>${escHtml(err.message||"ลองใหม่อีกครั้ง")}</small></p></div>`;
   });
 }
+
+let _allPending = [];
+
+function filterPending(q) { renderPending(_allPending, q); }
+
+function renderPending(list, q) {
+  const pdList=document.getElementById("pd-list");
+  const filtered = q ? list.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.regId.toLowerCase().includes(q.toLowerCase())) : list;
+  if (!filtered.length) {
+    pdList.innerHTML = q
+      ? '<div class="no-data">ไม่พบชื่อ "'+escHtml(q)+'"</div>'
+      : '<div class="no-data">🎉 ทุกคนเช็คอินครบแล้ว!</div>';
+    return;
+  }
+  pdList.innerHTML = filtered.map(p=>`<div class="pd-item"><div class="pd-dot"></div><div class="pd-name">${escHtml(p.name)}</div><div class="pd-id">${escHtml(p.regId)}</div><button class="pd-act" onclick="checkInFromSearch('${escAttr(p.regId)}')">เช็คอิน</button></div>`).join("");
+}
+
+function renderHourlySummary(hourly) {
+  const el = document.getElementById("hourly-summary");
+  if (!hourly || !hourly.length) {
+    el.innerHTML = '<div class="no-data" style="font-size:12px">ยังไม่มีการเช็คอิน</div>';
+    return;
+  }
+  // Group into 3 periods: เช้า (07-11), กลางวัน (11-13), บ่าย (13-18)
+  const periods = [
+    { label:"🌅 เช้า", range:"07:00 – 10:59", hours:["07","08","09","10"] },
+    { label:"☀️ สาย", range:"11:00 – 12:59", hours:["11","12"] },
+    { label:"🌤 บ่าย", range:"13:00 – 18:00", hours:["13","14","15","16","17","18"] }
+  ];
+  const hourMap = {};
+  hourly.forEach(h => { hourMap[h.hour.substring(0,2)] = h.count; });
+  const maxTotal = Math.max(...periods.map(p => p.hours.reduce((s,h)=>(s+(hourMap[h]||0)),0)), 1);
+
+  let html = "";
+  // Show individual hours that have data, grouped
+  const activeHours = hourly.filter(h=>h.count>0);
+  if (activeHours.length === 0) {
+    // Show all-zero periods
+    periods.forEach(p => {
+      const total = 0;
+      const pct = 0;
+      html += `<div class="hourly-block">
+        <div class="hourly-range"><strong>${p.label}</strong><br><span style="font-size:9px">${p.range}</span></div>
+        <div class="hourly-bar-bg"><div class="hourly-bar-fill" style="width:0%"></div></div>
+        <div class="hourly-count" style="color:var(--text-3)">0</div>
+      </div>`;
+    });
+  } else {
+    periods.forEach(p => {
+      const total = p.hours.reduce((s,h)=>(s+(hourMap[h]||0)),0);
+      const pct   = Math.round(total/maxTotal*100);
+      // Sub-hours detail
+      const subItems = p.hours.filter(h=>hourMap[h]>0).map(h=>`${h}:xx → ${hourMap[h]} คน`).join("  ·  ");
+      html += `<div class="hourly-block" title="${subItems||'ไม่มีข้อมูล'}">
+        <div class="hourly-range"><strong>${p.label}</strong><br><span style="font-size:9px;color:var(--text-3)">${p.range}</span></div>
+        <div class="hourly-bar-bg"><div class="hourly-bar-fill" style="width:${pct}%"></div></div>
+        <div class="hourly-count">${total>0?total:'–'}</div>
+      </div>`;
+    });
+    // Peak hour badge
+    let peakH="", peakC=0;
+    activeHours.forEach(h=>{ if(h.count>peakC){ peakC=h.count; peakH=h.hour; }});
+    if (peakH) {
+      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-3);text-align:right">
+        ⏰ ช่วงเวลาที่เข้าร่วมมากที่สุด: <strong style="color:var(--primary)">${escHtml(peakH)}</strong> (${peakC} คน)
+      </div>`;
+    }
+  }
+  el.innerHTML = html;
+  // Animate bars
+  setTimeout(()=>{
+    el.querySelectorAll(".hourly-bar-fill").forEach(b=>{ const w=b.style.width; b.style.width="0"; requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.width=w; })); });
+  }, 50);
+}
+
+// Fullscreen toggle
+function toggleFullscreen() {
+  const body = document.body;
+  const isFs = body.classList.toggle("dash-fullscreen");
+  document.getElementById("fs-icon").textContent = isFs ? "✕" : "⛶";
+  document.getElementById("btn-fullscreen").title = isFs ? "ออกจากเต็มหน้าจอ" : "เต็มหน้าจอ";
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  if (!isFs) document.getElementById("tab-dashboard").classList.add("active");
+  // Try native fullscreen
+  if (isFs) {
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  }
+}
+document.addEventListener("fullscreenchange", ()=>{
+  if (!document.fullscreenElement && document.body.classList.contains("dash-fullscreen")) {
+    document.body.classList.remove("dash-fullscreen");
+    document.getElementById("fs-icon").textContent = "⛶";
+    document.getElementById("btn-fullscreen").title = "เต็มหน้าจอ";
+  }
+});
+
+
 
 // ═══════════════════════════════════════════════════════
 // MISSION GROUP RENDER
