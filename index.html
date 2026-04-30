@@ -411,6 +411,21 @@ body::before {
 }
 .btn-wr-back:hover { color:var(--text); border-color:var(--text-2); }
 
+/* Walk-in select dropdown */
+.wf-select {
+  width:100%; background:var(--surface2); border:1.5px solid var(--border2);
+  border-radius:var(--radius); padding:13px 16px; color:var(--text);
+  font-family:var(--sans); font-size:14px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3c0' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center;
+  cursor:pointer;
+}
+.wf-select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+.wf-select.err   { border-color:var(--red); box-shadow:0 0 0 3px var(--red-glow); }
+.wf-select option { background:var(--surface2); color:var(--text); }
+
 /* ═══════════════════════════════════════════════════
    DASHBOARD PANEL
    ═══════════════════════════════════════════════════ */
@@ -717,6 +732,28 @@ body::before {
         placeholder="example@hospital.go.th"
         autocomplete="email" inputmode="email">
     </div>
+    <div class="wf-field">
+      <label class="wf-label" for="wf-mission">กลุ่มภารกิจ <span class="req">*</span></label>
+      <select id="wf-mission" class="wf-select" onchange="updateWalkinDept()">
+        <option value="">— เลือกกลุ่มภารกิจ —</option>
+        <option value="ภารกิจด้านการพยาบาล">ภารกิจด้านการพยาบาล</option>
+        <option value="ภารกิจด้านการแพทย์">ภารกิจด้านการแพทย์</option>
+        <option value="ภารกิจด้านบริการทางการแพทย์">ภารกิจด้านบริการทางการแพทย์</option>
+        <option value="ภารกิจด้านอำนวยการ">ภารกิจด้านอำนวยการ</option>
+      </select>
+    </div>
+    <div class="wf-field">
+      <label class="wf-label" for="wf-dept">กลุ่มงาน <span class="req">*</span></label>
+      <select id="wf-dept" class="wf-select" onchange="updateWalkinUnit()">
+        <option value="">— เลือกกลุ่มภารกิจก่อน —</option>
+      </select>
+    </div>
+    <div class="wf-field">
+      <label class="wf-label" for="wf-unit">หน่วยงาน <span class="req">*</span></label>
+      <select id="wf-unit" class="wf-select">
+        <option value="">— เลือกกลุ่มงานก่อน —</option>
+      </select>
+    </div>
     <button class="btn-walkin" id="btn-walkin" onclick="doWalkin()">
       <span class="wf-lbl">✔ ลงทะเบียน + เช็คอินทันที</span>
       <div class="spin"></div>
@@ -980,17 +1017,25 @@ function handleCamError(err) {
 // ═══════════════════════════════════════════════════════
 function scanLoop() {
   if (!scanning) return;
-  if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
-    canvasEl.width=videoEl.videoWidth; canvasEl.height=videoEl.videoHeight;
-    ctx.drawImage(videoEl,0,0,canvasEl.width,canvasEl.height);
-    const id   = ctx.getImageData(0,0,canvasEl.width,canvasEl.height);
-    const code = jsQR(id.data,id.width,id.height,{inversionAttempts:"dontInvert"});
-    if (code) {
-      const now=Date.now(), data=code.data.trim();
-      if (!processing && (data!==lastCode || now-lastCodeTime>COOLDOWN)) {
-        lastCode=data; lastCodeTime=now; handleScan(data);
+  try {
+    if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
+      canvasEl.width=videoEl.videoWidth; canvasEl.height=videoEl.videoHeight;
+      ctx.drawImage(videoEl,0,0,canvasEl.width,canvasEl.height);
+      if (typeof jsQR === "undefined") {
+        toast("❌ ไม่พบไลบรารี jsQR กรุณา refresh หน้าเว็บ","err");
+        closeCamera(); return;
+      }
+      const id   = ctx.getImageData(0,0,canvasEl.width,canvasEl.height);
+      const code = jsQR(id.data,id.width,id.height,{inversionAttempts:"dontInvert"});
+      if (code) {
+        const now=Date.now(), data=code.data.trim();
+        if (!processing && (data!==lastCode || now-lastCodeTime>COOLDOWN)) {
+          lastCode=data; lastCodeTime=now; handleScan(data);
+        }
       }
     }
+  } catch(scanErr) {
+    console.error("scanLoop error:", scanErr);
   }
   animFrame = requestAnimationFrame(scanLoop);
 }
@@ -1078,36 +1123,99 @@ function doUndo() {
 }
 
 // ═══════════════════════════════════════════════════════
+// WALK-IN DEPT/UNIT DATA
+// ═══════════════════════════════════════════════════════
+const WALKIN_ORG = {
+  "ภารกิจด้านการพยาบาล": {
+    "กลุ่มงานการพยาบาลผู้ป่วยนอก": ["งานผู้ป่วยนอก","งานอุบัติเหตุและฉุกเฉิน"],
+    "กลุ่มงานการพยาบาลผู้ป่วยใน": ["งานอายุรกรรม","งานศัลยกรรม","งานสูติกรรม","งานกุมารเวชกรรม"],
+    "กลุ่มงานการพยาบาลวิสัญญี": ["งานวิสัญญี"]
+  },
+  "ภารกิจด้านการแพทย์": {
+    "กลุ่มงานอายุรกรรม": ["งานอายุรกรรมทั่วไป","งานโรคหัวใจ"],
+    "กลุ่มงานศัลยกรรม": ["งานศัลยกรรมทั่วไป","งานกระดูกและข้อ"],
+    "กลุ่มงานสูติ-นรีเวชกรรม": ["งานสูติกรรม","งานนรีเวชกรรม"],
+    "กลุ่มงานกุมารเวชกรรม": ["งานกุมารเวชกรรม"]
+  },
+  "ภารกิจด้านบริการทางการแพทย์": {
+    "กลุ่มงานเภสัชกรรม": ["งานบริการเภสัชกรรม","งานคุ้มครองผู้บริโภค"],
+    "กลุ่มงานรังสีวิทยา": ["งานรังสีวินิจฉัย","งานรังสีรักษา"],
+    "กลุ่มงานเทคนิคการแพทย์": ["งานเทคนิคการแพทย์"],
+    "กลุ่มงานกายภาพบำบัด": ["งานกายภาพบำบัด"],
+    "กลุ่มงานโภชนศาสตร์": ["งานโภชนศาสตร์"]
+  },
+  "ภารกิจด้านอำนวยการ": {
+    "กลุ่มงานบริหารทั่วไป": ["งานสารบรรณ","งานพัสดุ","งานการเงิน"],
+    "กลุ่มงานทรัพยากรบุคคล": ["งาน HRD","งานการเจ้าหน้าที่"],
+    "กลุ่มงานยุทธศาสตร์": ["งานแผนและงบประมาณ","งานสารสนเทศ"]
+  }
+};
+
+function updateWalkinDept() {
+  const mission = document.getElementById("wf-mission").value;
+  const deptSel = document.getElementById("wf-dept");
+  const unitSel = document.getElementById("wf-unit");
+  deptSel.innerHTML = '<option value="">— เลือกกลุ่มงาน —</option>';
+  unitSel.innerHTML = '<option value="">— เลือกกลุ่มงานก่อน —</option>';
+  if (!mission || !WALKIN_ORG[mission]) return;
+  Object.keys(WALKIN_ORG[mission]).forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d; opt.textContent = d;
+    deptSel.appendChild(opt);
+  });
+}
+
+function updateWalkinUnit() {
+  const mission = document.getElementById("wf-mission").value;
+  const dept    = document.getElementById("wf-dept").value;
+  const unitSel = document.getElementById("wf-unit");
+  unitSel.innerHTML = '<option value="">— เลือกหน่วยงาน —</option>';
+  if (!mission || !dept || !WALKIN_ORG[mission] || !WALKIN_ORG[mission][dept]) return;
+  WALKIN_ORG[mission][dept].forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u; opt.textContent = u;
+    unitSel.appendChild(opt);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
 // WALK-IN REGISTRATION
 // ═══════════════════════════════════════════════════════
 function doWalkin() {
-  const nameEl  = document.getElementById("wf-name");
-  const emailEl = document.getElementById("wf-email");
-  const btn     = document.getElementById("btn-walkin");
+  const nameEl    = document.getElementById("wf-name");
+  const emailEl   = document.getElementById("wf-email");
+  const missionEl = document.getElementById("wf-mission");
+  const deptEl    = document.getElementById("wf-dept");
+  const unitEl    = document.getElementById("wf-unit");
+  const btn       = document.getElementById("btn-walkin");
 
-  const name  = nameEl.value.trim();
-  const email = emailEl.value.trim();
+  const name    = nameEl.value.trim();
+  const email   = emailEl.value.trim();
+  const mission = missionEl.value.trim();
+  const dept    = deptEl.value.trim();
+  const unit    = unitEl.value.trim();
 
   let valid=true;
-  [nameEl,emailEl].forEach(el=>el.classList.remove("err"));
-  if (!name)  { nameEl.classList.add("err"); nameEl.focus(); valid=false; }
+  [nameEl,emailEl,missionEl,deptEl,unitEl].forEach(el=>el.classList.remove("err"));
+  if (!name)    { nameEl.classList.add("err"); nameEl.focus(); valid=false; }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     emailEl.classList.add("err"); if(valid) emailEl.focus(); valid=false;
   }
+  if (!mission) { missionEl.classList.add("err"); if(valid){ missionEl.focus(); } valid=false; }
+  if (!dept)    { deptEl.classList.add("err");    if(valid){ deptEl.focus(); }    valid=false; }
+  if (!unit)    { unitEl.classList.add("err");    if(valid){ unitEl.focus(); }    valid=false; }
   if (!valid) return;
 
   btn.classList.add("loading"); btn.disabled=true;
 
-  _apiCall({action:"register", name:name, email:email}, function(res) {
+  _apiCall({action:"register", name:name, email:email, mission:mission, dept:dept, unit:unit}, function(res) {
     btn.classList.remove("loading"); btn.disabled=false;
     if (!res) { showWalkinResult("err","❌","เกิดข้อผิดพลาด","กรุณาลองใหม่",null); return; }
 
     if (res.status==="ok") {
-      // ลงทะเบียนสำเร็จ — เช็คอินทันที
       showWalkinResult("ok","🎉","ลงทะเบียนสำเร็จ!",
         name+" ลงทะเบียนแล้ว\nระบบส่ง QR Code ไปที่ "+email,
         res.regId);
-      // auto check-in
       _apiCall({action:"checkin",regId:res.regId}, function(ci){
         if (ci.status==="checkin_ok") {
           toast("✅ "+name+" เช็คอินสำเร็จ!","ok");
@@ -1155,7 +1263,12 @@ function resetWalkin() {
   document.getElementById("wf-form").style.display="block";
   document.getElementById("wf-name").value="";
   document.getElementById("wf-email").value="";
-  [document.getElementById("wf-name"),document.getElementById("wf-email")]
+  document.getElementById("wf-mission").value="";
+  document.getElementById("wf-dept").innerHTML='<option value="">— เลือกกลุ่มภารกิจก่อน —</option>';
+  document.getElementById("wf-unit").innerHTML='<option value="">— เลือกกลุ่มงานก่อน —</option>';
+  [document.getElementById("wf-name"),document.getElementById("wf-email"),
+   document.getElementById("wf-mission"),document.getElementById("wf-dept"),
+   document.getElementById("wf-unit")]
     .forEach(el=>el.classList.remove("err"));
   document.getElementById("wf-name").focus();
 }
