@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#1a5f7a">
+<title>Seat Map – ระบบจัดที่นั่งสัมมนา · โรงพยาบาลสันทราย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Noto+Serif+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN SYSTEM — Warm Institutional (matches index.html / register.html)
+   ═══════════════════════════════════════════════════ */
+:root {
+  --bg:           #f5f3ef;
+  --bg2:          #ede9e2;
+  --surface:      #ffffff;
+  --surface2:     #faf9f7;
+  --surface3:     #f0ede8;
+  --border:       #d8d2c8;
+  --border2:      #c4bcb0;
+
+  --primary:      #1a5f7a;
+  --primary-dk:   #134a5f;
+  --primary-lt:   #e8f4f8;
+  --primary-glow: rgba(26,95,122,.14);
+
+  --gold:         #c9882a;
+  --gold-lt:      #fdf3e3;
+  --gold-glow:    rgba(201,136,42,.18);
+
+  --green:        #1a7a5e;
+  --green-lt:     #e6f4f0;
+  --green-glow:   rgba(26,122,94,.18);
+  --red:          #b83535;
+  --red-lt:       #fdf0f0;
+  --red-glow:     rgba(184,53,53,.14);
+  --amber:        #b06820;
+  --amber-lt:     #fef4e8;
+
+  --text:         #2c2824;
+  --text-2:       #5c5650;
+  --text-3:       #9a918a;
+
+  --serif:        'Noto Serif Thai', 'Tahoma', serif;
+  --sans:         'Noto Sans Thai', 'Tahoma', sans-serif;
+  --mono:         'IBM Plex Mono', monospace;
+
+  --radius-sm:    8px;
+  --radius:       10px;
+  --radius-lg:    16px;
+  --radius-xl:    20px;
+  --shadow-sm:    0 1px 4px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+  --shadow:       0 2px 8px rgba(0,0,0,.07), 0 6px 24px rgba(0,0,0,.05);
+  --shadow-lg:    0 4px 16px rgba(0,0,0,.08), 0 12px 40px rgba(0,0,0,.07);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(26,95,122,.05) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(201,136,42,.04) 0%, transparent 50%);
+}
+
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--bg2); }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:5px; }
+
+/* ═══════════════════════════════════════════════════
+   TOP BAR
+   ═══════════════════════════════════════════════════ */
+.top-bar {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(26,95,122,.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 3px solid var(--gold);
+  box-shadow: 0 2px 16px rgba(0,0,0,.18);
+}
+.top-bar-inner {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px; gap: 10px; flex-wrap: wrap;
+}
+.brand { display:flex; align-items:center; gap:10px; }
+.brand-seal {
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  background: linear-gradient(145deg, var(--gold), #e8a838);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; box-shadow: 0 0 0 2px rgba(255,255,255,.2), 0 2px 8px rgba(0,0,0,.3);
+}
+.brand-name { font-family:var(--serif); font-size:13px; font-weight:700; color:#fff; line-height:1.2; }
+.brand-sub  { font-size:10px; color:rgba(255,255,255,.65); }
+.top-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.btn-top {
+  display:flex; align-items:center; gap:6px;
+  padding:6px 12px; border-radius:var(--radius);
+  background:rgba(255,255,255,.12); color:rgba(255,255,255,.9);
+  font-family:var(--sans); font-size:12px; font-weight:600;
+  border:1px solid rgba(255,255,255,.2); cursor:pointer; transition:all .2s; white-space:nowrap;
+}
+.btn-top:hover { background:rgba(255,255,255,.22); color:#fff; }
+.btn-top.gold  { background:var(--gold); border-color:var(--gold); color:#fff; }
+.btn-top.gold:hover { background:#b8791f; }
+.btn-top.green { background:var(--green); border-color:var(--green); color:#fff; }
+.btn-top.green:hover { background:#146147; }
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════ */
+.main-wrap {
+  max-width:1400px; margin:0 auto; padding:16px;
+  display:grid; grid-template-columns:290px 1fr; gap:16px;
+  min-height:calc(100vh - 62px);
+}
+@media(max-width:960px){
+  .main-wrap { grid-template-columns:1fr; }
+  .sidebar { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+}
+@media(max-width:600px){
+  .sidebar { grid-template-columns:1fr; }
+}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════════ */
+.sidebar { display:flex; flex-direction:column; gap:12px; }
+.side-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow-sm);
+}
+.side-title {
+  font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--primary); border-left:3px solid var(--primary); padding-left:8px;
+  margin-bottom:12px;
+}
+
+/* Stats */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.stat-box  { background:var(--bg2); border-radius:var(--radius); padding:10px; text-align:center; }
+.stat-num  { font-size:24px; font-weight:700; color:var(--primary); line-height:1; }
+.stat-lbl  { font-size:10px; color:var(--text-3); margin-top:3px; }
+.stat-box.green .stat-num { color:var(--green); }
+.stat-box.gold  .stat-num { color:var(--gold); }
+.stat-box.red   .stat-num { color:var(--red); }
+
+/* Legend */
+.legend { display:flex; flex-direction:column; gap:7px; }
+.legend-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-2); }
+.ldot { width:14px; height:14px; border-radius:4px; flex-shrink:0; }
+.ldot.empty   { background:var(--surface2); border:1.5px dashed var(--border2); }
+.ldot.seated  { background:#dbeafe; border:1.5px solid #93c5fd; }
+.ldot.checkin { background:var(--green-lt); border:1.5px solid #6ee7b7; }
+.ldot.pool    { background:var(--gold-lt); border:1.5px solid var(--gold); }
+
+/* Pool */
+.pool-search {
+  width:100%; padding:8px 10px;
+  border:1px solid var(--border); border-radius:var(--radius);
+  font-family:var(--sans); font-size:13px; color:var(--text);
+  background:var(--surface2); outline:none; margin-bottom:8px; transition:border .2s;
+}
+.pool-search:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-glow); }
+.pool-list { max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+.pool-chip {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 10px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:var(--radius);
+  cursor:grab; transition:all .18s; user-select:none;
+}
+.pool-chip:hover    { background:var(--primary-lt); border-color:rgba(26,95,122,.35); transform:translateX(2px); }
+.pool-chip.dragging-src { opacity:.35; transform:scale(.95); }
+.pool-chip-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.pool-chip-name  { font-size:12.5px; font-weight:600; color:var(--text); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pool-chip-dept  { font-size:10px; color:var(--text-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pool-empty      { text-align:center; color:var(--text-3); font-size:12px; padding:20px 0; }
+
+/* ═══════════════════════════════════════════════════
+   CANVAS AREA
+   ═══════════════════════════════════════════════════ */
+.canvas-wrap { display:flex; flex-direction:column; gap:12px; }
+.canvas-toolbar {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:11px 16px;
+  display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+  box-shadow:var(--shadow-sm);
+}
+.tb-label { font-size:12px; color:var(--text-2); font-weight:600; }
+.btn-sm {
+  display:flex; align-items:center; gap:5px;
+  padding:6px 12px; border-radius:var(--radius-sm);
+  font-family:var(--sans); font-size:12px; font-weight:600;
+  border:1.5px solid var(--border2); background:var(--surface);
+  color:var(--text-2); cursor:pointer; transition:all .18s; white-space:nowrap;
+}
+.btn-sm:hover  { background:var(--primary-lt); border-color:var(--primary); color:var(--primary); }
+.btn-sm.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.btn-sm.danger:hover { background:var(--red-lt); border-color:var(--red); color:var(--red); }
+.tb-sep { width:1px; height:24px; background:var(--border); flex-shrink:0; }
+.tb-hint { font-size:11.5px; color:var(--text-3); margin-left:auto; }
+
+/* Room canvas */
+.room-canvas {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-xl); padding:24px;
+  box-shadow:var(--shadow); min-height:520px; overflow:auto;
+}
+.room-title-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px; flex-wrap:wrap; gap:8px;
+}
+.room-name  { font-family:var(--serif); font-size:16px; font-weight:700; color:var(--primary); }
+.room-hint  { font-size:12px; color:var(--text-3); }
+.tables-grid { display:flex; flex-direction:column; gap:20px; }
+.table-row   { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+
+/* Table card */
+.table-card {
+  background:var(--surface2); border:1.5px solid var(--border);
+  border-radius:var(--radius-lg); padding:13px;
+  min-width:210px; flex:0 0 auto; transition:all .2s; position:relative;
+}
+.table-card.drag-over {
+  border-color:var(--primary); background:var(--primary-lt);
+  box-shadow:0 0 0 3px var(--primary-glow);
+}
+.table-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:11px; gap:6px;
+}
+.table-name-wrap { display:flex; align-items:center; gap:6px; flex:1; min-width:0; }
+.table-icon { font-size:14px; flex-shrink:0; }
+.table-name {
+  font-size:12.5px; font-weight:700; color:var(--primary);
+  flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  cursor:pointer; padding:2px 4px; border-radius:4px; transition:background .15s;
+}
+.table-name:hover { background:var(--primary-lt); }
+.table-name-input {
+  font-size:12.5px; font-weight:700; color:var(--primary);
+  border:1.5px solid var(--primary); border-radius:6px;
+  padding:2px 7px; background:var(--primary-lt);
+  font-family:var(--sans); outline:none; width:100%;
+}
+.table-count {
+  font-size:10px; color:var(--text-3); background:var(--bg2);
+  border-radius:20px; padding:2px 7px; white-space:nowrap; flex-shrink:0;
+}
+.table-count.full { background:#dcfce7; color:#166534; font-weight:700; }
+.table-actions { display:flex; gap:4px; flex-shrink:0; }
+.tbl-btn {
+  width:23px; height:23px; border-radius:5px; border:1px solid var(--border);
+  background:var(--surface); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:var(--text-3); transition:all .15s; flex-shrink:0;
+}
+.tbl-btn:hover     { background:var(--primary-lt); border-color:var(--primary); color:var(--primary); }
+.tbl-btn.del:hover { background:var(--red-lt); border-color:var(--red); color:var(--red); }
+
+/* Seats grid */
+.seats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+.seat {
+  width:34px; height:34px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; font-weight:700; transition:all .18s;
+  position:relative; border:1.5px solid transparent;
+  overflow:hidden;
+}
+.seat.empty   { background:var(--surface); border-style:dashed; border-color:var(--border2); color:var(--text-3); cursor:default; }
+.seat.occupied{
+  background:#dbeafe; border-color:#93c5fd; color:#1e40af;
+  cursor:pointer;
+}
+.seat.occupied:hover { background:#bfdbfe; transform:scale(1.1); z-index:2; }
+.seat.checkin { background:var(--green-lt); border-color:#6ee7b7; color:var(--green); cursor:pointer; }
+.seat.checkin:hover  { background:#c6f0e4; transform:scale(1.1); z-index:2; }
+.seat[draggable="true"]:hover { cursor:grab; }
+.seat.drag-over-seat { background:rgba(26,95,122,.12); border-color:var(--primary); border-style:solid; }
+.seat.drag-src       { opacity:.35; transform:scale(.92); }
+
+/* Add table button */
+.add-table-zone {
+  min-width:210px; min-height:90px;
+  border:2px dashed var(--border2); border-radius:var(--radius-lg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:5px; cursor:pointer; color:var(--text-3); font-size:12px; font-weight:600;
+  transition:all .2s; background:var(--surface2);
+}
+.add-table-zone:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-lt); }
+.add-table-plus { font-size:24px; line-height:1; }
+
+/* Empty state */
+.empty-state { text-align:center; padding:60px 0; color:var(--text-3); }
+.empty-state .es-icon { font-size:48px; margin-bottom:12px; }
+.empty-state .es-title { font-size:16px; font-weight:700; color:var(--text-2); margin-bottom:6px; }
+.empty-state .es-sub   { font-size:13px; margin-bottom:20px; }
+
+/* ═══════════════════════════════════════════════════
+   LIST VIEW
+   ═══════════════════════════════════════════════════ */
+.list-table {
+  width:100%; border-collapse:collapse; font-size:13px;
+}
+.list-table th {
+  text-align:left; padding:8px 10px; font-size:11px; font-weight:700;
+  color:var(--text-3); letter-spacing:.04em; text-transform:uppercase;
+  border-bottom:1.5px solid var(--border);
+}
+.list-table td { padding:8px 10px; border-bottom:1px solid var(--border); }
+.list-table tr:last-child td { border-bottom:none; }
+.list-table tr:hover td { background:var(--surface2); }
+.list-section-header {
+  background:linear-gradient(135deg, var(--primary) 0%, #1a6d8a 100%);
+  color:#fff; padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.list-section-name { font-size:13px; font-weight:700; font-family:var(--serif); }
+.list-section-count {
+  font-size:11px; background:rgba(255,255,255,.2);
+  padding:2px 9px; border-radius:20px;
+}
+.status-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px;
+}
+.status-badge.checkin  { background:var(--green-lt); color:var(--green); }
+.status-badge.seated   { background:var(--primary-lt); color:var(--primary); }
+.status-badge.unassign { background:var(--gold-lt); color:var(--amber); }
+
+/* ═══════════════════════════════════════════════════
+   TOOLTIP
+   ═══════════════════════════════════════════════════ */
+.tooltip {
+  position:fixed; background:var(--text); color:#fff;
+  padding:8px 13px; border-radius:var(--radius); font-size:12.5px;
+  pointer-events:none; z-index:9999; opacity:0; transition:opacity .15s;
+  max-width:240px; line-height:1.6; white-space:nowrap;
+  box-shadow:var(--shadow-lg);
+}
+.tooltip.show { opacity:1; }
+.tooltip b { font-weight:700; }
+
+/* ═══════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════ */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.35);
+  z-index:500; display:none; align-items:center; justify-content:center;
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border-radius:var(--radius-xl);
+  padding:24px 26px; width:360px; box-shadow:var(--shadow-lg);
+  max-height:90vh; overflow-y:auto; animation:modalIn .22s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.modal-title { font-family:var(--serif); font-size:17px; font-weight:700; color:var(--primary); margin-bottom:18px; }
+.modal-field { margin-bottom:14px; }
+.modal-label {
+  display:block; font-size:11px; font-weight:700;
+  color:var(--text-2); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;
+}
+.modal-input {
+  width:100%; padding:9px 12px;
+  border:1.5px solid var(--border); border-radius:var(--radius);
+  font-family:var(--sans); font-size:14px; color:var(--text);
+  background:var(--surface2); outline:none; transition:border .2s;
+}
+.modal-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-glow); }
+.modal-btns { display:flex; gap:8px; margin-top:18px; }
+.btn-primary {
+  flex:1; padding:10px; background:var(--primary); color:#fff;
+  border:none; border-radius:var(--radius);
+  font-family:var(--sans); font-size:14px; font-weight:600;
+  cursor:pointer; transition:background .2s;
+}
+.btn-primary:hover { background:var(--primary-dk); }
+.btn-secondary {
+  padding:10px 16px; background:var(--surface2); color:var(--text-2);
+  border:1.5px solid var(--border); border-radius:var(--radius);
+  font-family:var(--sans); font-size:14px; font-weight:600; cursor:pointer;
+}
+.btn-secondary:hover { background:var(--bg2); }
+.btn-danger {
+  padding:10px 14px; background:var(--red-lt); color:var(--red);
+  border:1.5px solid var(--red); border-radius:var(--radius);
+  font-family:var(--sans); font-size:14px; font-weight:600; cursor:pointer;
+}
+.btn-danger:hover { background:var(--red); color:#fff; }
+
+/* ═══════════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════════ */
+#toast-container {
+  position:fixed; bottom:20px; right:20px; z-index:9999;
+  display:flex; flex-direction:column; gap:8px; pointer-events:none;
+}
+.toast {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg); font-size:13px; font-weight:600;
+  pointer-events:none; animation:toastIn .25s ease; max-width:300px;
+}
+.toast.out { animation:toastOut .2s ease forwards; }
+.toast.t-ok   { border-left:4px solid var(--green); color:var(--green); }
+.toast.t-err  { border-left:4px solid var(--red); color:var(--red); }
+.toast.t-info { border-left:4px solid var(--primary); color:var(--primary); }
+@keyframes toastIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes toastOut { to{opacity:0;transform:translateY(10px)} }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <div class="brand">
+      <div class="brand-seal">🏥</div>
+      <div>
+        <div class="brand-name">โรงพยาบาลสันทราย · HRD Division</div>
+        <div class="brand-sub">ระบบจัดที่นั่งสัมมนา — Seat Map</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn-top" onclick="addTable()">➕ เพิ่มโต๊ะ</button>
+      <button class="btn-top" onclick="openAddPerson()">👤 เพิ่มรายชื่อ</button>
+      <button class="btn-top" onclick="autoAssign()">⚡ จัดที่นั่งอัตโนมัติ</button>
+      <button class="btn-top gold" onclick="exportLayout()">💾 ส่งออก JSON</button>
+      <button class="btn-top green" onclick="printMap()">🖨️ พิมพ์ผัง</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Stats -->
+    <div class="side-card">
+      <div class="side-title">สรุปภาพรวม</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-num" id="st-total">0</div>
+          <div class="stat-lbl">ผู้เข้าร่วมทั้งหมด</div>
+        </div>
+        <div class="stat-box green">
+          <div class="stat-num" id="st-seated">0</div>
+          <div class="stat-lbl">มีที่นั่งแล้ว</div>
+        </div>
+        <div class="stat-box gold">
+          <div class="stat-num" id="st-unassigned">0</div>
+          <div class="stat-lbl">ยังไม่มีที่นั่ง</div>
+        </div>
+        <div class="stat-box red">
+          <div class="stat-num" id="st-tables">0</div>
+          <div class="stat-lbl">โต๊ะทั้งหมด</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="side-card">
+      <div class="side-title">สัญลักษณ์</div>
+      <div class="legend">
+        <div class="legend-row"><div class="ldot empty"></div>ที่นั่งว่าง (10 ที่/โต๊ะ)</div>
+        <div class="legend-row"><div class="ldot seated"></div>มีผู้นั่ง (ยังไม่เช็คอิน)</div>
+        <div class="legend-row"><div class="ldot checkin"></div>เช็คอินแล้ว ✅</div>
+        <div class="legend-row"><div class="ldot pool"></div>รายชื่อยังไม่มีที่นั่ง</div>
+      </div>
+    </div>
+
+    <!-- Unassigned pool -->
+    <div class="side-card" style="flex:1;min-height:0">
+      <div class="side-title">
+        รายชื่อยังไม่มีที่นั่ง
+        (<span id="pool-count">0</span> คน)
+      </div>
+      <input class="pool-search" type="text" id="pool-search"
+             placeholder="🔍 ค้นหาชื่อ / กลุ่มงาน..." oninput="filterPool()">
+      <div class="pool-list" id="pool-list"></div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- CANVAS AREA -->
+  <div class="canvas-wrap">
+
+    <!-- Toolbar -->
+    <div class="canvas-toolbar">
+      <span class="tb-label">มุมมอง:</span>
+      <button class="btn-sm active" id="btn-view-map"  onclick="setView('map')">🗺️ ผังที่นั่ง</button>
+      <button class="btn-sm"        id="btn-view-list" onclick="setView('list')">📋 รายชื่อ</button>
+      <div class="tb-sep"></div>
+      <button class="btn-sm danger" onclick="clearAllSeats()">🗑️ ล้างที่นั่งทั้งหมด</button>
+      <div class="tb-sep"></div>
+      <span class="tb-hint">💡 ลากรายชื่อมาวางที่โต๊ะ · คลิกที่นั่งเพื่อแก้ไข · กดชื่อโต๊ะเพื่อเปลี่ยนชื่อ</span>
+    </div>
+
+    <!-- Room canvas -->
+    <div class="room-canvas" id="room-canvas">
+
+      <!-- Map view -->
+      <div id="panel-map">
+        <div class="room-title-bar">
+          <div class="room-name">🏛️ ห้องประชุมโรงพยาบาลสันทราย</div>
+          <div class="room-hint">โต๊ะละ 10 ที่นั่ง · ลากรายชื่อมาวางได้เลย</div>
+        </div>
+        <div class="tables-grid" id="tables-grid"></div>
+      </div>
+
+      <!-- List view -->
+      <div id="panel-list" style="display:none"></div>
+
+    </div>
+  </div><!-- /canvas-wrap -->
+</div><!-- /main-wrap -->
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- MODAL: Add / Edit Person -->
+<div class="modal-overlay" id="modal-person">
+  <div class="modal">
+    <div class="modal-title" id="mperson-title">➕ เพิ่มรายชื่อ</div>
+    <div class="modal-field">
+      <label class="modal-label">ชื่อ-นามสกุล *</label>
+      <input class="modal-input" id="mp-name" placeholder="ชื่อ นามสกุล">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">กลุ่มภารกิจ</label>
+      <input class="modal-input" id="mp-mission" placeholder="เช่น กลุ่มการพยาบาล">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">กลุ่มงาน / หน่วยงาน</label>
+      <input class="modal-input" id="mp-dept" placeholder="เช่น งานผู้ป่วยนอก">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">สถานะ</label>
+      <select class="modal-input" id="mp-status">
+        <option value="registered">ลงทะเบียนแล้ว</option>
+        <option value="checkin">เช็คอินแล้ว ✅</option>
+      </select>
+    </div>
+    <input type="hidden" id="mp-edit-id">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-person')">ยกเลิก</button>
+      <button class="btn-danger" id="mp-del-btn" style="display:none" onclick="deletePerson()">ลบ</button>
+      <button class="btn-primary" onclick="savePerson()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirm -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-title" id="confirm-title">ยืนยัน</div>
+    <p style="font-size:13.5px;color:var(--text-2);margin-bottom:4px;line-height:1.7" id="confirm-msg"></p>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-confirm')">ยกเลิก</button>
+      <button class="btn-primary" id="confirm-ok-btn">ตกลง</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let tables  = [];   // [{id, name, seats:[personId|null × 10]}]
+let people  = [];   // [{id, name, mission, dept, status:'registered'|'checkin'}]
+let nextTId = 1;
+let nextPId = 1;
+let dragSrc = null; // {type:'pool'|'seat', personId, fromTable?, fromSeat?}
+let currentView = 'map';
+let confirmCb   = null;
+
+// ════════════════════════════════════════════════════════════
+//  DEMO DATA  (ลบ/แก้ได้ตามต้องการ)
+// ════════════════════════════════════════════════════════════
+function initDemo() {
+  const depts = [
+    {m:'กลุ่มการพยาบาล',   d:'งานผู้ป่วยนอก'},
+    {m:'กลุ่มการพยาบาล',   d:'งานผู้ป่วยใน'},
+    {m:'กลุ่มการพยาบาล',   d:'ห้องคลอด'},
+    {m:'กลุ่มการพยาบาล',   d:'ICU'},
+    {m:'กลุ่มการแพทย์',    d:'อายุรกรรม'},
+    {m:'กลุ่มการแพทย์',    d:'ศัลยกรรม'},
+    {m:'กลุ่มการแพทย์',    d:'กุมารเวช'},
+    {m:'กลุ่มสนับสนุน',    d:'การเงิน'},
+    {m:'กลุ่มสนับสนุน',    d:'เวชระเบียน'},
+    {m:'กลุ่มอำนวยการ',    d:'HRD'},
+  ];
+  const names = [
+    'สมชาย ใจดี','นภาพร แสงทอง','วิไล มีสุข','ประยุทธ์ ดวงดี','ศิริพร หวานใจ',
+    'กนกวรรณ พรมมา','อาทิตย์ สีแดง','มนัส บุญมี','รัตนา ทองดี','ชลิตา เมืองงาม',
+    'วรรณี ดีมาก','สุรชัย คงดี','พิมลรัตน์ สุขใจ','ธนพล แก้วมณี','อรุณี จันทร์ดี',
+    'สิทธิชัย ผลดี','นิตยา เกษมสุข','วันเพ็ญ สมบูรณ์','ชาตรี มีทรัพย์','ปณิตา ใจงาม',
+    'เอกชัย รุ่งเรือง','กัญญา แสนดี','มาโนช ทองสุข','ลัดดา วงษ์งาม','สายชล บุญส่ง',
+    'ธิดา ศรีสุข','วิทยา คำดี','ณัฐพล ดีงาม','อภิรดี สุดดี','ปรีชา มีสกุล'
+  ];
+  names.forEach((name, i) => {
+    people.push({
+      id: nextPId++, name,
+      mission: depts[i % depts.length].m,
+      dept: depts[i % depts.length].d,
+      status: i < 5 ? 'checkin' : 'registered'
+    });
+  });
+
+  ['กลุ่มการพยาบาล','กลุ่มการแพทย์','กลุ่มสนับสนุน','กลุ่มอำนวยการ'].forEach(name => {
+    tables.push({id: nextTId++, name, seats: Array(10).fill(null)});
+  });
+
+  // Pre-assign first 20
+  for (let i = 0;  i < 10; i++) tables[0].seats[i]    = people[i].id;
+  for (let i = 10; i < 20; i++) tables[1].seats[i-10] = people[i].id;
+}
+
+// ════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function getPerson(id) { return people.find(p => p.id === id); }
+function findSeat(personId) {
+  for (const t of tables) {
+    const i = t.seats.indexOf(personId);
+    if (i !== -1) return {table: t, seatIdx: i};
+  }
+  return null;
+}
+function seatedSet() {
+  const s = new Set();
+  tables.forEach(t => t.seats.forEach(pid => { if (pid) s.add(pid); }));
+  return s;
+}
+function abbr(name) {
+  // 2-char Thai abbreviation
+  const words = String(name||'').trim().split(/\s+/);
+  if (words.length >= 2) return (words[0][0]||'') + (words[1][0]||'');
+  return (words[0]||'').substring(0,2);
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════
+function render() {
+  updateStats();
+  renderPool();
+  if (currentView === 'map') renderMap();
+  else renderList();
+}
+
+function updateStats() {
+  const seated = seatedSet().size;
+  document.getElementById('st-total').textContent      = people.length;
+  document.getElementById('st-seated').textContent     = seated;
+  document.getElementById('st-unassigned').textContent = people.length - seated;
+  document.getElementById('st-tables').textContent     = tables.length;
+  document.getElementById('pool-count').textContent    = people.length - seated;
+}
+
+// ── MAP VIEW ─────────────────────────────────────────────
+function renderMap() {
+  const grid = document.getElementById('tables-grid');
+  if (tables.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">🪑</div>
+        <div class="es-title">ยังไม่มีโต๊ะ</div>
+        <div class="es-sub">กดปุ่ม "เพิ่มโต๊ะ" เพื่อเริ่มจัดที่นั่ง</div>
+        <button class="btn-primary" style="width:auto;padding:10px 24px" onclick="addTable()">➕ เพิ่มโต๊ะแรก</button>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  for (let r = 0; r < tables.length; r += 3) {
+    html += '<div class="table-row">';
+    for (let c = r; c < Math.min(r+3, tables.length); c++) {
+      html += buildTableCardHTML(tables[c]);
+    }
+    if (r + 3 >= tables.length) {
+      html += `<div class="add-table-zone" onclick="addTable()">
+        <div class="add-table-plus">＋</div>
+        <div>เพิ่มโต๊ะ</div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+  bindTableEvents();
+}
+
+function buildTableCardHTML(t) {
+  const occupied = t.seats.filter(Boolean).length;
+  const full = occupied >= 10;
+  const seatsHtml = t.seats.map((pid, si) => {
+    if (pid) {
+      const p = getPerson(pid);
+      const cls = p && p.status === 'checkin' ? 'checkin' : 'occupied';
+      const ab  = p ? abbr(p.name) : '?';
+      return `<div class="seat ${cls}" id="seat-${t.id}-${si}"
+                   draggable="true" data-pid="${pid}" data-tid="${t.id}" data-si="${si}"
+                   title="${esc(p ? p.name : '')}">${esc(ab)}</div>`;
+    }
+    return `<div class="seat empty" id="seat-${t.id}-${si}"
+                 data-tid="${t.id}" data-si="${si}"></div>`;
+  }).join('');
+
+  return `<div class="table-card" id="tc-${t.id}" data-tid="${t.id}">
+    <div class="table-header">
+      <div class="table-name-wrap">
+        <span class="table-icon">🪑</span>
+        <span class="table-name" id="tname-${t.id}" onclick="startEditName(${t.id})"
+              title="${esc(t.name)}">${esc(t.name)}</span>
+      </div>
+      <span class="table-count ${full?'full':''}">${occupied}/10</span>
+      <div class="table-actions">
+        <button class="tbl-btn" title="แก้ไขชื่อโต๊ะ" onclick="startEditName(${t.id})">✏️</button>
+        <button class="tbl-btn del" title="ลบโต๊ะ" onclick="confirmDeleteTable(${t.id})">🗑️</button>
+      </div>
+    </div>
+    <div class="seats-grid">${seatsHtml}</div>
+  </div>`;
+}
+
+function bindTableEvents() {
+  // Table card: dragover / drop (drop on table = first empty seat)
+  tables.forEach(t => {
+    const card = document.getElementById('tc-' + t.id);
+    if (!card) return;
+    card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+    card.addEventListener('dragleave', e => {
+      if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over');
+    });
+    card.addEventListener('drop', e => {
+      e.preventDefault(); card.classList.remove('drag-over');
+      handleDrop(t.id, null);
+    });
+
+    // Seats
+    t.seats.forEach((pid, si) => {
+      const seatEl = document.getElementById(`seat-${t.id}-${si}`);
+      if (!seatEl) return;
+
+      if (pid) {
+        seatEl.addEventListener('dragstart', e => {
+          dragSrc = {type:'seat', personId: pid, fromTable: t.id, fromSeat: si};
+          setTimeout(() => seatEl.classList.add('drag-src'), 0);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        seatEl.addEventListener('dragend', () => seatEl.classList.remove('drag-src'));
+        seatEl.addEventListener('click', e => { e.stopPropagation(); openEditPerson(pid); });
+        seatEl.addEventListener('mouseenter', ev => showTooltip(ev, pid));
+        seatEl.addEventListener('mouseleave', hideTooltip);
+      }
+
+      seatEl.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); seatEl.classList.add('drag-over-seat'); });
+      seatEl.addEventListener('dragleave', () => seatEl.classList.remove('drag-over-seat'));
+      seatEl.addEventListener('drop', e => {
+        e.preventDefault(); e.stopPropagation(); seatEl.classList.remove('drag-over-seat');
+        handleDrop(t.id, si);
+      });
+    });
+  });
+}
+
+// แทนที่ฟังก์ชัน renderList() เดิม
+function renderList() {
+  const panel = document.getElementById('panel-list');
+  const seated = seatedSet();
+  let html = '<div style="display:flex;flex-direction:column;gap:14px">';
+
+  tables.forEach(t => {
+    const members = t.seats.filter(Boolean).map(getPerson).filter(Boolean);
+    html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+      <div class="list-section-header">
+        <span class="list-section-name">🪑 ${esc(t.name)}</span>
+        <span class="list-section-count">${members.length} / 10 คน</span>
+      </div>`;
+    if (members.length === 0) {
+      html += `<div style="text-align:center;padding:16px;color:var(--text-3);font-size:13px">ยังไม่มีสมาชิก — ลากรายชื่อมาวางในผังที่นั่ง</div>`;
+    } else {
+      html += `<table class="list-table" style="background:var(--surface)">
+        <thead><tr><th style="width:32px">#</th><th>ชื่อ-นามสกุล</th><th>กลุ่มภารกิจ / กลุ่มงาน</th><th>สถานะ</th><th>แก้ไข</th></tr></thead><tbody>`;
+      members.forEach((p, i) => {
+        const badge = p.status === 'checkin' ? '<span class="status-badge checkin">✅ เช็คอิน</span>' : '<span class="status-badge seated">⏳ ลงทะเบียน</span>';
+        html += `<tr>
+          <td style="color:var(--text-3)">${i+1}</td>
+          <td style="font-weight:600">${esc(p.name)}</td>
+          <td style="color:var(--text-2)">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</td>
+          <td>${badge}</td>
+          <td><button class="btn-sm" style="padding:3px 8px;font-size:11px" onclick="openEditPerson('${p.id}')">✏️</button></td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+    html += `</div>`;
+  });
+
+  const unassigned = people.filter(p => !seated.has(p.id));
+  if (unassigned.length > 0) {
+    html += `<div style="background:var(--gold-lt);border:1px solid var(--gold);border-radius:var(--radius-lg);overflow:hidden">
+      <div class="list-section-header" style="background:var(--gold);border-color:var(--gold)">
+        <span class="list-section-name">⚠️ ยังไม่มีที่นั่ง</span>
+        <span class="list-section-count">${unassigned.length} คน</span>
+      </div>
+      <table class="list-table" style="background:var(--gold-lt)"><thead><tr><th>#</th><th>ชื่อ-นามสกุล</th><th>กลุ่มงาน</th><th>สถานะ</th><th>แก้ไข</th></tr></thead><tbody>`;
+    unassigned.forEach((p, i) => {
+      html += `<tr>
+        <td style="color:var(--text-3)">${i+1}</td>
+        <td style="font-weight:600">${esc(p.name)}</td>
+        <td style="color:var(--text-2)">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</td>
+        <td><span class="status-badge unassign">ยังไม่มีที่นั่ง</span></td>
+        <td><button class="btn-sm" style="padding:3px 8px;font-size:11px" onclick="openEditPerson('${p.id}')">✏️</button></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+// แทนที่ฟังก์ชัน renderPool() เดิม
+function renderPool() {
+  const q = document.getElementById('pool-search').value.toLowerCase().trim();
+  const seated = seatedSet();
+  const unassigned = people.filter(p =>
+    !seated.has(p.id) && (!q || p.name.toLowerCase().includes(q) || (p.dept||'').toLowerCase().includes(q) || (p.mission||'').toLowerCase().includes(q))
+  );
+  const list = document.getElementById('pool-list');
+  if (unassigned.length === 0) {
+    list.innerHTML = `<div class="pool-empty">${q ? '🔍 ไม่พบรายชื่อที่ค้นหา' : '✅ ทุกคนมีที่นั่งแล้ว!'}</div>`;
+    return;
+  }
+  list.innerHTML = unassigned.map(p => `
+    <div class="pool-chip" id="pc-${p.id}" draggable="true"
+         onclick="openEditPerson('${p.id}')"
+         onmouseenter="showTooltip(event,'${p.id}')" onmouseleave="hideTooltip()">
+      <div class="pool-chip-dot" style="background:${p.status==='checkin'?'var(--green)':'var(--gold)'}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="pool-chip-name">${esc(p.name)}</div>
+        <div class="pool-chip-dept">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</div>
+      </div>
+      <span style="font-size:11px;color:var(--text-3)">${p.status==='checkin'?'✅':''}</span>
+    </div>
+  `).join('');
+  unassigned.forEach(p => {
+    const el = document.getElementById('pc-'+p.id);
+    if (!el) return;
+    el.addEventListener('dragstart', e => {
+      dragSrc = {type:'pool', personId: p.id};
+      setTimeout(() => el.classList.add('dragging-src'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => el.classList.remove('dragging-src'));
+  });
+}
+
+function filterPool() { renderPool(); }
+
+// ════════════════════════════════════════════════════════════
+//  DRAG & DROP HANDLER
+// ════════════════════════════════════════════════════════════
+function handleDrop(targetTableId, targetSeatIdx) {
+  if (!dragSrc) return;
+  const targetTable = tables.find(t => t.id === targetTableId);
+  if (!targetTable) { dragSrc = null; return; }
+
+  if (targetSeatIdx !== null && targetSeatIdx !== undefined) {
+    // Dropped on a specific seat
+    const existingPid = targetTable.seats[targetSeatIdx];
+
+    if (dragSrc.type === 'pool') {
+      if (existingPid) { toast('ที่นั่งนี้มีผู้นั่งแล้ว', 'err'); dragSrc = null; return; }
+      targetTable.seats[targetSeatIdx] = dragSrc.personId;
+      toast(`✅ จัดที่นั่ง: ${getPerson(dragSrc.personId)?.name}`, 'ok');
+
+    } else if (dragSrc.type === 'seat') {
+      const fromTable = tables.find(t => t.id === dragSrc.fromTable);
+      if (existingPid) {
+        // Swap seats
+        if (fromTable) fromTable.seats[dragSrc.fromSeat] = existingPid;
+        targetTable.seats[targetSeatIdx] = dragSrc.personId;
+        toast('🔄 สลับที่นั่งเรียบร้อย', 'info');
+      } else {
+        if (fromTable) fromTable.seats[dragSrc.fromSeat] = null;
+        targetTable.seats[targetSeatIdx] = dragSrc.personId;
+        toast(`✅ ย้ายที่นั่ง: ${getPerson(dragSrc.personId)?.name}`, 'ok');
+      }
+    }
+  } else {
+    // Dropped on table card → first empty seat
+    const emptyIdx = targetTable.seats.indexOf(null);
+    if (emptyIdx === -1) { toast(`❌ โต๊ะ "${targetTable.name}" เต็มแล้ว`, 'err'); dragSrc = null; return; }
+
+    if (dragSrc.type === 'pool') {
+      targetTable.seats[emptyIdx] = dragSrc.personId;
+      toast(`✅ จัดที่นั่ง: ${getPerson(dragSrc.personId)?.name} → ${targetTable.name}`, 'ok');
+    } else {
+      const fromTable = tables.find(t => t.id === dragSrc.fromTable);
+      if (fromTable) fromTable.seats[dragSrc.fromSeat] = null;
+      targetTable.seats[emptyIdx] = dragSrc.personId;
+      toast(`✅ ย้าย: ${getPerson(dragSrc.personId)?.name} → ${targetTable.name}`, 'ok');
+    }
+  }
+
+  dragSrc = null;
+  render();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TABLE MANAGEMENT
+// ════════════════════════════════════════════════════════════
+function addTable() {
+  const name = 'กลุ่มงาน_' + (tables.length + 1);
+  tables.push({id: nextTId++, name, seats: Array(10).fill(null)});
+  setView('map');
+  render();
+  toast(`➕ เพิ่มโต๊ะ "${name}" แล้ว`, 'ok');
+  setTimeout(() => { document.getElementById('room-canvas').scrollTop = 99999; }, 100);
+}
+
+function startEditName(tableId) {
+  const nameEl = document.getElementById('tname-' + tableId);
+  if (!nameEl) return;
+  const t = tables.find(x => x.id === tableId);
+  if (!t) return;
+  const input = document.createElement('input');
+  input.className = 'table-name-input';
+  input.value = t.name;
+  nameEl.replaceWith(input);
+  input.focus(); input.select();
+  const save = () => {
+    const val = input.value.trim() || t.name;
+    t.name = val;
+    render();
+    toast(`✏️ เปลี่ยนชื่อโต๊ะเป็น "${val}" แล้ว`, 'ok');
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { input.blur(); }
+    if (e.key === 'Escape') { input.value = t.name; input.blur(); }
+  });
+}
+
+function confirmDeleteTable(tableId) {
+  const t = tables.find(x => x.id === tableId);
+  if (!t) return;
+  const occupied = t.seats.filter(Boolean).length;
+  confirm2(
+    '🗑️ ลบโต๊ะ',
+    `ต้องการลบโต๊ะ "${t.name}"?${occupied ? `\n\nผู้นั่ง ${occupied} คน จะถูกย้ายกลับมายังรายชื่อที่ยังไม่มีที่นั่ง` : ''}`,
+    () => {
+      tables = tables.filter(x => x.id !== tableId);
+      render();
+      toast(`🗑️ ลบโต๊ะ "${t.name}" แล้ว`, 'ok');
+    }
+  );
+}
+
+function clearAllSeats() {
+  confirm2('🗑️ ล้างที่นั่งทั้งหมด', 'ต้องการย้ายทุกคนออกจากที่นั่งทั้งหมด?', () => {
+    tables.forEach(t => t.seats = Array(10).fill(null));
+    render();
+    toast('ล้างที่นั่งทั้งหมดแล้ว', 'ok');
+  });
+}
+
+function autoAssign() {
+  const seated = seatedSet();
+  const unassigned = people.filter(p => !seated.has(p.id));
+  if (unassigned.length === 0) { toast('✅ ทุกคนมีที่นั่งแล้ว', 'ok'); return; }
+  let assigned = 0;
+  for (const p of unassigned) {
+    let placed = false;
+    for (const t of tables) {
+      const empty = t.seats.indexOf(null);
+      if (empty !== -1) { t.seats[empty] = p.id; placed = true; assigned++; break; }
+    }
+    if (!placed) break;
+  }
+  render();
+  toast(`⚡ จัดที่นั่งอัตโนมัติ ${assigned} คน`, 'ok');
+  if (assigned < unassigned.length) {
+    toast(`⚠️ ที่นั่งเต็ม ยังเหลืออีก ${unassigned.length - assigned} คน`, 'err');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  PERSON MANAGEMENT
+// ════════════════════════════════════════════════════════════
+function openAddPerson() {
+  document.getElementById('mp-name').value    = '';
+  document.getElementById('mp-mission').value = '';
+  document.getElementById('mp-dept').value    = '';
+  document.getElementById('mp-status').value  = 'registered';
+  document.getElementById('mp-edit-id').value = '';
+  document.getElementById('mp-del-btn').style.display = 'none';
+  document.getElementById('mperson-title').textContent = '➕ เพิ่มรายชื่อ';
+  openModal('modal-person');
+}
+
+function openEditPerson(personId) {
+  const p = getPerson(personId);
+  if (!p) return;
+  document.getElementById('mp-name').value    = p.name;
+  document.getElementById('mp-mission').value = p.mission || '';
+  document.getElementById('mp-dept').value    = p.dept || '';
+  document.getElementById('mp-status').value  = p.status || 'registered';
+  document.getElementById('mp-edit-id').value = personId;
+  document.getElementById('mp-del-btn').style.display = '';
+  document.getElementById('mperson-title').textContent = '✏️ แก้ไขรายชื่อ';
+  openModal('modal-person');
+}
+
+function savePerson() {
+  const name = document.getElementById('mp-name').value.trim();
+  if (!name) { document.getElementById('mp-name').focus(); toast('กรุณากรอกชื่อ', 'err'); return; }
+  const mission = document.getElementById('mp-mission').value.trim();
+  const dept    = document.getElementById('mp-dept').value.trim();
+  const status  = document.getElementById('mp-status').value;
+  const editId  = parseInt(document.getElementById('mp-edit-id').value);
+
+  if (editId) {
+    const p = getPerson(editId);
+    if (p) { p.name = name; p.mission = mission; p.dept = dept; p.status = status; }
+    toast(`✏️ แก้ไข "${name}" แล้ว`, 'ok');
+  } else {
+    people.push({id: nextPId++, name, mission, dept, status});
+    toast(`➕ เพิ่ม "${name}" แล้ว`, 'ok');
+  }
+  closeModal('modal-person');
+  render();
+}
+
+function deletePerson() {
+  const editId = parseInt(document.getElementById('mp-edit-id').value);
+  const p = getPerson(editId);
+  if (!p) return;
+  confirm2('ลบรายชื่อ', `ต้องการลบ "${p.name}" ออกจากระบบทั้งหมด?`, () => {
+    people = people.filter(x => x.id !== editId);
+    tables.forEach(t => { t.seats = t.seats.map(s => s === editId ? null : s); });
+    closeModal('modal-person');
+    render();
+    toast(`🗑️ ลบ "${p.name}" แล้ว`, 'ok');
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  VIEWS
+// ════════════════════════════════════════════════════════════
+function setView(v) {
+  currentView = v;
+  document.getElementById('panel-map').style.display  = v === 'map'  ? '' : 'none';
+  document.getElementById('panel-list').style.display = v === 'list' ? '' : 'none';
+  document.getElementById('btn-view-map').classList.toggle('active',  v === 'map');
+  document.getElementById('btn-view-list').classList.toggle('active', v === 'list');
+  render();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TOOLTIP
+// ════════════════════════════════════════════════════════════
+const tipEl = document.getElementById('tooltip');
+function showTooltip(e, personId) {
+  const p = getPerson(personId);
+  if (!p) return;
+  const loc = findSeat(personId);
+  const tableName = loc ? loc.table.name : 'ยังไม่มีที่นั่ง';
+  tipEl.innerHTML = `<b>${esc(p.name)}</b><br>${esc(p.mission || '')}${p.dept ? ' · '+esc(p.dept) : ''}<br>📍 ${esc(tableName)}<br>${p.status === 'checkin' ? '✅ เช็คอินแล้ว' : '⏳ ยังไม่เช็คอิน'}`;
+  tipEl.classList.add('show');
+  positionTip(e);
+}
+function hideTooltip() { tipEl.classList.remove('show'); }
+document.addEventListener('mousemove', e => { if (tipEl.classList.contains('show')) positionTip(e); });
+function positionTip(e) {
+  let x = e.clientX + 14, y = e.clientY - 10;
+  if (x + 250 > window.innerWidth)  x = e.clientX - 254;
+  if (y + 100 > window.innerHeight) y = e.clientY - 110;
+  tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+}
+
+// ════════════════════════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  setTimeout(() => {
+    const first = document.querySelector(`#${id} input:not([type=hidden]),#${id} select`);
+    if (first) first.focus();
+  }, 80);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el =>
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); })
+);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(el => el.classList.remove('open'));
+});
+
+function confirm2(title, msg, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  confirmCb = cb;
+  openModal('modal-confirm');
+}
+document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+  closeModal('modal-confirm');
+  if (confirmCb) { confirmCb(); confirmCb = null; }
+});
+
+// ════════════════════════════════════════════════════════════
+//  EXPORT / PRINT
+// ════════════════════════════════════════════════════════════
+function exportLayout() {
+  const layout = {
+    exportedAt: new Date().toLocaleString('th-TH', {
+      year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit'
+    }),
+    totalPeople: people.length,
+    totalTables: tables.length,
+    tables: tables.map(t => ({
+      name: t.name,
+      capacity: 10,
+      occupied: t.seats.filter(Boolean).length,
+      seats: t.seats.map((pid, i) => {
+        const p = getPerson(pid);
+        return pid && p ? {seat: i+1, name: p.name, mission: p.mission||'', dept: p.dept||'', status: p.status} : {seat: i+1, name: null};
+      })
+    })),
+    unassigned: people.filter(p => !seatedSet().has(p.id)).map(p => ({name:p.name, mission:p.mission||'', dept:p.dept||'', status:p.status}))
+  };
+  const blob = new Blob([JSON.stringify(layout, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'seat-layout-' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+  toast('💾 บันทึกผังที่นั่ง JSON แล้ว', 'ok');
+}
+
+function printMap() {
+  window.print();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════
+function toast(msg, type='ok') {
+  const cls = {ok:'t-ok', err:'t-err', info:'t-info'}[type] || 't-ok';
+  const el = document.createElement('div');
+  el.className = `toast ${cls}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').prepend(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 220); }, 3000);
+}
+
+// ════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════
+initDemo();
+render();
+</script>
+
+<style>
+@media print {
+  .top-bar, .canvas-toolbar, .sidebar, .btn-top, .tbl-btn, .table-actions,
+  #toast-container, .modal-overlay, .tooltip { display:none!important; }
+  .main-wrap { grid-template-columns:1fr!important; padding:0!important; }
+  .room-canvas { box-shadow:none!important; border:none!important; padding:8px!important; }
+  .canvas-wrap { gap:0!important; }
+  body { background:#fff!important; }
+}
+</style>
+
+</body>
+</html>
