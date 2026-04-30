@@ -606,11 +606,10 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
    ═══════════════════════════════════════════════════ */
 .activity-zone {
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:1fr;
   gap:14px;
   margin-bottom:18px;
 }
-@media(max-width:700px){ .activity-zone{ grid-template-columns:1fr; } }
 
 /* ── Live Feed Panel ── */
 .feed-panel {
@@ -1011,6 +1010,43 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
 .toast.t-ok   { border-left:3px solid var(--green); }
 .toast.t-warn { border-left:3px solid var(--amber); }
 .toast.t-err  { border-left:3px solid var(--red); }
+
+/* Wide LIVE feed layout */
+.dash-cols-live{
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:14px;
+  align-items:start;
+}
+@media(max-width:900px){.dash-cols-live{grid-template-columns:1fr;}}
+.feed-panel-wide{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  box-shadow:var(--shadow-sm);
+  display:flex;
+  flex-direction:column;
+  min-height:440px;
+  position:relative;
+}
+.feed-stream-wide{
+  flex:1;
+  overflow-y:auto;
+  padding:12px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:8px;
+  align-content:start;
+  max-height:540px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
+.pending-card{
+  min-height:440px;
+  display:flex;
+  flex-direction:column;
+}
 </style>
 </head>
 <body>
@@ -1263,26 +1299,6 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
        ═══════════════════════════════════════════════════ -->
   <div class="activity-zone">
 
-    <!-- LEFT: Live Activity Feed -->
-    <div class="feed-panel">
-      <div class="feed-header">
-        <div class="feed-title-row">
-          <span class="feed-pulse-dot"></span>
-          <span class="feed-title">LIVE · เช็คอินล่าสุด</span>
-        </div>
-        <span class="feed-sub" id="feed-sub">กำลังโหลด...</span>
-      </div>
-      <div class="feed-stream" id="feed-stream">
-        <div class="feed-skel"></div>
-        <div class="feed-skel" style="opacity:.7"></div>
-        <div class="feed-skel" style="opacity:.45"></div>
-      </div>
-      <div class="feed-empty hidden" id="feed-empty">
-        <div class="feed-empty-ico">🎯</div>
-        <div class="feed-empty-txt">รอเช็คอินครั้งแรก...</div>
-      </div>
-    </div>
-
     <!-- RIGHT: Seat Map Visualization -->
     <div class="seat-panel">
       <div class="seat-header">
@@ -1318,17 +1334,32 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
 
   </div>
 
-  <!-- ── เช็คอินรายชั่วโมง + ยังไม่เช็คอิน ── -->
-  <div class="dash-cols" style="margin-bottom:18px">
-    <div class="dash-card">
-      <h3>⏱ เช็คอินรายชั่วโมง</h3>
-      <div class="bar-chart" id="bar-chart">
-        <div class="no-data" style="width:100%;font-size:12px">กำลังโหลด...</div>
+  <!-- Wide LIVE Feed + Pending -->
+  <div class="dash-cols-live" style="margin-bottom:18px">
+    <div class="feed-panel-wide">
+      <div class="feed-header">
+        <div class="feed-title-row">
+          <span class="feed-pulse-dot"></span>
+          <span class="feed-title">LIVE &middot; เช็คอินล่าสุด</span>
+        </div>
+        <span class="feed-sub" id="feed-wide-sub">กำลังโหลด...</span>
+      </div>
+      <div class="feed-stream feed-stream-wide" id="feed-stream-wide">
+        <div class="feed-skel"></div>
+        <div class="feed-skel" style="opacity:.7"></div>
+        <div class="feed-skel" style="opacity:.5"></div>
+        <div class="feed-skel" style="opacity:.35"></div>
+        <div class="feed-skel" style="opacity:.2"></div>
+        <div class="feed-skel" style="opacity:.1"></div>
+      </div>
+      <div class="feed-empty hidden" id="feed-empty-wide">
+        <div class="feed-empty-ico">🎯</div>
+        <div class="feed-empty-txt">รอเช็คอินครั้งแรก...</div>
       </div>
     </div>
-    <div class="dash-card">
+    <div class="dash-card pending-card">
       <h3>⏳ ยังไม่ได้เช็คอิน <span id="pd-count"></span></h3>
-      <div id="pd-list" style="margin-top:8px;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:5px">
+      <div id="pd-list" style="margin-top:8px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:5px">
         <div class="skel skel-row"></div>
         <div class="skel skel-row"></div>
       </div>
@@ -1416,9 +1447,7 @@ function _domInit() {
 }
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", _domInit);
-} else {
-  _domInit();
-}
+} else { _domInit(); }
 
 // ═══════════════════════════════════════════════════════
 // INIT
@@ -1521,8 +1550,8 @@ function handleCamError(err) {
 // ═══════════════════════════════════════════════════════
 function scanLoop() {
   if (!scanning) return;
-  if (!ctx && canvasEl) ctx = canvasEl.getContext("2d", { willReadFrequently:true });
   try {
+    if (!ctx && canvasEl) ctx = canvasEl.getContext("2d", { willReadFrequently:true });
     if (videoEl && ctx && videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
       canvasEl.width=videoEl.videoWidth; canvasEl.height=videoEl.videoHeight;
       ctx.drawImage(videoEl,0,0,canvasEl.width,canvasEl.height);
@@ -1935,7 +1964,6 @@ function loadDashboard() {
     renderSeatMap(total, checkedIn);
 
     // ── Hourly Bar Chart ────────────────────────────────
-    renderHourlyChart(d.hourly || []);
 
     // ── Pending List ─────────────────────────────────────
     renderPendingList(d.pending || []);
@@ -1959,9 +1987,9 @@ const AV_COLORS = ["av-0","av-1","av-2","av-3","av-4","av-5","av-6","av-7"];
 let _lastCheckinCount = 0;
 
 function renderFeed(checkins) {
-  const stream  = document.getElementById("feed-stream");
-  const empty   = document.getElementById("feed-empty");
-  const feedSub = document.getElementById("feed-sub");
+  const stream  = document.getElementById("feed-stream-wide");
+  const empty   = document.getElementById("feed-empty-wide");
+  const feedSub = document.getElementById("feed-wide-sub");
 
   if (!checkins || !checkins.length) {
     stream.innerHTML = "";
@@ -2104,25 +2132,25 @@ function renderHourlyChart(hourly) {
 
 // ─── Pending List ─────────────────────────────────────────
 function renderPendingList(pending) {
-  const pdList  = document.getElementById("pd-list");
-  const pdCount = document.getElementById("pd-count");
+  var pdList  = document.getElementById("pd-list");
+  var pdCount = document.getElementById("pd-count");
   if (!pdList) return;
   if (pdCount) pdCount.textContent = pending.length ? "(" + pending.length + ")" : "";
   if (!pending.length) {
     pdList.innerHTML = '<div class="no-data">🎉 ทุกคนเช็คอินครบแล้ว!</div>';
     return;
   }
-  pdList.innerHTML = pending.slice(0,50).map(function(p) {
+  pdList.innerHTML = pending.slice(0,80).map(function(p) {
     var rid = escHtml(p.regId || "");
-    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--surface2);">' +
-      '<div style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>' +
-      '<div style="font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(p.name) + '</div>' +
-      '<div style="font-size:10px;color:var(--text-3);font-family:var(--mono);background:var(--bg2);padding:2px 6px;border-radius:4px;white-space:nowrap">' + rid + '</div>' +
-      '<button data-regid="' + rid + '" class="pd-ci-btn" style="padding:3px 8px;border:none;border-radius:5px;background:var(--primary-lt);color:var(--primary);font-size:10px;font-weight:700;cursor:pointer;">เช็คอิน</button>' +
-      '</div>';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--surface2);">'
+      + '<div style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>'
+      + '<div style="font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(p.name) + '</div>'
+      + '<div style="font-size:10px;color:var(--text-3);font-family:var(--mono);background:var(--bg2);padding:2px 6px;border-radius:4px;">' + rid + '</div>'
+      + '<button data-regid="' + rid + '" class="pd-ci-btn" style="padding:3px 8px;border:none;border-radius:5px;background:var(--primary-lt);color:var(--primary);font-size:10px;font-weight:700;cursor:pointer;">เช็คอิน</button>'
+      + '</div>';
   }).join("");
-  pdList.querySelectorAll(".pd-ci-btn").forEach(function(btn) {
-    btn.addEventListener("click", function() { quickCheckin(this.dataset.regid); });
+  pdList.querySelectorAll(".pd-ci-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){ quickCheckin(this.dataset.regid); });
   });
 }
 
