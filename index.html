@@ -1076,6 +1076,9 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
       <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">
         📊 Dashboard
       </button>
+       <button class="tab-btn" onclick="window.open('URL_หน้า_SEAT_บน_GITHUB', '_blank')">
+  🪑 ผังที่นั่ง
+</button>
     </div>
 
     <div class="live-dot" id="live-dot" title="ระบบออนไลน์"></div>
@@ -1249,7 +1252,16 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
 
 <!-- ─── DASHBOARD PANEL ──────────────────────────── -->
 <div id="panel-dashboard" class="panel">
-
+<a href="URL_หน้า_SEAT_บน_GITHUB" class="dash-register-link" target="_blank" style="background:var(--gold-lt); border-color:var(--gold);">
+  <div class="drl-left">
+    <div class="drl-ico">🪑</div>
+    <div class="drl-text">
+      <strong>จัดการผังที่นั่ง (Seat Map)</strong>
+      <span>จัดโต๊ะและระบุที่นั่งสำหรับผู้เข้าร่วม</span>
+    </div>
+  </div>
+  <div class="drl-arrow">→</div>
+</a>
   <div class="dash-toprow">
     <div>
       <div class="dash-title">📊 Dashboard <em>สัมมนา</em></div>
