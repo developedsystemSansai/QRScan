@@ -522,11 +522,11 @@ body {
 .ci-name { font-size:13px; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ci-time { font-size:10px; color:var(--text-3); font-family:var(--mono); }
 
-.bar-chart { display:flex; align-items:flex-end; gap:3px; height:90px; width:100%; margin-top:4px; }
+.bar-chart { display:flex; align-items:flex-end; gap:3px; height:100px; width:100%; margin-top:8px; }
 .bar-grp   { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; }
-.bar-fill  { width:100%; border-radius:3px 3px 0 0; background:linear-gradient(180deg, var(--primary), var(--primary-dk)); transition:height .7s cubic-bezier(.4,0,.2,1); min-height:2px; position:relative; }
+.bar-fill  { width:100%; border-radius:3px 3px 0 0; background:linear-gradient(180deg, var(--primary), var(--primary-dk)); transition:height .7s cubic-bezier(.4,0,.2,1); min-height:3px; position:relative; max-height:100px; }
 .bar-fill:hover { background:linear-gradient(180deg, var(--green), var(--primary)); }
-.bar-fill::before { content:attr(data-count); position:absolute; bottom:calc(100%+2px); left:50%; transform:translateX(-50%); font-size:9px; font-family:var(--mono); color:var(--text-2); opacity:0; transition:opacity .15s; white-space:nowrap; }
+.bar-fill::before { content:attr(data-count); position:absolute; bottom:calc(100%+2px); left:50%; transform:translateX(-50%); font-size:9px; font-family:var(--mono); color:var(--text-2); opacity:0; transition:opacity .15s; white-space:nowrap; pointer-events:none; background:var(--surface); padding:2px 5px; border-radius:4px; border:1px solid var(--border); }
 .bar-fill:hover::before { opacity:1; }
 .bar-lbl   { font-size:8px; color:var(--text-3); font-family:var(--mono); }
 
@@ -569,7 +569,10 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
 
 /* KPI 3 cols */
 .kpi-3col { grid-template-columns:repeat(3,1fr) !important; }
-@media(max-width:640px) { .kpi-3col { grid-template-columns:1fr 1fr !important; } }
+@media(max-width:760px) { .kpi-3col { grid-template-columns:repeat(3,1fr) !important; } }
+@media(max-width:480px) { .kpi-3col { grid-template-columns:1fr 1fr !important; } }
+/* Make KPI cards taller on desktop */
+.kpi-3col .kpi-card { padding:22px 18px; }
 
 /* Hourly summary blocks */
 .hourly-block {
@@ -824,6 +827,12 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
 #ci-list { display:none; }
 
 .dash-register-link {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--primary-lt); border:1.5px solid rgba(26,95,122,.25);
+  border-radius:var(--radius-lg); padding:14px 18px; margin-bottom:16px;
+  text-decoration:none; color:inherit; transition:all .18s; box-shadow:var(--shadow-sm);
+}
+.dash-register-link:hover { background:#d8edf4; border-color:var(--primary); }
 .drl-left { display:flex; align-items:center; gap:12px; }
 .drl-ico  { font-size:24px; }
 .drl-text strong { display:block; font-size:14px; font-weight:700; color:var(--text); }
@@ -1309,6 +1318,23 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
 
   </div>
 
+  <!-- ── เช็คอินรายชั่วโมง + ยังไม่เช็คอิน ── -->
+  <div class="dash-cols" style="margin-bottom:18px">
+    <div class="dash-card">
+      <h3>⏱ เช็คอินรายชั่วโมง</h3>
+      <div class="bar-chart" id="bar-chart">
+        <div class="no-data" style="width:100%;font-size:12px">กำลังโหลด...</div>
+      </div>
+    </div>
+    <div class="dash-card">
+      <h3>⏳ ยังไม่ได้เช็คอิน <span id="pd-count"></span></h3>
+      <div id="pd-list" style="margin-top:8px;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:5px">
+        <div class="skel skel-row"></div>
+        <div class="skel skel-row"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="mg-section">
     <div class="mg-section-hd">
       <h2>🏢 การเช็คอินแยกตาม<span>กลุ่มภารกิจ</span></h2>
@@ -1324,10 +1350,10 @@ body.dash-fullscreen .btn-fullscreen:hover { background:rgba(255,80,80,.3); }
       </div>
     </div>
     <div id="mg-card-view" class="mg-grid active">
-      <div class="skel" style="height:130px;border-radius:14px"></div>
-      <div class="skel" style="height:130px;border-radius:14px"></div>
-      <div class="skel" style="height:130px;border-radius:14px"></div>
-      <div class="skel" style="height:130px;border-radius:14px"></div>
+      <div class="skel" style="height:160px;border-radius:14px"></div>
+      <div class="skel" style="height:160px;border-radius:14px"></div>
+      <div class="skel" style="height:160px;border-radius:14px"></div>
+      <div class="skel" style="height:160px;border-radius:14px"></div>
     </div>
     <div id="mg-list-view" class="mg-list"></div>
   </div>
@@ -1846,34 +1872,76 @@ function checkInFromSearch(regId) {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════
 function loadDashboard() {
-  const btn=document.getElementById("btn-refresh");
-  btn.classList.add("loading"); btn.disabled=true;
+  const btn = document.getElementById("btn-refresh");
+  btn.classList.add("loading"); btn.disabled = true;
+
+  // Show skeletons while loading
+  document.getElementById("kpi-grid").innerHTML =
+    '<div class="kpi-card kc-blue skel skel-kpi"></div>' +
+    '<div class="kpi-card kc-mint skel skel-kpi"></div>' +
+    '<div class="kpi-card kc-amber skel skel-kpi"></div>';
+  document.getElementById("mg-card-view").innerHTML =
+    '<div class="skel" style="height:160px;border-radius:14px"></div>' +
+    '<div class="skel" style="height:160px;border-radius:14px"></div>';
+
   _apiCall({action:"dashboard"}, function(d) {
-    btn.classList.remove("loading"); btn.disabled=false;
-    document.getElementById("last-update").textContent="อัปเดต: "+d.lastUpdate;
-    const pct = d.total>0 ? Math.round(d.checkedIn/d.total*100) : 0;
+    btn.classList.remove("loading"); btn.disabled = false;
+    document.getElementById("last-update").textContent = "อัปเดต: " + (d.lastUpdate || "–");
 
-    // KPI — 3 cards
-    document.getElementById("kpi-grid").innerHTML=`
-      <div class="kpi-card kc-blue"><span class="kpi-ico">👥</span><div class="kpi-val">${d.total}</div><div class="kpi-lbl">ลงทะเบียนทั้งหมด</div></div>
-      <div class="kpi-card kc-mint"><span class="kpi-ico">✅</span><div class="kpi-val">${d.checkedIn}</div><div class="kpi-lbl">เช็คอินแล้ว</div></div>
-      <div class="kpi-card kc-amber"><span class="kpi-ico">⏳</span><div class="kpi-val">${d.notCheckedIn}</div><div class="kpi-lbl">ยังไม่เช็คอิน</div></div>`;
+    const total     = d.total     || 0;
+    const checkedIn = d.checkedIn || 0;
+    const notIn     = d.notCheckedIn != null ? d.notCheckedIn : (total - checkedIn);
+    const emailSent = d.emailSent  || 0;
+    const pct       = total > 0 ? Math.round(checkedIn / total * 100) : 0;
 
-    document.getElementById("prog-label").textContent = d.checkedIn+" / "+d.total;
-    document.getElementById("prog-pct").innerHTML = pct+'% <small>เช็คอิน</small>';
-    setTimeout(()=>{ document.getElementById("prog-fill").style.width=pct+"%"; },120);
+    // ── KPI Cards ──────────────────────────────────────
+    document.getElementById("kpi-grid").innerHTML = `
+      <div class="kpi-card kc-blue">
+        <span class="kpi-ico">👥</span>
+        <div class="kpi-val">${total}</div>
+        <div class="kpi-lbl">ลงทะเบียนทั้งหมด</div>
+      </div>
+      <div class="kpi-card kc-mint">
+        <span class="kpi-ico">✅</span>
+        <div class="kpi-val">${checkedIn}</div>
+        <div class="kpi-lbl">เช็คอินแล้ว</div>
+      </div>
+      <div class="kpi-card kc-amber">
+        <span class="kpi-ico">⏳</span>
+        <div class="kpi-val">${notIn}</div>
+        <div class="kpi-lbl">ยังไม่เช็คอิน</div>
+      </div>`;
 
-    // NEW: Live feed
+    // ── Progress Bar ────────────────────────────────────
+    document.getElementById("prog-label").textContent = checkedIn + " / " + total;
+    document.getElementById("prog-pct").innerHTML = pct + '% <small>เช็คอิน</small>';
+    setTimeout(function() {
+      document.getElementById("prog-fill").style.width = pct + "%";
+    }, 120);
+
+    // ── Live Feed ───────────────────────────────────────
     renderFeed(d.recentCheckins || []);
 
-    // NEW: Seat map
-    renderSeatMap(d.total, d.checkedIn);
+    // ── Seat Map ────────────────────────────────────────
+    renderSeatMap(total, checkedIn);
 
+    // ── Hourly Bar Chart ────────────────────────────────
+    renderHourlyChart(d.hourly || []);
+
+    // ── Pending List ─────────────────────────────────────
+    renderPendingList(d.pending || []);
+
+    // ── Mission Groups ──────────────────────────────────
     renderMissionGroups(d.missionGroups || []);
-    document.getElementById("mg-update-time").textContent = d.lastUpdate || "–";
+    const mgTime = document.getElementById("mg-update-time");
+    if (mgTime) mgTime.textContent = d.lastUpdate || "–";
+
   }, function(err) {
-    btn.classList.remove("loading"); btn.disabled=false;
-    document.getElementById("kpi-grid").innerHTML=`<div class="dash-err" style="grid-column:1/-1"><div class="ei">⚠️</div><p>โหลดข้อมูลไม่ได้<br><small>${escHtml(err.message||"ลองใหม่อีกครั้ง")}</small></p></div>`;
+    btn.classList.remove("loading"); btn.disabled = false;
+    document.getElementById("kpi-grid").innerHTML =
+      '<div class="dash-err" style="grid-column:1/-1"><div class="ei">⚠️</div><p>โหลดข้อมูลไม่ได้<br><small>' +
+      escHtml(err.message || "ลองใหม่อีกครั้ง") + '</small></p></div>';
+    toast("❌ โหลด Dashboard ไม่สำเร็จ: " + (err.message || ""), "err");
   });
 }
 
@@ -2000,7 +2068,65 @@ function renderSeatMap(total, checkedIn) {
   }
 }
 
-// Keep old stubs so nothing breaks
+// ─── Hourly Chart ────────────────────────────────────────
+function renderHourlyChart(hourly) {
+  const chart = document.getElementById("bar-chart");
+  if (!chart) return;
+  if (!hourly || !hourly.length) {
+    chart.innerHTML = '<div class="no-data" style="width:100%;font-size:12px">ยังไม่มีข้อมูล</div>';
+    return;
+  }
+  const maxV = Math.max.apply(null, hourly.map(function(h){ return h.count; })) || 1;
+  chart.innerHTML = hourly.map(function(h) {
+    const pctH = Math.round(h.count / maxV * 100);
+    const label = (h.hour || "").substring(0,2);
+    return '<div class="bar-grp">' +
+      '<div class="bar-fill" style="height:0%" data-pct="' + pctH + '" data-count="' + h.count + '"></div>' +
+      '<div class="bar-lbl">' + escHtml(label) + '</div>' +
+      '</div>';
+  }).join("");
+  // animate bars
+  setTimeout(function() {
+    chart.querySelectorAll(".bar-fill[data-pct]").forEach(function(el) {
+      el.style.height = el.getAttribute("data-pct") + "%";
+    });
+  }, 80);
+}
+
+// ─── Pending List ─────────────────────────────────────────
+function renderPendingList(pending) {
+  const pdList  = document.getElementById("pd-list");
+  const pdCount = document.getElementById("pd-count");
+  if (!pdList) return;
+  if (pdCount) pdCount.textContent = pending.length ? "(" + pending.length + ")" : "";
+  if (!pending.length) {
+    pdList.innerHTML = '<div class="no-data">🎉 ทุกคนเช็คอินครบแล้ว!</div>';
+    return;
+  }
+  pdList.innerHTML = pending.slice(0,50).map(function(p) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--surface2);">' +
+      '<div style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>' +
+      '<div style="font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(p.name) + '</div>' +
+      '<div style="font-size:10px;color:var(--text-3);font-family:var(--mono);background:var(--bg2);padding:2px 6px;border-radius:4px;white-space:nowrap">' + escHtml(p.regId || "") + '</div>' +
+      '<button onclick="quickCheckin('' + escAttr(p.regId) + '')" style="padding:3px 8px;border:none;border-radius:5px;background:var(--primary-lt);color:var(--primary);font-size:10px;font-weight:700;cursor:pointer;">เช็คอิน</button>' +
+      '</div>';
+  }).join("");
+}
+
+function quickCheckin(regId) {
+  if (!regId) return;
+  if (!confirm("เช็คอิน: " + regId + "?")) return;
+  _apiCall({action:"checkin", regId:regId}, function(res) {
+    if (res.status === "checkin_ok") {
+      toast("✅ เช็คอินสำเร็จ: " + res.name, "ok");
+    } else {
+      toast("⚠️ " + (res.message || ""), "warn");
+    }
+    loadDashboard();
+  }, function(err) { toast("❌ " + err.message, "err"); });
+}
+
+// legacy stubs
 let _allPending = [];
 function filterPending(q) {}
 function renderPending(list, q) {}
@@ -2059,11 +2185,11 @@ function renderMissionGroups(groups) {
   document.getElementById("mg-card-view").innerHTML = groups.map((g, gi) => {
     const ci  = g.color || MG_COLORS[gi % MG_COLORS.length];
     const pct = g.total > 0 ? Math.round(g.checkedIn / g.total * 100) : 0;
-    const deptsHtml = (g.depts || []).slice(0,5).map(d => {
+    const deptsHtml = (g.depts || []).slice(0,8).map(d => {
       const dp  = g.checkedIn > 0 ? Math.round(d.checkedIn / Math.max(d.total,1) * 100) : 0;
       const badgeCls = d.checkedIn === d.total && d.total > 0 ? "done" : d.checkedIn > 0 ? "part" : "none";
       const badgeTxt = d.checkedIn === d.total && d.total > 0 ? "ครบ" : d.checkedIn > 0 ? `${d.checkedIn}/${d.total}` : "–";
-      return `<div class="mg-dept-row"><div class="mg-dept-name" title="${escHtml(d.name)}">${escHtml(d.name)}</div><div class="mg-dept-bar-bg"><div class="mg-dept-bar-fill" style="width:${dp}%"></div></div><div class="mg-dept-count">${d.checkedIn}/${d.total}</div><div class="mg-dept-badge ${badgeCls}">${badgeTxt}</div></div>`;
+      return `<div class="mg-dept-row"><div class="mg-dept-name" title="${escHtml(d.name)}">${escHtml(d.name)}</div><div class="mg-dept-bar-bg"><div class="mg-dept-bar-fill" style="width:0%" data-pct="${dp}"></div></div><div class="mg-dept-count">${d.checkedIn}/${d.total}</div><div class="mg-dept-badge ${badgeCls}">${badgeTxt}</div></div>`;
     }).join("");
     return `<div class="mg-card ${ci}"><div class="mg-card-accent"></div><div class="mg-card-top"><div class="mg-card-name">${escHtml(g.name)}</div><div class="mg-card-stat"><div class="mg-big-num">${g.checkedIn}</div><div class="mg-small-total">/ ${g.total} คน</div></div><div class="mg-bar-wrap" style="margin-top:6px"><div class="mg-bar-bg"><div class="mg-bar-fill" style="width:${pct}%"></div></div><div class="mg-pct-text">${pct}%</div></div></div><div class="mg-depts">${deptsHtml || '<div style="font-size:11px;color:var(--text-3);padding:4px 0">ไม่มีข้อมูลกลุ่มงาน</div>'}</div></div>`;
   }).join("");
@@ -2071,8 +2197,20 @@ function renderMissionGroups(groups) {
     const liCls = MG_LI_CLS[gi % MG_LI_CLS.length];
     const pct   = g.total > 0 ? Math.round(g.checkedIn / g.total * 100) : 0;
     const rk    = gi < 3 ? RANK_CLS[gi] : "";
-    return `<div class="mg-list-item ${liCls}"><div class="mg-list-rank ${rk}">${gi+1}</div><div class="mg-list-body"><div class="mg-list-name">${escHtml(g.name)}</div><div class="mg-list-bar-bg"><div class="mg-list-bar-fill" style="width:${pct}%"></div></div></div><div class="mg-list-right"><div class="mg-list-pct">${pct}%</div><div class="mg-list-sub">${g.checkedIn} / ${g.total}</div></div></div>`;
+    return `<div class="mg-list-item ${liCls}"><div class="mg-list-rank ${rk}">${gi+1}</div><div class="mg-list-body"><div class="mg-list-name">${escHtml(g.name)}</div><div class="mg-list-bar-bg"><div class="mg-list-bar-fill" style="width:0%" data-pct="${pct}"></div></div></div><div class="mg-list-right"><div class="mg-list-pct">${pct}%</div><div class="mg-list-sub">${g.checkedIn} / ${g.total}</div></div></div>`;
   }).join("");
+
+  // Animate all progress bars (card view dept bars + list bar fills) after DOM settles
+  setTimeout(function() {
+    // Mission card dept bars
+    document.querySelectorAll(".mg-dept-bar-fill[data-pct]").forEach(function(el) {
+      el.style.width = el.getAttribute("data-pct") + "%";
+    });
+    // Mission list bars
+    document.querySelectorAll(".mg-list-bar-fill[data-pct]").forEach(function(el) {
+      el.style.width = el.getAttribute("data-pct") + "%";
+    });
+  }, 80);
 }
 
 // ═══════════════════════════════════════════════════════
