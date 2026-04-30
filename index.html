@@ -1399,9 +1399,8 @@ const stats = { total:0, ok:0, dup:0, err:0 };
 let searchTimer = null;
 let undoData = null;
 
-// ── DOM refs (lazy — เพื่อป้องกัน null crash ถ้า element ยังไม่ render) ──
 let videoEl, canvasEl, ctx, camBox, vfFrame, vfLine, camHint, camPh, btnOpen, btnClose, pillEl, pillText;
-function _initDOMRefs() {
+function _domInit() {
   videoEl  = document.getElementById("camera-feed");
   canvasEl = document.getElementById("scan-canvas");
   ctx      = canvasEl ? canvasEl.getContext("2d", { willReadFrequently:true }) : null;
@@ -1415,9 +1414,11 @@ function _initDOMRefs() {
   pillEl   = document.getElementById("status-pill");
   pillText = document.getElementById("status-text");
 }
-document.addEventListener("DOMContentLoaded", _initDOMRefs);
-// กรณี script อยู่ท้าย body และ DOM โหลดแล้ว ให้ call ทันทีด้วย
-if (document.readyState !== "loading") _initDOMRefs();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", _domInit);
+} else {
+  _domInit();
+}
 
 // ═══════════════════════════════════════════════════════
 // INIT
@@ -1520,7 +1521,7 @@ function handleCamError(err) {
 // ═══════════════════════════════════════════════════════
 function scanLoop() {
   if (!scanning) return;
-  if (!ctx && canvasEl) ctx = canvasEl.getContext("2d", { willReadFrequently:true }); // lazy re-init
+  if (!ctx && canvasEl) ctx = canvasEl.getContext("2d", { willReadFrequently:true });
   try {
     if (videoEl && ctx && videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
       canvasEl.width=videoEl.videoWidth; canvasEl.height=videoEl.videoHeight;
@@ -2112,13 +2113,17 @@ function renderPendingList(pending) {
     return;
   }
   pdList.innerHTML = pending.slice(0,50).map(function(p) {
+    var rid = escHtml(p.regId || "");
     return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--surface2);">' +
       '<div style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>' +
       '<div style="font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(p.name) + '</div>' +
-      '<div style="font-size:10px;color:var(--text-3);font-family:var(--mono);background:var(--bg2);padding:2px 6px;border-radius:4px;white-space:nowrap">' + escHtml(p.regId || "") + '</div>' +
-      '<button onclick="quickCheckin(\'' + escAttr(p.regId) + '\')" style="padding:3px 8px;border:none;border-radius:5px;background:var(--primary-lt);color:var(--primary);font-size:10px;font-weight:700;cursor:pointer;">เช็คอิน</button>' +
+      '<div style="font-size:10px;color:var(--text-3);font-family:var(--mono);background:var(--bg2);padding:2px 6px;border-radius:4px;white-space:nowrap">' + rid + '</div>' +
+      '<button data-regid="' + rid + '" class="pd-ci-btn" style="padding:3px 8px;border:none;border-radius:5px;background:var(--primary-lt);color:var(--primary);font-size:10px;font-weight:700;cursor:pointer;">เช็คอิน</button>' +
       '</div>';
   }).join("");
+  pdList.querySelectorAll(".pd-ci-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() { quickCheckin(this.dataset.regid); });
+  });
 }
 
 function quickCheckin(regId) {
