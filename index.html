@@ -1399,18 +1399,25 @@ const stats = { total:0, ok:0, dup:0, err:0 };
 let searchTimer = null;
 let undoData = null;
 
-const videoEl  = document.getElementById("camera-feed");
-const canvasEl = document.getElementById("scan-canvas");
-const ctx      = canvasEl.getContext("2d", { willReadFrequently:true });
-const camBox   = document.getElementById("cam-box");
-const vfFrame  = document.getElementById("vf-frame");
-const vfLine   = document.getElementById("vf-line");
-const camHint  = document.getElementById("cam-hint");
-const camPh    = document.getElementById("cam-ph");
-const btnOpen  = document.getElementById("btn-open");
-const btnClose = document.getElementById("btn-close");
-const pillEl   = document.getElementById("status-pill");
-const pillText = document.getElementById("status-text");
+// ── DOM refs (lazy — เพื่อป้องกัน null crash ถ้า element ยังไม่ render) ──
+let videoEl, canvasEl, ctx, camBox, vfFrame, vfLine, camHint, camPh, btnOpen, btnClose, pillEl, pillText;
+function _initDOMRefs() {
+  videoEl  = document.getElementById("camera-feed");
+  canvasEl = document.getElementById("scan-canvas");
+  ctx      = canvasEl ? canvasEl.getContext("2d", { willReadFrequently:true }) : null;
+  camBox   = document.getElementById("cam-box");
+  vfFrame  = document.getElementById("vf-frame");
+  vfLine   = document.getElementById("vf-line");
+  camHint  = document.getElementById("cam-hint");
+  camPh    = document.getElementById("cam-ph");
+  btnOpen  = document.getElementById("btn-open");
+  btnClose = document.getElementById("btn-close");
+  pillEl   = document.getElementById("status-pill");
+  pillText = document.getElementById("status-text");
+}
+document.addEventListener("DOMContentLoaded", _initDOMRefs);
+// กรณี script อยู่ท้าย body และ DOM โหลดแล้ว ให้ call ทันทีด้วย
+if (document.readyState !== "loading") _initDOMRefs();
 
 // ═══════════════════════════════════════════════════════
 // INIT
@@ -1513,8 +1520,9 @@ function handleCamError(err) {
 // ═══════════════════════════════════════════════════════
 function scanLoop() {
   if (!scanning) return;
+  if (!ctx && canvasEl) ctx = canvasEl.getContext("2d", { willReadFrequently:true }); // lazy re-init
   try {
-    if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
+    if (videoEl && ctx && videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
       canvasEl.width=videoEl.videoWidth; canvasEl.height=videoEl.videoHeight;
       ctx.drawImage(videoEl,0,0,canvasEl.width,canvasEl.height);
       if (typeof jsQR === "undefined") { toast("❌ ไม่พบไลบรารี jsQR กรุณา refresh","err"); closeCamera(); return; }
@@ -2108,7 +2116,7 @@ function renderPendingList(pending) {
       '<div style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>' +
       '<div style="font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(p.name) + '</div>' +
       '<div style="font-size:10px;color:var(--text-3);font-family:var(--mono);background:var(--bg2);padding:2px 6px;border-radius:4px;white-space:nowrap">' + escHtml(p.regId || "") + '</div>' +
-      '<button onclick="quickCheckin('' + escAttr(p.regId) + '')" style="padding:3px 8px;border:none;border-radius:5px;background:var(--primary-lt);color:var(--primary);font-size:10px;font-weight:700;cursor:pointer;">เช็คอิน</button>' +
+      '<button onclick="quickCheckin(\'' + escAttr(p.regId) + '\')" style="padding:3px 8px;border:none;border-radius:5px;background:var(--primary-lt);color:var(--primary);font-size:10px;font-weight:700;cursor:pointer;">เช็คอิน</button>' +
       '</div>';
   }).join("");
 }
