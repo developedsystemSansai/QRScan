@@ -665,17 +665,7 @@ body::before {
       </button>
     </div>
 
-    <div style="display:flex;align-items:center;gap:10px">
-      <a id="btn-go-register" href="#" target="_blank" rel="noopener"
-         onclick="goRegister()"
-         style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;
-                background:linear-gradient(135deg,#10d9a0,#059669);color:#fff;font-family:var(--sans);
-                font-size:12px;font-weight:700;text-decoration:none;border:none;cursor:pointer;
-                box-shadow:0 2px 10px rgba(16,217,160,.3);white-space:nowrap;">
-        📝 ลงทะเบียน
-      </a>
-      <div class="live-dot" title="ระบบออนไลน์"></div>
-    </div>
+    <div class="live-dot" title="ระบบออนไลน์"></div>
   </div>
 </div>
 
@@ -752,11 +742,7 @@ body::before {
     <div class="stat-card s-err"><div class="stat-num" id="st-err">0</div><div class="stat-lbl">ไม่พบ</div></div>
   </div>
 
-  <p class="foot">ระบบเช็คอินสัมมนา · โรงพยาบาลสันทราย<br>ใช้กล้องหลังเพื่อประสิทธิภาพสูงสุด<br>
-    <a href="#" onclick="goRegister();return false;" style="color:var(--mint);font-weight:600;text-decoration:none;">
-      📝 ไปหน้าลงทะเบียน →
-    </a>
-  </p>
+  <p class="foot">ระบบเช็คอินสัมมนา · โรงพยาบาลสันทราย<br>ใช้กล้องหลังเพื่อประสิทธิภาพสูงสุด</p>
 </div>
 
 <!-- ─── DASHBOARD PANEL ──────────────────────────── -->
@@ -844,18 +830,8 @@ body::before {
 // ═══════════════════════════════════════════════
 // เมื่อ Deploy เป็น Web App (GAS) ให้ใช้ google.script.run
 // เมื่อ host แบบ standalone ให้ set WEB_APP_URL
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwzimtNiUsNPYelNocjhzshTdoJ8392hYSix4lWxf2cGHVWsMBybBHBUzyFkq8iq2_EeQ/exec";  // ← ใส่ URL จาก GAS Deploy
-const REGISTER_URL = "https://script.google.com/macros/s/AKfycbwzimtNiUsNPYelNocjhzshTdoJ8392hYSix4lWxf2cGHVWsMBybBHBUzyFkq8iq2_EeQ/exec"; // ← URL หน้าลงทะเบียน (GAS)
-const USE_GAS_RUN = false; // GitHub Pages ใช้ fetch mode เสมอ (ไม่ใช้ google.script.run)
-
-// ── เปิดหน้าลงทะเบียน ───────────────────────────────────────
-function goRegister() {
-  if (REGISTER_URL && !REGISTER_URL.includes("YOUR_DEPLOYMENT_ID")) {
-    window.open(REGISTER_URL, "_blank");
-  } else {
-    alert("⚠️ กรุณาตั้งค่า REGISTER_URL ใน index.html ก่อนใช้งาน");
-  }
-}
+const WEB_APP_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";  // ← ใส่ URL จาก GAS Deploy
+const USE_GAS_RUN = false; // GitHub Pages ใช้ fetch mode เสมอ
 
 // ═══════════════════════════════════════════════
 // STATE
