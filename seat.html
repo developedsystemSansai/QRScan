@@ -435,7 +435,7 @@ body {
       <button class="btn-top" onclick="addTable()">➕ เพิ่มโต๊ะ</button>
       <button class="btn-top" onclick="openAddPerson()">👤 เพิ่มรายชื่อ</button>
       <button class="btn-top" onclick="autoAssign()">⚡ จัดที่นั่งอัตโนมัติ</button>
-      <button class="btn-top gold" onclick="exportLayout()">💾 ส่งออก JSON</button>
+      <button class="btn-top gold" onclick="saveDataToGAS()">☁️ บันทึกผังที่นั่ง</button>
       <button class="btn-top green" onclick="printMap()">🖨️ พิมพ์ผัง</button>
     </div>
   </div>
@@ -579,56 +579,65 @@ body {
 
 <script>
 // ════════════════════════════════════════════════════════════
-//  STATE
+//  STATE & CONFIG
 // ════════════════════════════════════════════════════════════
-let tables  = [];   // [{id, name, seats:[personId|null × 10]}]
-let people  = [];   // [{id, name, mission, dept, status:'registered'|'checkin'}]
+// ⚠️ สำคัญ: ใส่ URL ของ Google Apps Script ของคุณตรงนี้
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwzimtNiUsNPYelNocjhzshTdoJ8392hYSix4lWxf2cGHVWsMBybBHBUzyFkq8iq2_EeQ/exec";
+
+let tables  = [];
+let people  = [];   
 let nextTId = 1;
-let nextPId = 1;
-let dragSrc = null; // {type:'pool'|'seat', personId, fromTable?, fromSeat?}
+let dragSrc = null; 
 let currentView = 'map';
 let confirmCb   = null;
 
 // ════════════════════════════════════════════════════════════
-//  DEMO DATA  (ลบ/แก้ได้ตามต้องการ)
+//  API CONNECTORS (GAS)
 // ════════════════════════════════════════════════════════════
-function initDemo() {
-  const depts = [
-    {m:'กลุ่มการพยาบาล',   d:'งานผู้ป่วยนอก'},
-    {m:'กลุ่มการพยาบาล',   d:'งานผู้ป่วยใน'},
-    {m:'กลุ่มการพยาบาล',   d:'ห้องคลอด'},
-    {m:'กลุ่มการพยาบาล',   d:'ICU'},
-    {m:'กลุ่มการแพทย์',    d:'อายุรกรรม'},
-    {m:'กลุ่มการแพทย์',    d:'ศัลยกรรม'},
-    {m:'กลุ่มการแพทย์',    d:'กุมารเวช'},
-    {m:'กลุ่มสนับสนุน',    d:'การเงิน'},
-    {m:'กลุ่มสนับสนุน',    d:'เวชระเบียน'},
-    {m:'กลุ่มอำนวยการ',    d:'HRD'},
-  ];
-  const names = [
-    'สมชาย ใจดี','นภาพร แสงทอง','วิไล มีสุข','ประยุทธ์ ดวงดี','ศิริพร หวานใจ',
-    'กนกวรรณ พรมมา','อาทิตย์ สีแดง','มนัส บุญมี','รัตนา ทองดี','ชลิตา เมืองงาม',
-    'วรรณี ดีมาก','สุรชัย คงดี','พิมลรัตน์ สุขใจ','ธนพล แก้วมณี','อรุณี จันทร์ดี',
-    'สิทธิชัย ผลดี','นิตยา เกษมสุข','วันเพ็ญ สมบูรณ์','ชาตรี มีทรัพย์','ปณิตา ใจงาม',
-    'เอกชัย รุ่งเรือง','กัญญา แสนดี','มาโนช ทองสุข','ลัดดา วงษ์งาม','สายชล บุญส่ง',
-    'ธิดา ศรีสุข','วิทยา คำดี','ณัฐพล ดีงาม','อภิรดี สุดดี','ปรีชา มีสกุล'
-  ];
-  names.forEach((name, i) => {
-    people.push({
-      id: nextPId++, name,
-      mission: depts[i % depts.length].m,
-      dept: depts[i % depts.length].d,
-      status: i < 5 ? 'checkin' : 'registered'
-    });
-  });
+function loadDataFromGAS() {
+  toast("กำลังโหลดข้อมูลรายชื่อจากระบบ...", "info");
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "get_seat_data" }),
+    headers: { "Content-Type": "text/plain" }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "ok") {
+      people = data.people; 
+      if (data.layout && data.layout.length > 0) {
+        tables = data.layout;
+        const maxTid = Math.max(...tables.map(t => t.id), 0);
+        nextTId = maxTid + 1;
+      } else {
+        // ค่าเริ่มต้นถ้ายังไม่มีผังที่นั่ง
+        tables = [];
+        ['กลุ่มการพยาบาล','กลุ่มการแพทย์','กลุ่มสนับสนุน','กลุ่มอำนวยการ'].forEach(name => {
+          tables.push({id: nextTId++, name, seats: Array(10).fill(null)});
+        });
+      }
+      render();
+      toast("อัปเดตข้อมูลรายชื่อและผังที่นั่งสำเร็จ", "ok");
+    } else {
+      toast("❌ โหลดข้อมูลไม่สำเร็จ: " + data.message, "err");
+    }
+  })
+  .catch(err => toast("❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: " + err.message, "err"));
+}
 
-  ['กลุ่มการพยาบาล','กลุ่มการแพทย์','กลุ่มสนับสนุน','กลุ่มอำนวยการ'].forEach(name => {
-    tables.push({id: nextTId++, name, seats: Array(10).fill(null)});
-  });
-
-  // Pre-assign first 20
-  for (let i = 0;  i < 10; i++) tables[0].seats[i]    = people[i].id;
-  for (let i = 10; i < 20; i++) tables[1].seats[i-10] = people[i].id;
+function saveDataToGAS() {
+  toast("กำลังบันทึกผังที่นั่งลงฐานข้อมูล...", "info");
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "save_seat_layout", layout: tables }),
+    headers: { "Content-Type": "text/plain" }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "ok") toast("✅ บันทึกผังที่นั่งขึ้น Cloud สำเร็จ!", "ok");
+    else toast("❌ บันทึกไม่สำเร็จ: " + data.message, "err");
+  })
+  .catch(err => toast("❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "err"));
 }
 
 // ════════════════════════════════════════════════════════════
@@ -652,7 +661,6 @@ function seatedSet() {
   return s;
 }
 function abbr(name) {
-  // 2-char Thai abbreviation
   const words = String(name||'').trim().split(/\s+/);
   if (words.length >= 2) return (words[0][0]||'') + (words[1][0]||'');
   return (words[0]||'').substring(0,2);
@@ -724,7 +732,6 @@ function buildTableCardHTML(t) {
     return `<div class="seat empty" id="seat-${t.id}-${si}"
                  data-tid="${t.id}" data-si="${si}"></div>`;
   }).join('');
-
   return `<div class="table-card" id="tc-${t.id}" data-tid="${t.id}">
     <div class="table-header">
       <div class="table-name-wrap">
@@ -743,7 +750,6 @@ function buildTableCardHTML(t) {
 }
 
 function bindTableEvents() {
-  // Table card: dragover / drop (drop on table = first empty seat)
   tables.forEach(t => {
     const card = document.getElementById('tc-' + t.id);
     if (!card) return;
@@ -756,7 +762,6 @@ function bindTableEvents() {
       handleDrop(t.id, null);
     });
 
-    // Seats
     t.seats.forEach((pid, si) => {
       const seatEl = document.getElementById(`seat-${t.id}-${si}`);
       if (!seatEl) return;
@@ -783,7 +788,6 @@ function bindTableEvents() {
   });
 }
 
-// แทนที่ฟังก์ชัน renderList() เดิม
 function renderList() {
   const panel = document.getElementById('panel-list');
   const seated = seatedSet();
@@ -803,6 +807,7 @@ function renderList() {
         <thead><tr><th style="width:32px">#</th><th>ชื่อ-นามสกุล</th><th>กลุ่มภารกิจ / กลุ่มงาน</th><th>สถานะ</th><th>แก้ไข</th></tr></thead><tbody>`;
       members.forEach((p, i) => {
         const badge = p.status === 'checkin' ? '<span class="status-badge checkin">✅ เช็คอิน</span>' : '<span class="status-badge seated">⏳ ลงทะเบียน</span>';
+        // ใช้เครื่องหมาย ' ครอบ p.id เพื่อรองรับ ID ที่เป็นตัวอักษร
         html += `<tr>
           <td style="color:var(--text-3)">${i+1}</td>
           <td style="font-weight:600">${esc(p.name)}</td>
@@ -825,6 +830,7 @@ function renderList() {
       </div>
       <table class="list-table" style="background:var(--gold-lt)"><thead><tr><th>#</th><th>ชื่อ-นามสกุล</th><th>กลุ่มงาน</th><th>สถานะ</th><th>แก้ไข</th></tr></thead><tbody>`;
     unassigned.forEach((p, i) => {
+      // ใช้เครื่องหมาย ' ครอบ p.id
       html += `<tr>
         <td style="color:var(--text-3)">${i+1}</td>
         <td style="font-weight:600">${esc(p.name)}</td>
@@ -839,7 +845,6 @@ function renderList() {
   panel.innerHTML = html;
 }
 
-// แทนที่ฟังก์ชัน renderPool() เดิม
 function renderPool() {
   const q = document.getElementById('pool-search').value.toLowerCase().trim();
   const seated = seatedSet();
@@ -851,6 +856,7 @@ function renderPool() {
     list.innerHTML = `<div class="pool-empty">${q ? '🔍 ไม่พบรายชื่อที่ค้นหา' : '✅ ทุกคนมีที่นั่งแล้ว!'}</div>`;
     return;
   }
+  // ใช้เครื่องหมาย ' ครอบ p.id 
   list.innerHTML = unassigned.map(p => `
     <div class="pool-chip" id="pc-${p.id}" draggable="true"
          onclick="openEditPerson('${p.id}')"
@@ -886,18 +892,14 @@ function handleDrop(targetTableId, targetSeatIdx) {
   if (!targetTable) { dragSrc = null; return; }
 
   if (targetSeatIdx !== null && targetSeatIdx !== undefined) {
-    // Dropped on a specific seat
     const existingPid = targetTable.seats[targetSeatIdx];
-
     if (dragSrc.type === 'pool') {
       if (existingPid) { toast('ที่นั่งนี้มีผู้นั่งแล้ว', 'err'); dragSrc = null; return; }
       targetTable.seats[targetSeatIdx] = dragSrc.personId;
       toast(`✅ จัดที่นั่ง: ${getPerson(dragSrc.personId)?.name}`, 'ok');
-
     } else if (dragSrc.type === 'seat') {
       const fromTable = tables.find(t => t.id === dragSrc.fromTable);
       if (existingPid) {
-        // Swap seats
         if (fromTable) fromTable.seats[dragSrc.fromSeat] = existingPid;
         targetTable.seats[targetSeatIdx] = dragSrc.personId;
         toast('🔄 สลับที่นั่งเรียบร้อย', 'info');
@@ -908,7 +910,6 @@ function handleDrop(targetTableId, targetSeatIdx) {
       }
     }
   } else {
-    // Dropped on table card → first empty seat
     const emptyIdx = targetTable.seats.indexOf(null);
     if (emptyIdx === -1) { toast(`❌ โต๊ะ "${targetTable.name}" เต็มแล้ว`, 'err'); dragSrc = null; return; }
 
@@ -1006,7 +1007,7 @@ function autoAssign() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  PERSON MANAGEMENT
+//  PERSON MANAGEMENT (เพิ่ม/แก้ไขคนที่ไม่ได้ลงทะเบียน)
 // ════════════════════════════════════════════════════════════
 function openAddPerson() {
   document.getElementById('mp-name').value    = '';
@@ -1038,14 +1039,16 @@ function savePerson() {
   const mission = document.getElementById('mp-mission').value.trim();
   const dept    = document.getElementById('mp-dept').value.trim();
   const status  = document.getElementById('mp-status').value;
-  const editId  = parseInt(document.getElementById('mp-edit-id').value);
+  const editId  = document.getElementById('mp-edit-id').value;
 
   if (editId) {
     const p = getPerson(editId);
     if (p) { p.name = name; p.mission = mission; p.dept = dept; p.status = status; }
     toast(`✏️ แก้ไข "${name}" แล้ว`, 'ok');
   } else {
-    people.push({id: nextPId++, name, mission, dept, status});
+    // Generate mock ID for manually added person
+    const newId = "MOCK-" + Math.floor(Math.random() * 90000 + 10000);
+    people.push({id: newId, name, mission, dept, status});
     toast(`➕ เพิ่ม "${name}" แล้ว`, 'ok');
   }
   closeModal('modal-person');
@@ -1053,7 +1056,7 @@ function savePerson() {
 }
 
 function deletePerson() {
-  const editId = parseInt(document.getElementById('mp-edit-id').value);
+  const editId = document.getElementById('mp-edit-id').value;
   const p = getPerson(editId);
   if (!p) return;
   confirm2('ลบรายชื่อ', `ต้องการลบ "${p.name}" ออกจากระบบทั้งหมด?`, () => {
@@ -1096,7 +1099,8 @@ function positionTip(e) {
   let x = e.clientX + 14, y = e.clientY - 10;
   if (x + 250 > window.innerWidth)  x = e.clientX - 254;
   if (y + 100 > window.innerHeight) y = e.clientY - 110;
-  tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+  tipEl.style.left = x + 'px';
+  tipEl.style.top = y + 'px';
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1117,7 +1121,6 @@ document.querySelectorAll('.modal-overlay').forEach(el =>
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(el => el.classList.remove('open'));
 });
-
 function confirm2(title, msg, cb) {
   document.getElementById('confirm-title').textContent = title;
   document.getElementById('confirm-msg').textContent   = msg;
@@ -1130,35 +1133,9 @@ document.getElementById('confirm-ok-btn').addEventListener('click', () => {
 });
 
 // ════════════════════════════════════════════════════════════
-//  EXPORT / PRINT
+//  PRINT
 // ════════════════════════════════════════════════════════════
-function exportLayout() {
-  const layout = {
-    exportedAt: new Date().toLocaleString('th-TH', {
-      year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit'
-    }),
-    totalPeople: people.length,
-    totalTables: tables.length,
-    tables: tables.map(t => ({
-      name: t.name,
-      capacity: 10,
-      occupied: t.seats.filter(Boolean).length,
-      seats: t.seats.map((pid, i) => {
-        const p = getPerson(pid);
-        return pid && p ? {seat: i+1, name: p.name, mission: p.mission||'', dept: p.dept||'', status: p.status} : {seat: i+1, name: null};
-      })
-    })),
-    unassigned: people.filter(p => !seatedSet().has(p.id)).map(p => ({name:p.name, mission:p.mission||'', dept:p.dept||'', status:p.status}))
-  };
-  const blob = new Blob([JSON.stringify(layout, null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'seat-layout-' + new Date().toISOString().slice(0,10) + '.json'; a.click();
-  toast('💾 บันทึกผังที่นั่ง JSON แล้ว', 'ok');
-}
-
-function printMap() {
-  window.print();
-}
+function printMap() { window.print(); }
 
 // ════════════════════════════════════════════════════════════
 //  TOAST
