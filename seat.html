@@ -176,6 +176,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
 #room-canvas[data-tool="line"]{cursor:crosshair}
 #room-canvas[data-tool="arrow"]{cursor:crosshair}
 #room-canvas[data-tool="erase"]{cursor:cell}
+#room-canvas[data-tool="hand"]{cursor:grab}
+#room-canvas[data-tool="hand"].panning{cursor:grabbing!important}
 #room-canvas.panning{cursor:grabbing!important}
 
 /* Drawing preview overlay (SVG on top of canvas) */
@@ -378,6 +380,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
         <span class="tb-lbl">เลือก:</span>
         <button class="btn-sm active" id="tool-select" onclick="setTool('select')" title="S">📌</button>
         <button class="btn-sm" id="tool-erase" onclick="setTool('erase')" title="X" style="color:var(--red)">🧹</button>
+        <button class="btn-sm" id="tool-hand"  onclick="setTool('hand')"  title="H">✋ เลื่อน</button>
       </div>
       <div class="tb-sep"></div>
       <div class="tb-grp">
@@ -588,7 +591,7 @@ let tool='select', view='map', sel=null;
 let dragSrc=null, confirmCb=null;
 let histStack=[], MAX_HIST=50;
 let panX=60,panY=40,zoom=1;
-let isPanning=false,panStart={x:0,y:0};
+let isPanning=false,panStart={x:0,y:0},_wasPanning=false;
 let spaceDown=false;
 
 // Element drag (move)
@@ -870,8 +873,21 @@ document.addEventListener('touchend',onUp);
 function onDown(e){
   e.preventDefault();
   const sp=getCP(e),wp=s2w(sp.x,sp.y);
-  // Pan
-  if(e.button===1||(e.button===0&&spaceDown)){isPanning=true;panStart={x:sp.x-panX,y:sp.y-panY};canvas.classList.add('panning');return;}
+
+  // ── PAN triggers ──────────────────────────────────────────────────
+  // 1) Hand tool (any button/touch)
+  // 2) Middle mouse button
+  // 3) Space + left click
+  // 4) Right mouse button drag
+  // 5) Single-finger touch on empty area (handled below after hit test)
+  const isRightClick = e.button===2;
+  const isMiddleClick = e.button===1;
+  const isTouchSingle = e.touches && e.touches.length===1;
+
+  if(tool==='hand'||(isMiddleClick)||(e.button===0&&spaceDown)){
+    isPanning=true;panStart={x:sp.x-panX,y:sp.y-panY};canvas.classList.add('panning');return;
+  }
+  if(isRightClick){isPanning=true;panStart={x:sp.x-panX,y:sp.y-panY};canvas.classList.add('panning');return;}
   if(e.button!==0&&!e.touches) return;
 
   // Check resize handles for selected element
@@ -891,6 +907,11 @@ function onDown(e){
 
   // Hit test
   const hit=hitTest(sp,wp);
+
+  // Single-finger touch on empty → pan
+  if(isTouchSingle&&!hit&&tool==='select'){
+    isPanning=true;panStart={x:sp.x-panX,y:sp.y-panY};canvas.classList.add('panning');return;
+  }
 
   if(tool==='erase'){if(hit){saveHist();deleteEl(hit);drawAll();}return;}
 
@@ -940,6 +961,8 @@ function onDown(e){
 
 function onMove(e){
   e.preventDefault&&e.preventDefault();
+  // ถ้าสองนิ้ว = pinch zoom ไม่ต้อง pan
+  if(e.touches&&e.touches.length===2) return;
   const sp=getCP(e),wp=s2w(sp.x,sp.y);
   if(isPanning){panX=sp.x-panStart.x;panY=sp.y-panStart.y;drawAll();return;}
   if(elDrag){
@@ -971,7 +994,9 @@ function onMove(e){
 }
 
 function onUp(e){
-  if(isPanning){isPanning=false;canvas.classList.remove('panning');canvas.style.cursor='';return;}
+  // ถ้าเพิ่งยกนิ้วหนึ่งออก แต่ยังมีนิ้วอื่นอยู่ = pinch กำลังจบ ไม่ต้อง process
+  if(e.touches&&e.touches.length>0&&isPanning) return;
+  if(isPanning){isPanning=false;_wasPanning=true;setTimeout(()=>{_wasPanning=false;},50);canvas.classList.remove('panning');canvas.style.cursor='';return;}
   if(elDrag){elDrag=false;elDragType=null;elDragId=null;drawAll();return;}
   if(elResize){elResize=false;elResHandle=null;canvas.style.cursor='';drawAll();return;}
   if(isDrawing){
@@ -1062,8 +1087,9 @@ canvas.addEventListener('dblclick',e=>{
   }
 });
 
-// Right-click: inspector
+// Right-click: inspector (ถ้าไม่ได้ pan)
 canvas.addEventListener('contextmenu',e=>{
+  if(isPanning||_wasPanning){_wasPanning=false;e.preventDefault();return;}
   e.preventDefault();
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
   if(hit){
@@ -1100,6 +1126,7 @@ document.addEventListener('keydown',e=>{
   if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
   const k=e.key;
   if(k==='s'||k==='S') setTool('select');
+  if(k==='h'||k==='H') setTool('hand');
   if(k==='t'||k==='T') setTool('table');
   if(k==='e'||k==='E') setTool('stage');
   if(k==='w'||k==='W') setTool('textbox');
@@ -1573,7 +1600,7 @@ function updateStats(){
 // ══════════════════════════════════════════════════════════════════
 //  TOOL / ZOOM
 // ══════════════════════════════════════════════════════════════════
-const TOOL_NAMES={select:'เลือก',table:'วางโต๊ะ',stage:'วางเวที',textbox:'กล่องข้อความ',rect:'สี่เหลี่ยม',ellipse:'วงรี',arrow:'ลูกศร',line:'เส้น',erase:'ลบ'};
+const TOOL_NAMES={select:'เลือก',table:'วางโต๊ะ',stage:'วางเวที',textbox:'กล่องข้อความ',rect:'สี่เหลี่ยม',ellipse:'วงรี',arrow:'ลูกศร',line:'เส้น',erase:'ลบ',hand:'เลื่อนผัง'};
 function setTool(t){
   tool=t;
   document.querySelectorAll('[id^="tool-"]').forEach(b=>b.classList.remove('active'));
