@@ -118,8 +118,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
 .pool-chip.armed{border-color:var(--gold);background:var(--gold-lt);box-shadow:0 0 0 2px var(--gold-glow);animation:armpulse 1s ease infinite}
 @keyframes armpulse{0%,100%{box-shadow:0 0 0 2px var(--gold-glow)}50%{box-shadow:0 0 0 4px var(--gold-glow)}}
 .pc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.pc-name{font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pc-dept{font-size:10px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-dept{font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pc-seat-btn{flex-shrink:0;width:34px;height:34px;border-radius:var(--r-sm);border:1.5px solid var(--border2);
   background:var(--surface);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all .15s}
@@ -160,6 +160,26 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
   font-size:11px;font-weight:700;background:var(--primary-lt);color:var(--primary);
   border:1.5px solid var(--primary-glow);white-space:nowrap}
 .mode-dot{width:7px;height:7px;border-radius:50%;background:var(--primary)}
+
+/* ── VIEW-ONLY (PRESENTATION) MODE ──
+   Shows just the seat map — hides every editing surface (sidebar,
+   toolbar, format bar, inspector, GAS status bar). Toggled by the
+   "🖥️ โหมดแสดงผัง" button, or opened directly via ?view=1 in the URL
+   so it can be bookmarked/shared as a separate "display-only" link. */
+body.view-only .sidebar,body.view-only .toolbar,body.view-only .format-bar,
+body.view-only .gas-bar,body.view-only .insp{display:none!important}
+body.view-only .wrap{grid-template-columns:1fr!important}
+body.view-only .top-acts .btn-t{display:none}
+body.view-only .top-acts .btn-t.vo-visible{display:flex}
+.vo-bar{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:250;
+  background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:99px;
+  box-shadow:var(--sh-lg);padding:6px;gap:2px;align-items:center}
+body.view-only .vo-bar{display:flex}
+.vo-btn{padding:7px 14px;border:none;background:none;border-radius:99px;font-family:var(--sans);
+  font-size:12.5px;font-weight:700;color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.vo-btn:hover{background:var(--bg2)}
+.vo-btn.active{background:var(--primary);color:#fff}
+.vo-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
 
 /* ── FORMAT BAR (context sensitive) ── */
 .format-bar{display:none;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);
@@ -312,19 +332,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
         <div class="api-dot loading" id="api-dot"></div>
         <span id="api-txt">กำลังเชื่อมต่อ...</span>
       </div>
-      <button class="btn-t" onclick="loadFromGAS()">🔄 รีโหลด</button>
+      <button class="btn-t vo-visible" onclick="loadFromGAS()">🔄 รีโหลด</button>
       <button class="btn-t" onclick="openAddPerson()">👤 เพิ่มรายชื่อ</button>
-      <button class="btn-t" onclick="autoAssign()">⚡ จัดอัตโนมัติ</button>
+      <button class="btn-t" onclick="autoAssign()" title="เติมที่นั่งว่างตามลำดับ ไม่สนใจกลุ่มงาน">⚡ จัดอัตโนมัติ</button>
+      <button class="btn-t gold" onclick="autoAssignByDept()" title="จัดคนแต่ละกลุ่มงานไปนั่งโต๊ะเดียวกัน สร้างโต๊ะใหม่อัตโนมัติถ้าที่ไม่พอ">🏷️ จัดตามกลุ่มงาน</button>
       <button class="btn-t gold" onclick="saveToGAS()">☁️ บันทึก GAS</button>
       <button class="btn-t gold" onclick="saveLocal()">💾 Local</button>
       <button class="btn-t" onclick="exportJSON()">📤 Export</button>
-      <button class="btn-t green" onclick="window.print()">🖨️ พิมพ์</button>
+      <button class="btn-t green vo-visible" onclick="window.print()">🖨️ พิมพ์</button>
+      <button class="btn-t vo-visible" id="btn-viewonly" onclick="toggleViewOnly()" title="แสดงผังที่นั่งอย่างเดียว เหมาะสำหรับฉายจอโปรเจคเตอร์ หรือแชร์ลิงก์ให้ผู้อื่นดู (แยกจากหน้าปรับปรุงที่นั่ง)">🖥️ โหมดแสดงผัง</button>
     </div>
   </div>
 </header>
 
 <div class="gas-bar" id="gas-bar">
   <span id="gas-bar-txt">⏳ กำลังโหลดข้อมูลจาก Google Sheets...</span>
+</div>
+
+<!-- Floating controls shown only in view-only (presentation) mode -->
+<div class="vo-bar" id="vo-bar">
+  <button class="vo-btn" id="vo-map" onclick="setView('map')">🗺️ ผังที่นั่ง</button>
+  <button class="vo-btn" id="vo-list" onclick="setView('list')">📋 รายชื่อ</button>
+  <span class="vo-sep"></span>
+  <button class="vo-btn" onclick="toggleViewOnly()">✏️ กลับไปแก้ไข</button>
 </div>
 
 <div class="wrap">
@@ -666,6 +696,7 @@ let people  = [];
 let nextTId=1,nextSId=1,nextTBId=1,nextShId=1,nextPId=1;
 
 let tool='select', view='map', sel=null;
+let viewOnly=false; // presentation / display-only mode — see toggleViewOnly()
 let dragSrc=null, confirmCb=null;
 let assignArm=null; // person id "armed" for tap-to-place seating (iPad-friendly alt to drag&drop)
 let histStack=[], MAX_HIST=50;
@@ -795,10 +826,11 @@ function drawTable(t){
   ctx.fillStyle=deptColor(t.dept); roundRectTop(sr.x,sr.y,sr.w,HEADER*zoom,12*zoom); ctx.fill();
   ctx.fillStyle='#fff'; ctx.textBaseline='middle';
   const headerLabel=t.dept?`${t.name} · ${deptShortLabel(t.dept)}`:t.name;
-  ctx.font=`700 ${Math.max(11,12*zoom)}px "Noto Sans Thai",Tahoma,sans-serif`;
-  ctx.fillText(clipText(ctx,headerLabel,sr.w-60*zoom),sr.x+8*zoom,sr.y+HEADER*zoom/2);
+  const headerFz=fitFontSize(headerLabel,sr.w-58*zoom,'700',Math.max(14,17*zoom),11);
+  ctx.font=`700 ${headerFz}px "Noto Sans Thai",Tahoma,sans-serif`;
+  ctx.fillText(clipText(ctx,headerLabel,sr.w-58*zoom),sr.x+8*zoom,sr.y+HEADER*zoom/2);
   const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
-  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(9,10*zoom)}px "IBM Plex Mono",monospace`;
+  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(10,11*zoom)}px "IBM Plex Mono",monospace`;
   ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-8*zoom,sr.y+HEADER*zoom/2);
   const cols=Math.ceil(Math.sqrt(t.cap));
   for(let si=0;si<t.cap;si++){
@@ -811,7 +843,7 @@ function drawTable(t){
     if(p){
       ctx.fillStyle=isCI?'#1a7a5e':'#c9882a';
       const lbl=seatLabel(p),maxW=sc.w-4*zoom;
-      const fz=fitFontSize(lbl,maxW,'700',Math.max(9,12*zoom),6);
+      const fz=fitFontSize(lbl,maxW,'700',Math.max(11,15*zoom),8);
       ctx.font=`700 ${fz}px "Noto Sans Thai",Tahoma,sans-serif`;
       let shown=lbl,lw=ctx.measureText(shown).width;
       if(lw>maxW){ shown=clipText(ctx,lbl,maxW); lw=ctx.measureText(shown).width; }
@@ -834,7 +866,7 @@ function drawStage(s){
   ctx.shadowColor='transparent'; ctx.shadowBlur=0;
   ctx.strokeStyle=isSel?'#c9882a':'#475569'; ctx.lineWidth=isSel?2.5*zoom:1.5*zoom;
   roundRect(sr.x,sr.y,sr.w,sr.h,8*zoom); ctx.stroke();
-  ctx.fillStyle='#94a3b8'; ctx.font=`700 ${Math.max(9,13*zoom)}px "Noto Sans Thai",Tahoma,sans-serif`;
+  ctx.fillStyle='#94a3b8'; ctx.font=`700 ${Math.max(12,15*zoom)}px "Noto Sans Thai",Tahoma,sans-serif`;
   ctx.textBaseline='middle'; ctx.textAlign='center';
   ctx.fillText(s.label||'STAGE',sr.x+sr.w/2,sr.y+sr.h/2); ctx.textAlign='left';
   if(isSel) drawHandles(sr);
@@ -1192,6 +1224,7 @@ function clearPreview(){svgOvr.innerHTML='';}
 //  DOUBLE-CLICK — rename / edit text
 // ══════════════════════════════════════════════════════════════════
 canvas.addEventListener('dblclick',e=>{
+  if(viewOnly) return;
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
   if(!hit) return;
   if(hit.type==='table'){const t=getEl('table',hit.id);const name=prompt('ชื่อโต๊ะ:',t.name);if(name!==null&&name.trim()){saveHist();t.name=name.trim();drawAll();}}
@@ -1207,8 +1240,9 @@ canvas.addEventListener('dblclick',e=>{
 
 // Right-click: inspector (ถ้าไม่ได้ pan)
 canvas.addEventListener('contextmenu',e=>{
-  if(isPanning||_wasPanning){_wasPanning=false;e.preventDefault();return;}
   e.preventDefault();
+  if(viewOnly) return;
+  if(isPanning||_wasPanning){_wasPanning=false;return;}
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
   if(hit){
     selectEl(hit.type,hit.id);
@@ -1242,6 +1276,7 @@ canvas.addEventListener('touchmove',e=>{
 // Keyboard shortcuts
 document.addEventListener('keydown',e=>{
   if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if(viewOnly) return; // no shortcuts (tool switch, delete, undo, etc.) in view-only mode
   const k=e.key;
   if(k==='s'||k==='S') setTool('select');
   if(k==='h'||k==='H') setTool('hand');
@@ -1460,6 +1495,7 @@ function openInspTable(tid){
       <input class="insp-inp" type="number" id="ii-x" value="${Math.round(t.x)}" style="width:60px">
       <input class="insp-inp" type="number" id="ii-y" value="${Math.round(t.y)}" style="width:60px">
     </div>
+    <button class="insp-btn p" style="width:100%;margin-bottom:8px;background:var(--gold)" onclick="fillTableFromDept(${tid})" title="เติมที่นั่งว่างด้วยคนที่อยู่กลุ่มงานเดียวกับโต๊ะนี้ (บันทึกกลุ่มงานก่อนถ้าเพิ่งพิมพ์)">🏷️ เติมคนกลุ่มงานนี้</button>
     <div class="insp-btns">
       <button class="insp-btn d" onclick="confirmDeleteTable(${tid})">🗑️ ลบ</button>
       <button class="insp-btn p" onclick="applyInspTable(${tid})">✔ ใช้</button>
@@ -1702,7 +1738,7 @@ function placeArmedAtSeat(tid,si){
 canvas.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
 canvas.addEventListener('drop',e=>{
   e.preventDefault();
-  if(!dragSrc||dragSrc.type!=='pool') return;
+  if(viewOnly||!dragSrc||dragSrc.type!=='pool') return;
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
   if(!hit||hit.type!=='table'){dragSrc=null;return;}
   const t=getEl('table',hit.id);
@@ -1729,6 +1765,73 @@ function deletePerson(){const editId=document.getElementById('mp-edit-id').value
 // ══════════════════════════════════════════════════════════════════
 function autoAssign(){const seated=seatedSet(),unassigned=people.filter(p=>!seated.has(String(p.id)));if(!unassigned.length){toast('✅ ทุกคนมีที่นั่งแล้ว','ok');return;}saveHist();let n=0;for(const p of unassigned){for(const t of tables){const i=t.seats.indexOf(null);if(i!==-1){t.seats[i]=p.id;n++;break;}}}drawAll();renderPool();toast(`⚡ จัดที่นั่งอัตโนมัติ ${n} คน`,'ok');if(n<unassigned.length) toast(`⚠️ ที่นั่งไม่พอ เหลือ ${unassigned.length-n} คน`,'warn');}
 
+// ── จัดที่นั่งแยกตามกลุ่มงาน ──────────────────────────────────────
+// Groups every unassigned person by their กลุ่มงาน (dept), fills any
+// existing table already tagged with that dept first, then — if there
+// still isn't enough room — creates new tables (auto-named & colored
+// for that dept) and lays them out on the canvas below the current
+// content, so every table ends up holding people from one department.
+function autoAssignByDept(){
+  const seated=seatedSet(),unassigned=people.filter(p=>!seated.has(String(p.id)));
+  if(!unassigned.length){toast('✅ ทุกคนมีที่นั่งแล้ว','ok');return;}
+  saveHist();
+  const NO_DEPT='ไม่ระบุกลุ่มงาน';
+  const groups={};
+  unassigned.forEach(p=>{const key=p.dept||NO_DEPT;(groups[key]=groups[key]||[]).push(p);});
+  let placed=0,newTables=0;
+  let maxBottom=[...tables,...stages].reduce((m,el)=>Math.max(m,(el.y||0)+(el.h||0)),40);
+  let curX=40,curY=maxBottom+40,rowH=0;
+  const ROW_W=1500;
+  Object.keys(groups).sort((a,b)=>a.localeCompare(b,'th')).forEach(dept=>{
+    let list=groups[dept];
+    // 1) fill empty seats on tables already assigned to this dept
+    tables.filter(t=>(t.dept||NO_DEPT)===dept).forEach(t=>{
+      while(list.length){
+        const i=t.seats.indexOf(null);
+        if(i===-1) break;
+        t.seats[i]=list.shift().id;placed++;
+      }
+    });
+    // 2) create new table(s) for whoever is left in this dept
+    while(list.length){
+      const cap=Math.min(10,Math.max(4,list.length));
+      const chunk=list.splice(0,cap);
+      const cols=Math.ceil(Math.sqrt(cap));
+      const tw=cols*CELL+(cols-1)*2+PAD*2,th=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+      if(curX+tw>ROW_W){curX=40;curY+=rowH+30;rowH=0;}
+      const nt={id:nextTId++,name:dept===NO_DEPT?'โต๊ะ '+(tables.length+1):dept,x:snap(curX),y:snap(curY),
+        w:tw,h:th,cap,dept:dept===NO_DEPT?null:dept,seats:Array(cap).fill(null)};
+      chunk.forEach(p=>{const i=nt.seats.indexOf(null);nt.seats[i]=p.id;placed++;});
+      tables.push(nt);newTables++;
+      curX+=tw+24;rowH=Math.max(rowH,th);
+    }
+  });
+  drawAll();renderPool();
+  toast(`🏷️ จัดตามกลุ่มงานแล้ว ${placed} คน${newTables?` (สร้างโต๊ะใหม่ ${newTables} โต๊ะ)`:''}`,'ok');
+}
+
+// Fills a table's remaining empty seats with unassigned people who share
+// that table's กลุ่มงาน — used from the table inspector's "เติมคนกลุ่มงานนี้" button.
+function fillTableFromDept(tid){
+  const t=getEl('table',tid);if(!t) return;
+  const typedDept=document.getElementById('ii-dept')?.value.trim();
+  if(typedDept) t.dept=typedDept; // pick up dept just typed in the inspector, even if not saved yet
+  if(!t.dept){toast('⚠️ กรุณาระบุกลุ่มงานของโต๊ะนี้ก่อน','warn');return;}
+  const seated=seatedSet();
+  const candidates=people.filter(p=>!seated.has(String(p.id))&&p.dept===t.dept);
+  if(!candidates.length){toast(`ไม่มีคนกลุ่มงาน "${t.dept}" ที่ยังไม่มีที่นั่ง`,'info');return;}
+  saveHist();
+  let n=0;
+  for(const p of candidates){
+    const i=t.seats.indexOf(null);
+    if(i===-1) break;
+    t.seats[i]=p.id;n++;
+  }
+  drawAll();renderPool();
+  if(n) toast(`🏷️ เติม "${t.name}" ด้วยคนกลุ่มงาน "${t.dept}" แล้ว ${n} คน`,'ok');
+  else toast('ที่นั่งเต็มแล้ว','warn');
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  VIEWS
 // ══════════════════════════════════════════════════════════════════
@@ -1738,7 +1841,30 @@ function setView(v){
   document.getElementById('list-outer').style.display=v==='list'?'block':'none';
   document.getElementById('btn-vmap').classList.toggle('active',v==='map');
   document.getElementById('btn-vlist').classList.toggle('active',v==='list');
+  document.getElementById('vo-map')?.classList.toggle('active',v==='map');
+  document.getElementById('vo-list')?.classList.toggle('active',v==='list');
   drawAll();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  VIEW-ONLY / PRESENTATION MODE
+//  A separate, read-only way to show the seat map — no toolbar,
+//  sidebar, or editing — for projecting on a screen or sharing a link
+//  (add ?view=1 to the URL to open straight into this mode).
+// ══════════════════════════════════════════════════════════════════
+function toggleViewOnly(force){
+  viewOnly=(force!==undefined)?force:!viewOnly;
+  document.body.classList.toggle('view-only',viewOnly);
+  const b=document.getElementById('btn-viewonly');
+  if(b) b.innerHTML=viewOnly?'✏️ กลับไปแก้ไข':'🖥️ โหมดแสดงผัง';
+  if(viewOnly){
+    sel=null;closeInsp();hideFormatBar();assignArm=null;
+    setTool('hand'); // panning/zooming only — blocks placement & drag-editing
+  } else {
+    setTool('select');
+  }
+  drawAll();renderPool();
+  toast(viewOnly?'🖥️ โหมดแสดงผังอย่างเดียว — เหมาะสำหรับฉายจอ/แชร์ลิงก์':'✏️ กลับสู่โหมดแก้ไขที่นั่งแล้ว','ok');
 }
 
 function renderList(){
@@ -1911,6 +2037,9 @@ window.addEventListener('load',()=>{
   const hadLocal=loadLocal();
   if(!hadLocal) initDefaultLayout();
   setView('map');setTool('select');drawAll();renderPool();updateStats();
+  // ?view=1 in the URL opens straight into presentation/view-only mode —
+  // handy as a separate link for a projector screen or for sharing.
+  if(new URLSearchParams(location.search).get('view')==='1') toggleViewOnly(true);
   if(GAS_URL&&!GAS_URL.includes('YOUR_GAS')){setTimeout(()=>loadFromGAS(),600);}
   else{document.getElementById('load-overlay').classList.add('hidden');setApiStatus('err','ยังไม่ได้ตั้งค่า GAS URL');setGasBar('err','❌ กรุณาตั้งค่า GAS_URL ในบรรทัดแรกของ JavaScript');}
   setInterval(async()=>{
