@@ -163,14 +163,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
 
 /* ── VIEW-ONLY (PRESENTATION) MODE ──
    Shows just the seat map — hides every editing surface (sidebar,
-   toolbar, format bar, inspector, GAS status bar). Toggled by the
-   "🖥️ โหมดแสดงผัง" button, or opened directly via ?view=1 in the URL
-   so it can be bookmarked/shared as a separate "display-only" link. */
+   toolbar, format bar, inspector, GAS status bar). Only ever entered
+   via a dedicated "?view=1" link (see toggleViewOnly()/copyViewLink()/
+   openViewOnlyTab()) — that link is fully LOCKED, for participants:
+   no button anywhere leads back to editing, so it's safe to project
+   on a screen or hand to attendees, completely cut off from the
+   editor. The "🖥️ โหมดแสดงผัง" button in the editor never edits this
+   page in place — it opens that locked link in a brand-new tab, so
+   the editor stays in edit mode on its own tab throughout. */
 body.view-only .sidebar,body.view-only .toolbar,body.view-only .format-bar,
 body.view-only .gas-bar,body.view-only .insp{display:none!important}
 body.view-only .wrap{grid-template-columns:1fr!important}
 body.view-only .top-acts .btn-t{display:none}
 body.view-only .top-acts .btn-t.vo-visible{display:flex}
+/* No path back to editing from view-only mode, ever — not just when locked. */
+body.view-only #vo-back-sep,body.view-only #vo-back-edit-btn,body.view-only #btn-viewonly{display:none!important}
 .vo-bar{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:250;
   background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:99px;
   box-shadow:var(--sh-lg);padding:6px;gap:2px;align-items:center}
@@ -357,7 +364,8 @@ body.view-only .vo-bar{display:flex}
       <button class="btn-t gold" onclick="saveLocal()">💾 Local</button>
       <button class="btn-t" onclick="exportJSON()">📤 Export</button>
       <button class="btn-t green vo-visible" onclick="window.print()">🖨️ พิมพ์</button>
-      <button class="btn-t vo-visible" id="btn-viewonly" onclick="toggleViewOnly()" title="แสดงผังที่นั่งอย่างเดียว เหมาะสำหรับฉายจอโปรเจคเตอร์ หรือแชร์ลิงก์ให้ผู้อื่นดู (แยกจากหน้าปรับปรุงที่นั่ง)">🖥️ โหมดแสดงผัง</button>
+      <button class="btn-t vo-visible" id="btn-viewonly" onclick="openViewOnlyTab()" title="เปิดหน้าโหมดแสดงผังในแท็บใหม่ — สำหรับผู้เข้าร่วมงาน/ฉายจอ ดูได้อย่างเดียว ไม่มีปุ่มโหมดแก้ไขอยู่ในนั้นเลย แยกขาดจากหน้าแก้ไขนี้โดยสมบูรณ์">🖥️ โหมดแสดงผัง</button>
+      <button class="btn-t" onclick="copyViewLink()" title="คัดลอกลิงก์แสดงผังแบบแยกต่างหาก — ผู้เปิดลิงก์นี้จะเห็นแค่ผังที่นั่งอย่างเดียว ไม่มีทางกลับมาหน้าแก้ไข เหมาะสำหรับฉายจอ/ส่งให้คนอื่นดู">🔗 ลิงก์แสดงผัง</button>
     </div>
   </div>
 </header>
@@ -366,12 +374,12 @@ body.view-only .vo-bar{display:flex}
   <span id="gas-bar-txt">⏳ กำลังโหลดข้อมูลจาก Google Sheets...</span>
 </div>
 
-<!-- Floating controls shown only in view-only (presentation) mode -->
+<!-- Floating controls shown only in view-only (presentation) mode.
+     No "back to edit" button here on purpose — this mode is for
+     participants only and must stay fully cut off from editing. -->
 <div class="vo-bar" id="vo-bar">
   <button class="vo-btn" id="vo-map" onclick="setView('map')">🗺️ ผังที่นั่ง</button>
   <button class="vo-btn" id="vo-list" onclick="setView('list')">📋 รายชื่อ</button>
-  <span class="vo-sep"></span>
-  <button class="vo-btn" onclick="toggleViewOnly()">✏️ กลับไปแก้ไข</button>
 </div>
 
 <div class="wrap">
@@ -432,7 +440,8 @@ body.view-only .vo-bar{display:flex}
           <b>Del/Backspace</b> — ลบที่เลือก<br>
           <b>Ctrl+S</b> — บันทึก Local<br>
           <b>Ctrl+Shift+S</b> — บันทึก GAS<br>
-          <b>Ctrl+D</b> — ทำซ้ำ (Duplicate)<br>
+          <b>Ctrl+D</b> — ทำซ้ำวางถัดจากเดิม (Duplicate)<br>
+          <b>Ctrl+C / Ctrl+V</b> — คัดลอก/วาง (วางซ้ำได้หลายครั้งที่ตำแหน่งเคอร์เซอร์)<br>
           <b>[/]</b> — ขนาดตัวอักษร ±2<br><br>
           <b>ลากรายชื่อ</b> จากแถบ "รายชื่อ" มาวาง<br>
           <b>ดับเบิลคลิกโต๊ะ</b> — ดูรายชื่อในโต๊ะ<br>
@@ -488,6 +497,8 @@ body.view-only .vo-bar{display:flex}
       <div class="tb-sep"></div>
       <button class="btn-sm" onclick="undoAction()" title="Ctrl+Z">↩ เลิกทำ</button>
       <button class="btn-sm" onclick="duplicateSelected()" title="Ctrl+D">⎘ ทำซ้ำ</button>
+      <button class="btn-sm" id="btn-copy-sel" onclick="copySelected()" title="Ctrl+C — คัดลอกไว้วางซ้ำได้หลายครั้ง" disabled>📋 คัดลอก</button>
+      <button class="btn-sm" id="btn-paste-sel" onclick="pasteClipboard()" title="Ctrl+V — วางที่ตำแหน่งเคอร์เซอร์" disabled>📥 วาง</button>
       <button class="btn-sm" id="btn-edit-sel" onclick="editSelected()" title="แก้ไของค์ประกอบที่เลือก" disabled>✏️ แก้ไข</button>
       <button class="btn-sm" id="btn-del-sel" style="color:var(--red)" onclick="deleteSelectedUI()" title="ลบ (Delete)" disabled>🗑️ ลบ</button>
       <div class="tb-sep"></div>
@@ -682,6 +693,21 @@ function allDeptNames(){
   const fromTables=(typeof tables!=='undefined'?tables:[]).map(t=>t.dept).filter(Boolean);
   return Array.from(new Set([...DEPT_LIST_BASE,...fromPeople,...fromTables])).sort((a,b)=>a.localeCompare(b,'th'));
 }
+// Departments that actually exist in the imported roster right now (i.e.
+// the "ฝ่าย / กลุ่มงาน" column from the Google Sheet form-response data) —
+// trimmed + deduped. Used for the two filter dropdowns (sidebar pool list
+// and the seat-assign modal) so their options only ever show real groups
+// with real people, never the large static reference list (allDeptNames,
+// still used for the dept-name autocomplete when manually editing a
+// person/table so you can type a not-yet-used group name).
+function sheetDeptNames(){
+  const set=new Set();
+  (typeof people!=='undefined'?people:[]).forEach(p=>{
+    const d=(p.dept||'').trim();
+    if(d) set.add(d);
+  });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b,'th'));
+}
 // Deterministic color per department name (same name → always same color),
 // so no manual color-picking is needed no matter how many depts exist.
 function _hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return Math.abs(h);}
@@ -743,10 +769,15 @@ let nextTId=1,nextSId=1,nextTBId=1,nextShId=1,nextPId=1;
 
 let tool='select', view='map', sel=null;
 let viewOnly=false; // presentation / display-only mode — see toggleViewOnly()
+let lockedView=false; // true only when this page was opened via a dedicated
+  // share-only "?view=1" link — see toggleViewOnly()/copyViewLink(). A
+  // locked view has no path back to editing, so it's safe to hand out as
+  // a separate projector/share link without risking the live layout.
 let dragSrc=null, confirmCb=null;
 let assignArm=null; // person id "armed" for tap-to-place seating (iPad-friendly alt to drag&drop)
 let histStack=[], MAX_HIST=50;
 let panX=60,panY=40,zoom=1;
+const MIN_ZOOM=0.05,MAX_ZOOM=10; // widened so large/small layouts aren't clipped by the old 0.1–5 limit
 let isPanning=false,panStart={x:0,y:0},_wasPanning=false;
 let spaceDown=false;
 
@@ -759,6 +790,12 @@ let longPressTimer=null,longPressStart={x:0,y:0},longPressFired=false;
 let multiSel=[];              // [{type,id}, ...] extra items selected alongside `sel`
 let isMarquee=false,marqueeStart={x:0,y:0},marqueeCurrent={x:0,y:0};
 let groupDragOrigin=null;     // snapshot of {type,id,x,y} for every selected item while group-dragging
+
+// Copy / paste clipboard — holds a deep-cloned snapshot of the selected
+// element(s) so they can be pasted repeatedly at different spots without
+// re-selecting or re-building them each time. See copySelected()/pasteClipboard().
+let clipboardEl=null;         // [{type,data}, ...] or null
+let lastMouseWorld={x:400,y:300}; // last known pointer position in world coords, kept up to date in onMove()
 
 // Resize: 8 handles
 let elResize=false,elResHandle=null; // handle: 'nw','n','ne','e','se','s','sw','w'
@@ -915,23 +952,23 @@ function drawTable(t){
   const tFont=t.font||'Noto Sans Thai', tWeight=t.bold===false?'400':'700', tItalic=t.italic?'italic ':'';
   const headerPadL=12*zoom, headerReserveR=72*zoom; // left padding + room for the seat-count badge
   const headerMaxW=Math.max(20*zoom,sr.w-headerPadL-headerReserveR);
-  const headerFz=fitFontSize(headerLabel,headerMaxW,tWeight,Math.max(17,(t.fontSize||22)*zoom),13,tFont);
+  const headerFz=fitFontSize(headerLabel,headerMaxW,tWeight,Math.max(19,(t.fontSize||25)*zoom),14,tFont);
   ctx.font=`${tItalic}${tWeight} ${headerFz}px "${tFont}",Tahoma,sans-serif`;
   ctx.fillText(clipText(ctx,headerLabel,headerMaxW),sr.x+headerPadL,sr.y+HEADER*zoom/2);
   const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
-  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(11,12*zoom)}px "IBM Plex Mono",monospace`;
+  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(12,14*zoom)}px "IBM Plex Mono",monospace`;
   ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-10*zoom,sr.y+HEADER*zoom/2);
   for(let si=0;si<t.cap;si++){
     const sc=seatScreenRect(t,si),pid=t.seats[si],p=pid?getPerson(pid):null,isCI=p&&p.status==='checkin';
     ctx.fillStyle=pid?(isCI?'#e6f4f0':'#fdf3e3'):'#e8f4f8';
     ctx.strokeStyle=pid?(isCI?'#1a7a5e':'#c9882a'):'#1a5f7a'; ctx.lineWidth=1.5*zoom;
     roundRect(sc.x,sc.y,sc.w,sc.h,6*zoom); ctx.fill(); ctx.stroke();
-    if(zoom>0.55){ctx.fillStyle='rgba(100,90,80,.4)';ctx.font=`400 ${Math.max(7,8*zoom)}px "IBM Plex Mono",monospace`;ctx.textBaseline='top';ctx.fillText(si+1,sc.x+sc.w-11*zoom,sc.y+2*zoom);}
+    if(zoom>0.55){ctx.fillStyle='rgba(100,90,80,.4)';ctx.font=`400 ${Math.max(8,9*zoom)}px "IBM Plex Mono",monospace`;ctx.textBaseline='top';ctx.fillText(si+1,sc.x+sc.w-11*zoom,sc.y+2*zoom);}
     ctx.textBaseline='middle';
     if(p){
       ctx.fillStyle=isCI?'#1a7a5e':'#c9882a';
       const lbl=seatLabel(p),maxW=sc.w-4*zoom;
-      const fz=fitFontSize(lbl,maxW,'700',Math.max(11,15*zoom),8);
+      const fz=fitFontSize(lbl,maxW,'700',Math.max(13,18*zoom),10);
       ctx.font=`700 ${fz}px "Noto Sans Thai",Tahoma,sans-serif`;
       let shown=lbl,lw=ctx.measureText(shown).width;
       if(lw>maxW){ shown=clipText(ctx,lbl,maxW); lw=ctx.measureText(shown).width; }
@@ -960,13 +997,13 @@ function drawTableViewOnly(t,sr,isSel){
   const tFont=t.font||'Noto Sans Thai', tWeight=t.bold===false?'400':'700', tItalic=t.italic?'italic ':'';
   const pad=Math.max(8,10*zoom);
   const deptLabel=t.dept?deptShortLabel(t.dept):'';
-  const deptFz=Math.max(9,Math.min(13*zoom,sr.h*0.14));
-  const deptBlockH=deptLabel?deptFz+6*zoom:0;
+  const deptFz=Math.max(11,Math.min(17*zoom,sr.h*0.18));
+  const deptBlockH=deptLabel?deptFz+8*zoom:0;
 
   // seat-count badge, small, top-right — kept out of the main layout flow
   const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
   ctx.fillStyle='rgba(255,255,255,.8)';
-  ctx.font=`700 ${Math.max(9,11*zoom)}px "IBM Plex Mono",monospace`;
+  ctx.font=`700 ${Math.max(11,14*zoom)}px "IBM Plex Mono",monospace`;
   ctx.textBaseline='top';
   ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-pad,sr.y+pad*0.7);
 
@@ -983,7 +1020,10 @@ function drawTableViewOnly(t,sr,isSel){
   if(deptLabel){
     ctx.font=`700 ${deptFz}px "${tFont}",Tahoma,sans-serif`;
     ctx.fillStyle='rgba(255,255,255,.82)';
-    ctx.fillText(deptLabel,sr.x+sr.w/2,ty-lineH/2+deptBlockH/2+2*zoom);
+    ctx.textAlign='left'; // clipText needs left-alignment to measure/trim correctly
+    const deptShown=clipText(ctx,deptLabel,nameMaxW);
+    const deptW=ctx.measureText(deptShown).width;
+    ctx.fillText(deptShown,sr.x+(sr.w-deptW)/2,ty-lineH/2+deptBlockH/2+2*zoom);
   }
   ctx.textAlign='left';
 }
@@ -1025,7 +1065,7 @@ function drawStage(s){
   ctx.shadowColor='transparent'; ctx.shadowBlur=0;
   ctx.strokeStyle=isSel?'#c9882a':'#475569'; ctx.lineWidth=isSel?2.5*zoom:1.5*zoom;
   roundRect(sr.x,sr.y,sr.w,sr.h,8*zoom); ctx.stroke();
-  ctx.fillStyle='#94a3b8'; ctx.font=`700 ${Math.max(12,15*zoom)}px "Noto Sans Thai",Tahoma,sans-serif`;
+  ctx.fillStyle='#94a3b8'; ctx.font=`700 ${Math.max(14,18*zoom)}px "Noto Sans Thai",Tahoma,sans-serif`;
   ctx.textBaseline='middle'; ctx.textAlign='center';
   ctx.fillText(s.label||'STAGE',sr.x+sr.w/2,sr.y+sr.h/2); ctx.textAlign='left';
   if(isPrimary) drawHandles(sr);
@@ -1311,6 +1351,7 @@ function onMove(e){
   // ถ้าสองนิ้ว = pinch zoom ไม่ต้อง pan
   if(e.touches&&e.touches.length===2) return;
   const sp=getCP(e),wp=s2w(sp.x,sp.y);
+  lastMouseWorld=wp; // tracked so pasteClipboard() can drop items at the cursor
   if(isPanning){panX=sp.x-panStart.x;panY=sp.y-panStart.y;drawAll();return;}
   // Moving the finger means it's a drag, not a long-press → cancel the timer
   if(longPressTimer&&(Math.abs(sp.x-longPressStart.x)>8||Math.abs(sp.y-longPressStart.y)>8)){
@@ -1514,7 +1555,7 @@ canvas.addEventListener('contextmenu',e=>{
 canvas.addEventListener('wheel',e=>{
   e.preventDefault();
   const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-  const factor=e.deltaY<0?1.1:0.91,nz=Math.min(5,Math.max(0.1,zoom*factor));
+  const factor=e.deltaY<0?1.1:0.91,nz=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom*factor));
   panX=mx-(mx-panX)*(nz/zoom);panY=my-(my-panY)*(nz/zoom);zoom=nz;
   document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();
 },{passive:false});
@@ -1525,7 +1566,7 @@ canvas.addEventListener('touchstart',e=>{if(e.touches.length===2) lastPinchDist=
 canvas.addEventListener('touchmove',e=>{
   if(e.touches.length!==2) return; e.preventDefault();
   const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-  zoom=Math.min(5,Math.max(0.1,zoom*(d/lastPinchDist)));lastPinchDist=d;
+  zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom*(d/lastPinchDist)));lastPinchDist=d;
   document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();
 },{passive:false});
 
@@ -1549,6 +1590,8 @@ document.addEventListener('keydown',e=>{
   else if((e.ctrlKey||e.metaKey)&&k==='s'){e.preventDefault();saveLocal();}
   if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();undoAction();}
   if((e.ctrlKey||e.metaKey)&&k==='d'){e.preventDefault();duplicateSelected();}
+  if((e.ctrlKey||e.metaKey)&&k==='c'){e.preventDefault();copySelected();}
+  if((e.ctrlKey||e.metaKey)&&k==='v'){e.preventDefault();pasteClipboard();}
   if((k==='Delete'||k==='Backspace')&&(sel||multiSel.length)){e.preventDefault();deleteSelectedUI();}
   if(k==='Escape'){clearAllSelection();closeInsp();hideFormatBar();drawAll();document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}
   // Font size shortcuts
@@ -1622,8 +1665,11 @@ function updateSelToolbarBtns(){
   const has=!!sel||multiSel.length>0;
   const isGroup=multiSel.length>0;
   const eb=document.getElementById('btn-edit-sel'),db=document.getElementById('btn-del-sel');
+  const cb=document.getElementById('btn-copy-sel'),pb=document.getElementById('btn-paste-sel');
   if(eb) eb.disabled=!has||isGroup; // settings panel only makes sense for one item at a time
   if(db) db.disabled=!has;
+  if(cb) cb.disabled=!has;
+  if(pb) pb.disabled=!clipboardEl||!clipboardEl.length;
 }
 function editSelected(){
   if(!sel||multiSel.length>0) return;
@@ -1659,6 +1705,50 @@ function duplicateSelected(){
   if(!newSel.length) return;
   sel=newSel[0];multiSel=newSel.slice(1);
   drawAll();toast(newSel.length>1?`⎘ ทำซ้ำแล้ว ${newSel.length} รายการ`:'⎘ ทำซ้ำแล้ว','ok');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  COPY / PASTE
+//  Unlike duplicateSelected() (Ctrl+D, which drops a copy right next to
+//  the original), copy holds the selection in a clipboard so it can be
+//  pasted repeatedly at wherever the cursor/finger is — handy for
+//  building several identical tables (e.g. same capacity/name pattern)
+//  without redoing the setup each time.
+// ══════════════════════════════════════════════════════════════════
+function copySelected(){
+  const items=allSelected();
+  if(!items.length){toast('ยังไม่ได้เลือกโต๊ะหรือองค์ประกอบที่จะคัดลอก','err');return;}
+  clipboardEl=items.map(it=>{
+    const el=getEl(it.type,it.id);
+    return el?{type:it.type,data:JSON.parse(JSON.stringify(el))}:null;
+  }).filter(Boolean);
+  updateSelToolbarBtns();
+  toast(clipboardEl.length>1?`📋 คัดลอกแล้ว ${clipboardEl.length} รายการ — วางได้ที่ตำแหน่งใดก็ได้`:'📋 คัดลอกโต๊ะแล้ว — วางได้ที่ตำแหน่งใดก็ได้','ok');
+}
+
+function pasteClipboard(){
+  if(!clipboardEl||!clipboardEl.length){toast('ยังไม่ได้คัดลอกอะไรไว้ (📋 คัดลอก ก่อน)','err');return;}
+  saveHist();
+  // Paste relative to the pointer's current world position, keeping the
+  // copied items' shape/offsets relative to each other intact.
+  const minX=Math.min(...clipboardEl.map(c=>c.data.x));
+  const minY=Math.min(...clipboardEl.map(c=>c.data.y));
+  const target=lastMouseWorld||{x:minX+GRID*2,y:minY+GRID*2};
+  const newSel=[];
+  clipboardEl.forEach(c=>{
+    const copy=JSON.parse(JSON.stringify(c.data));
+    copy.x=snap(target.x+(copy.x-minX));
+    copy.y=snap(target.y+(copy.y-minY));
+    if(c.type==='table'){copy.id=nextTId++;copy.seats=copy.seats.map(()=>null);tables.push(copy);}
+    else if(c.type==='stage'){copy.id=nextSId++;stages.push(copy);}
+    else if(c.type==='textbox'){copy.id=nextTBId++;textboxes.push(copy);}
+    else if(c.type==='shape'){copy.id=nextShId++;shapes.push(copy);}
+    newSel.push({type:c.type,id:copy.id});
+  });
+  if(!newSel.length) return;
+  sel=newSel[0];multiSel=newSel.slice(1);
+  drawAll();renderPool();updateSelToolbarBtns();
+  toast(newSel.length>1?`📥 วางแล้ว ${newSel.length} รายการ — วางซ้ำได้อีกเรื่อยๆ`:'📥 วางโต๊ะแล้ว — วางซ้ำได้อีกเรื่อยๆ','ok');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1790,6 +1880,7 @@ function openInspTable(tid){
       <input class="insp-inp" type="number" id="ii-y" value="${Math.round(t.y)}" style="width:60px">
     </div>
     <button class="insp-btn p" style="width:100%;margin-bottom:8px;background:var(--gold)" onclick="fillTableFromDept(${tid})" title="เติมที่นั่งว่างด้วยคนที่อยู่กลุ่มงานเดียวกับโต๊ะนี้ (บันทึกกลุ่มงานก่อนถ้าเพิ่งพิมพ์)">🏷️ เติมคนกลุ่มงานนี้</button>
+    <button class="insp-btn" style="width:100%;margin-bottom:8px" onclick="selectEl('table',${tid});duplicateSelected();closeInsp();" title="สร้างโต๊ะแบบเดียวกัน (ชื่อ/จำนวนเก้าอี้/สี) วางถัดจากโต๊ะนี้ ไม่ต้องตั้งค่าใหม่ทั้งหมด">⎘ ทำซ้ำโต๊ะนี้</button>
     <div class="insp-btns">
       <button class="insp-btn d" onclick="confirmDeleteTable(${tid})">🗑️ ลบ</button>
       <button class="insp-btn p" onclick="applyInspTable(${tid})">✔ ใช้</button>
@@ -1970,13 +2061,13 @@ function openSeatModal(tid,si){
   renderSeatList();openModal('modal-seat');
 }
 
-// Keeps the seat-assign modal's dept dropdown in sync with whatever
-// departments currently exist among people/tables (same source as the
-// sidebar's pool filter — see refreshPoolDeptFilter/allDeptNames).
+// Keeps the seat-assign modal's dept dropdown in sync with the real
+// departments present in the roster (see sheetDeptNames) — same source
+// as the sidebar's pool filter (refreshPoolDeptFilter).
 function refreshSeatDeptFilter(){
   const sel=document.getElementById('seat-dept-filter');if(!sel) return;
   const cur=sel.value;
-  const depts=allDeptNames();
+  const depts=sheetDeptNames();
   sel.innerHTML='<option value="">🗂️ ทุกกลุ่มงาน</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
   if(cur&&depts.includes(cur)) sel.value=cur;
 }
@@ -1985,7 +2076,7 @@ function renderSeatList(){
   refreshSeatDeptFilter();
   const q=(document.getElementById('seat-q').value||'').toLowerCase(),seated=seatedSet(),t=getEl('table',seatModalTid);
   const deptFilter=document.getElementById('seat-dept-filter')?.value||'';
-  const list=people.filter(p=>(!deptFilter||p.dept===deptFilter)&&(!q?(!seated.has(String(p.id))||p.id===t?.seats[seatModalSi]):p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)));
+  const list=people.filter(p=>(!deptFilter||(p.dept||'').trim()===deptFilter)&&(!q?(!seated.has(String(p.id))||p.id===t?.seats[seatModalSi]):p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)));
   const el=document.getElementById('seat-list');
   if(!list.length){el.innerHTML='<div style="padding:12px;font-size:12px;color:var(--text-3);text-align:center">ไม่พบ</div>';return;}
   el.innerHTML=list.slice(0,30).map(p=>{
@@ -2072,7 +2163,7 @@ function openTableSettingsFromDetails(){
 function refreshPoolDeptFilter(){
   const sel=document.getElementById('pool-dept-filter');if(!sel) return;
   const cur=sel.value;
-  const depts=allDeptNames();
+  const depts=sheetDeptNames();
   sel.innerHTML='<option value="">🗂️ ทุกกลุ่มงาน</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
   if(cur&&depts.includes(cur)) sel.value=cur;
 }
@@ -2080,7 +2171,7 @@ function renderPool(){
   refreshPoolDeptFilter();
   const q=(document.getElementById('pool-search')?.value||'').toLowerCase(),seated=seatedSet();
   const deptFilter=document.getElementById('pool-dept-filter')?.value||'';
-  const list=people.filter(p=>!seated.has(String(p.id))&&(!deptFilter||p.dept===deptFilter)&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
+  const list=people.filter(p=>!seated.has(String(p.id))&&(!deptFilter||(p.dept||'').trim()===deptFilter)&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
   document.getElementById('pool-cnt').textContent=list.length;
   const el=document.getElementById('pool-list');
   if(!list.length){el.innerHTML=`<div class="pool-empty">${q?'🔍 ไม่พบ':'✅ ทุกคนมีที่นั่งแล้ว'}</div>`;return;}
@@ -2245,14 +2336,20 @@ function setView(v){
 // ══════════════════════════════════════════════════════════════════
 //  VIEW-ONLY / PRESENTATION MODE
 //  A separate, read-only way to show the seat map — no toolbar,
-//  sidebar, or editing — for projecting on a screen or sharing a link
-//  (add ?view=1 to the URL to open straight into this mode).
+//  sidebar, or editing — for projecting on a screen or sharing with
+//  attendees. There is exactly ONE way in: a dedicated "?view=1" link
+//  (see copyViewLink()/openViewOnlyTab()). That link is LOCKED — no
+//  button anywhere on it leads back to editing, so it's completely
+//  cut off from the editor and safe to hand to participants / a
+//  projector PC. The editor's own "🖥️ โหมดแสดงผัง" button never
+//  switches the current tab into this mode — it opens the locked link
+//  in a brand-new tab instead, so the editor itself never leaves edit
+//  mode.
 // ══════════════════════════════════════════════════════════════════
 function toggleViewOnly(force){
   viewOnly=(force!==undefined)?force:!viewOnly;
   document.body.classList.toggle('view-only',viewOnly);
-  const b=document.getElementById('btn-viewonly');
-  if(b) b.innerHTML=viewOnly?'✏️ กลับไปแก้ไข':'🖥️ โหมดแสดงผัง';
+  document.body.classList.toggle('locked-view',lockedView);
   if(viewOnly){
     sel=null;closeInsp();hideFormatBar();assignArm=null;
     setTool('hand'); // panning/zooming only — blocks placement & drag-editing
@@ -2260,7 +2357,29 @@ function toggleViewOnly(force){
     setTool('select');
   }
   drawAll();renderPool();
-  toast(viewOnly?'🖥️ โหมดแสดงผังอย่างเดียว — เหมาะสำหรับฉายจอ/แชร์ลิงก์':'✏️ กลับสู่โหมดแก้ไขที่นั่งแล้ว','ok');
+}
+
+// Builds a dedicated, locked view-only link (separate from this editor
+// page's normal URL) and copies it to the clipboard. Anyone opening that
+// link only ever sees the read-only seat map — there is no button or
+// shortcut that takes them into the editor from there.
+function copyViewLink(){
+  const url=location.origin+location.pathname+'?view=1';
+  const done=()=>toast('🔗 คัดลอกลิงก์แสดงผังแล้ว (ดูอย่างเดียว แยกจากหน้าแก้ไขนี้)','ok');
+  const fallback=()=>{ prompt('คัดลอกลิงก์นี้ไปแชร์ / เปิดฉายจอได้เลย:',url); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(fallback);
+  } else fallback();
+}
+
+// Opens the locked view-only link in a brand-new tab — this is what the
+// "🖥️ โหมดแสดงผัง" toolbar button does. The editor tab you're on stays in
+// edit mode; the new tab is participant-facing only, with no edit-mode
+// button anywhere in it.
+function openViewOnlyTab(){
+  const url=location.origin+location.pathname+'?view=1';
+  const w=window.open(url,'_blank');
+  if(!w) toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — ลองใช้ 🔗 ลิงก์แสดงผัง แทน','warn');
 }
 
 function renderList(){
@@ -2305,7 +2424,7 @@ function setTool(t){
   canvas.dataset.tool=t;
   clearPreview();
 }
-function dz(delta){zoom=Math.min(5,Math.max(0.1,zoom+delta));document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();}
+function dz(delta){zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom+delta));document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();}
 function resetView(){zoom=1;panX=60;panY=40;document.getElementById('zoom-val').textContent='100%';drawAll();}
 
 // ══════════════════════════════════════════════════════════════════
@@ -2433,9 +2552,10 @@ window.addEventListener('load',()=>{
   const hadLocal=loadLocal();
   if(!hadLocal) initDefaultLayout();
   setView('map');setTool('select');drawAll();renderPool();updateStats();
-  // ?view=1 in the URL opens straight into presentation/view-only mode —
-  // handy as a separate link for a projector screen or for sharing.
-  if(new URLSearchParams(location.search).get('view')==='1') toggleViewOnly(true);
+  // ?view=1 in the URL opens straight into a LOCKED presentation/view-only
+  // mode — a dedicated link for a projector screen or for sharing, with no
+  // path back into editing (see toggleViewOnly()/copyViewLink()).
+  if(new URLSearchParams(location.search).get('view')==='1'){ lockedView=true; toggleViewOnly(true); }
   if(GAS_URL&&!GAS_URL.includes('YOUR_GAS')){setTimeout(()=>loadFromGAS(),600);}
   else{document.getElementById('load-overlay').classList.add('hidden');setApiStatus('err','ยังไม่ได้ตั้งค่า GAS URL');setGasBar('err','❌ กรุณาตั้งค่า GAS_URL ในบรรทัดแรกของ JavaScript');}
   setInterval(async()=>{
