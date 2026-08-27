@@ -665,7 +665,7 @@ body.view-only .vo-bar{display:flex}
 // ══════════════════════════════════════════════════════════════════
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwzimtNiUsNPYelNocjhzshTdoJ8392hYSix4lWxf2cGHVWsMBybBHBUzyFkq8iq2_EeQ/exec';
 
-const GRID=20, CELL=32, HEADER=36, PAD=6, SEAT_GAP=3;
+const GRID=20, CELL=32, HEADER=44, PAD=6, SEAT_GAP=3;
 
 // ══════════════════════════════════════════════════════════════════
 //  DEPARTMENT / กลุ่มงาน — known list (from HR master data) so the
@@ -896,6 +896,12 @@ function drawTable(t){
   ctx.shadowColor='rgba(0,0,0,.12)'; ctx.shadowBlur=isSel?16:6; ctx.shadowOffsetY=isSel?4:2;
   ctx.fillStyle='#fff'; roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.fill();
   ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+
+  // ── View-only (presentation) mode: show the table as one big, fully
+  // readable name card — no header/seat-grid clutter. Seat/roster detail
+  // is still reachable via double-click (see openTableDetails).
+  if(viewOnly){ drawTableViewOnly(t,sr,isSel); if(isPrimary) drawHandles(sr); return; }
+
   ctx.strokeStyle=isSel?'#1a5f7a':((t.color||t.dept)?tableHeaderColor(t):'#d8d2c8'); ctx.lineWidth=isSel?2.5*zoom:1.5*zoom;
   roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.stroke();
   if(isSel){ctx.strokeStyle='rgba(26,95,122,.18)';ctx.lineWidth=6*zoom;roundRect(sr.x-3,sr.y-3,sr.w+6,sr.h+6,14*zoom);ctx.stroke();}
@@ -903,14 +909,14 @@ function drawTable(t){
   ctx.fillStyle='#fff'; ctx.textBaseline='middle';
   const headerLabel=t.dept?`${t.name} · ${deptShortLabel(t.dept)}`:t.name;
   const tFont=t.font||'Noto Sans Thai', tWeight=t.bold===false?'400':'700', tItalic=t.italic?'italic ':'';
-  const headerPadL=10*zoom, headerReserveR=64*zoom; // left padding + room for the seat-count badge
+  const headerPadL=12*zoom, headerReserveR=72*zoom; // left padding + room for the seat-count badge
   const headerMaxW=Math.max(20*zoom,sr.w-headerPadL-headerReserveR);
-  const headerFz=fitFontSize(headerLabel,headerMaxW,tWeight,Math.max(15,(t.fontSize||19)*zoom),12,tFont);
+  const headerFz=fitFontSize(headerLabel,headerMaxW,tWeight,Math.max(17,(t.fontSize||22)*zoom),13,tFont);
   ctx.font=`${tItalic}${tWeight} ${headerFz}px "${tFont}",Tahoma,sans-serif`;
   ctx.fillText(clipText(ctx,headerLabel,headerMaxW),sr.x+headerPadL,sr.y+HEADER*zoom/2);
   const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
-  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(10,11*zoom)}px "IBM Plex Mono",monospace`;
-  ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-8*zoom,sr.y+HEADER*zoom/2);
+  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(11,12*zoom)}px "IBM Plex Mono",monospace`;
+  ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-10*zoom,sr.y+HEADER*zoom/2);
   for(let si=0;si<t.cap;si++){
     const sc=seatScreenRect(t,si),pid=t.seats[si],p=pid?getPerson(pid):null,isCI=p&&p.status==='checkin';
     ctx.fillStyle=pid?(isCI?'#e6f4f0':'#fdf3e3'):'#e8f4f8';
@@ -933,6 +939,76 @@ function drawTable(t){
     ctx.textBaseline='middle';
   }
   if(isPrimary) drawHandles(sr);
+}
+
+// View-only rendering: the whole card becomes one big colored name
+// tag — full name, no clipping — instead of a thin header + seat grid.
+// This is what gets projected on screen / shared via a view-only link.
+function drawTableViewOnly(t,sr,isSel){
+  const color=tableHeaderColor(t);
+  ctx.save();
+  roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.clip();
+  ctx.fillStyle=color; ctx.fillRect(sr.x,sr.y,sr.w,sr.h);
+  ctx.restore();
+  ctx.strokeStyle=isSel?'#1a5f7a':color; ctx.lineWidth=isSel?2.5*zoom:1.5*zoom;
+  roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.stroke();
+
+  const tFont=t.font||'Noto Sans Thai', tWeight=t.bold===false?'400':'700', tItalic=t.italic?'italic ':'';
+  const pad=Math.max(8,10*zoom);
+  const deptLabel=t.dept?deptShortLabel(t.dept):'';
+  const deptFz=Math.max(9,Math.min(13*zoom,sr.h*0.14));
+  const deptBlockH=deptLabel?deptFz+6*zoom:0;
+
+  // seat-count badge, small, top-right — kept out of the main layout flow
+  const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
+  ctx.fillStyle='rgba(255,255,255,.8)';
+  ctx.font=`700 ${Math.max(9,11*zoom)}px "IBM Plex Mono",monospace`;
+  ctx.textBaseline='top';
+  ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-pad,sr.y+pad*0.7);
+
+  const nameMaxW=Math.max(20*zoom,sr.w-pad*2);
+  const nameMaxH=Math.max(20*zoom,sr.h-pad*2-deptBlockH);
+  const nameMaxSize=Math.min(sr.h*0.4,40*zoom);
+  const fit=fitTextBlock(t.name,nameMaxW,nameMaxH,tWeight,tFont,nameMaxSize,13);
+  ctx.font=`${tItalic}${tWeight} ${fit.size}px "${tFont}",Tahoma,sans-serif`;
+  ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.textAlign='center';
+  const lineH=fit.size*1.18;
+  const totalH=fit.lines.length*lineH+deptBlockH;
+  let ty=sr.y+(sr.h-totalH)/2+lineH/2;
+  fit.lines.forEach(line=>{ ctx.fillText(line,sr.x+sr.w/2,ty); ty+=lineH; });
+  if(deptLabel){
+    ctx.font=`700 ${deptFz}px "${tFont}",Tahoma,sans-serif`;
+    ctx.fillStyle='rgba(255,255,255,.82)';
+    ctx.fillText(deptLabel,sr.x+sr.w/2,ty-lineH/2+deptBlockH/2+2*zoom);
+  }
+  ctx.textAlign='left';
+}
+// Fits `text` into a maxW×maxH box: tries one line first (shrinking font),
+// then falls back to a 2-line word-wrap, then a clipped single line —
+// so long table names still read in full wherever possible.
+function fitTextBlock(text,maxW,maxH,weight,fontFamily,maxSize,minSize){
+  for(let size=Math.floor(maxSize);size>=minSize;size--){
+    ctx.font=`${weight} ${size}px "${fontFamily}",Tahoma,sans-serif`;
+    if(ctx.measureText(text).width<=maxW && size*1.18<=maxH) return{lines:[text],size};
+  }
+  const words=text.split(' ');
+  if(words.length>1){
+    for(let size=Math.floor(maxSize);size>=minSize;size--){
+      ctx.font=`${weight} ${size}px "${fontFamily}",Tahoma,sans-serif`;
+      let lines=[],cur='';
+      words.forEach(w=>{
+        const test=cur?cur+' '+w:w;
+        if(ctx.measureText(test).width<=maxW) cur=test;
+        else { if(cur) lines.push(cur); cur=w; }
+      });
+      if(cur) lines.push(cur);
+      if(lines.length<=2 && lines.every(l=>ctx.measureText(l).width<=maxW) && lines.length*size*1.18<=maxH){
+        return{lines,size};
+      }
+    }
+  }
+  ctx.font=`${weight} ${minSize}px "${fontFamily}",Tahoma,sans-serif`;
+  return{lines:[clipText(ctx,text,maxW)],size:minSize};
 }
 
 /* ── STAGE ── */
@@ -1392,8 +1468,13 @@ function clearMarqueePreview(){svgOvr.innerHTML='';}
 //  DOUBLE-CLICK — rename / edit text
 // ══════════════════════════════════════════════════════════════════
 canvas.addEventListener('dblclick',e=>{
-  if(viewOnly) return;
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
+  if(viewOnly){
+    // In presentation/view-only mode, double-clicking a table still lets
+    // you peek at who's seated there (read-only) — everything else is inert.
+    if(hit&&hit.type==='table') openTableDetails(hit.id);
+    return;
+  }
   if(!hit) return;
   if(hit.type==='table'){openTableDetails(hit.id);}
   else if(hit.type==='stage'){const s=getEl('stage',hit.id);const lbl=prompt('ข้อความเวที:',s.label);if(lbl!==null){saveHist();s.label=lbl.trim();drawAll();}}
@@ -1934,17 +2015,24 @@ function openTableDetails(tid){
     body.innerHTML=seated.map(s=>{
       const noAttend=s.p.intent==='ไม่เข้าร่วม';
       const dotColor=noAttend?'var(--red)':(s.p.status==='checkin'?'var(--green)':'var(--gold)');
+      const actions=viewOnly?'':`
+        <button type="button" class="insp-btn" title="แก้ไขรายชื่อ" onclick="closeModal('modal-table-details');openEditPerson('${s.p.id}')">✏️</button>
+        <button type="button" class="insp-btn d" title="ถอดออกจากโต๊ะ" onclick="removeSeatFromDetails(${tid},${s.idx})">✕</button>`;
       return `<div class="td-row">
         <div class="pc-dot" style="background:${dotColor};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
           <div class="td-row-name">ที่นั่ง ${s.idx+1} · ${esc(s.p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}</div>
           <div class="td-row-sub">${esc(s.p.mission||'')}${s.p.dept?' · '+esc(s.p.dept):''}</div>
-        </div>
-        <button type="button" class="insp-btn" title="แก้ไขรายชื่อ" onclick="closeModal('modal-table-details');openEditPerson('${s.p.id}')">✏️</button>
-        <button type="button" class="insp-btn d" title="ถอดออกจากโต๊ะ" onclick="removeSeatFromDetails(${tid},${s.idx})">✕</button>
+        </div>${actions}
       </div>`;
     }).join('');
   }
+  // In view-only (presentation) mode this is a pure read-only peek —
+  // no editing entry points, just the roster and a close button.
+  const footer=document.querySelector('#modal-table-details .mbtns');
+  if(footer) footer.innerHTML=viewOnly
+    ?'<button class="btn-p" style="margin-left:auto" onclick="closeModal(\'modal-table-details\')">ปิด</button>'
+    :'<button class="btn-sec" onclick="openTableSettingsFromDetails()">⚙️ ตั้งค่าโต๊ะ (เปลี่ยนชื่อ/สี/จำนวนที่นั่ง)</button><button class="btn-p" onclick="closeModal(\'modal-table-details\')">ปิด</button>';
   openModal('modal-table-details');
 }
 function removeSeatFromDetails(tid,si){
