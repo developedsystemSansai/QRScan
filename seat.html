@@ -1734,15 +1734,17 @@ function renderSeatList(){
   const list=people.filter(p=>!q?(!seated.has(String(p.id))||p.id===t?.seats[seatModalSi]):p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q));
   const el=document.getElementById('seat-list');
   if(!list.length){el.innerHTML='<div style="padding:12px;font-size:12px;color:var(--text-3);text-align:center">ไม่พบ</div>';return;}
-  el.innerHTML=list.slice(0,30).map(p=>`
+  el.innerHTML=list.slice(0,30).map(p=>{
+    const noAttend=p.intent==='ไม่เข้าร่วม';
+    return `
     <div class="seat-opt" onclick="assignSeat('${p.id}')">
-      <div class="pc-dot" style="background:${p.status==='checkin'?'var(--green)':'var(--gold)'}"></div>
+      <div class="pc-dot" style="background:${noAttend?'var(--red)':(p.status==='checkin'?'var(--green)':'var(--gold)')}"></div>
       <div style="flex:1;min-width:0">
-        <div class="seat-opt-name">${esc(p.name)}</div>
+        <div class="seat-opt-name">${esc(p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}</div>
         <div class="seat-opt-dept">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</div>
       </div>
       ${seated.has(String(p.id))&&p.id!==t?.seats[seatModalSi]?'<span class="seat-opt-tag">มีที่นั่งแล้ว</span>':''}
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 function assignSeat(pid){
@@ -1765,23 +1767,26 @@ function removeSeatPerson(){
 // ══════════════════════════════════════════════════════════════════
 function renderPool(){
   const q=(document.getElementById('pool-search')?.value||'').toLowerCase(),seated=seatedSet();
-  const list=people.filter(p=>!seated.has(String(p.id))&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)));
+  const list=people.filter(p=>!seated.has(String(p.id))&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
   document.getElementById('pool-cnt').textContent=list.length;
   const el=document.getElementById('pool-list');
   if(!list.length){el.innerHTML=`<div class="pool-empty">${q?'🔍 ไม่พบ':'✅ ทุกคนมีที่นั่งแล้ว'}</div>`;return;}
-  el.innerHTML=list.map(p=>`
+  el.innerHTML=list.map(p=>{
+    const noAttend=p.intent==='ไม่เข้าร่วม';
+    const dotColor=noAttend?'var(--red)':(p.status==='checkin'?'var(--green)':'var(--gold)');
+    return `
     <div class="pool-chip${String(p.id)===String(assignArm)?' armed':''}" id="pc-${p.id}" draggable="true"
          onclick="openEditPerson('${p.id}')"
          onmouseenter="showTip(event,'${p.id}')" onmouseleave="hideTip()">
-      <div class="pc-dot" style="background:${p.status==='checkin'?'var(--green)':'var(--gold)'}"></div>
+      <div class="pc-dot" style="background:${dotColor}"></div>
       <div style="flex:1;min-width:0">
-        <div class="pc-name">${esc(p.name)}</div>
+        <div class="pc-name">${esc(p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}</div>
         <div class="pc-dept">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</div>
       </div>
       <button type="button" class="pc-seat-btn${String(p.id)===String(assignArm)?' on':''}"
               title="แตะเพื่อเลือก แล้วแตะที่นั่งว่างเพื่อจัดที่นั่ง (ใช้แทนการลาก บนไอแพด)"
               onclick="event.stopPropagation();armAssign('${p.id}')">🪑</button>
-    </div>`).join('');
+    </div>`;}).join('');
   list.forEach(p=>{
     const ch=document.getElementById('pc-'+p.id);if(!ch) return;
     // Native HTML5 drag-and-drop works with a mouse but is unreliable/unsupported
@@ -2003,7 +2008,7 @@ function setSideTab(name,btn){
 //  TOOLTIP
 // ══════════════════════════════════════════════════════════════════
 const tipEl=()=>document.getElementById('tip');
-function showTip(e,pid){const p=getPerson(pid);if(!p) return;const loc=findSeat(pid);const code=personCode(p);tipEl().innerHTML=`<b>${code?esc(code)+' · ':''}${esc(p.name)}</b><br>${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}<br>📍 ${loc?esc(loc.table.name):'ยังไม่มีที่นั่ง'}<br>${p.status==='checkin'?'✅ เช็คอินแล้ว':'⏳ ยังไม่เช็คอิน'}`;tipEl().classList.add('show');moveTip(e);}
+function showTip(e,pid){const p=getPerson(pid);if(!p) return;const loc=findSeat(pid);const code=personCode(p);const intentLine=p.intent?(p.intent==='ไม่เข้าร่วม'?'<br><span style="color:#fca5a5">🚫 แจ้งไม่เข้าร่วม</span>':'<br>✅ แจ้งเข้าร่วม'):'';tipEl().innerHTML=`<b>${code?esc(code)+' · ':''}${esc(p.name)}</b><br>${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}${p.position?' · '+esc(p.position):''}<br>📍 ${loc?esc(loc.table.name):'ยังไม่มีที่นั่ง'}${intentLine}`;tipEl().classList.add('show');moveTip(e);}
 function hideTip(){tipEl().classList.remove('show');}
 document.addEventListener('mousemove',e=>{if(tipEl().classList.contains('show'))moveTip(e);});
 function moveTip(e){let x=e.clientX+14,y=e.clientY-10;if(x+240>window.innerWidth)x=e.clientX-244;if(y+110>window.innerHeight)y=e.clientY-115;tipEl().style.left=x+'px';tipEl().style.top=y+'px';}
