@@ -675,20 +675,25 @@ function toggleSeatLabelMode(){
 }
 // Shrinks font just enough for `text` to fit within maxWidth (readable
 // full codes like "การเงิน1" instead of clipping to 1-2 letters).
-function fitFontSize(text,maxWidth,weight,maxSize,minSize){
+function fitFontSize(text,maxWidth,weight,maxSize,minSize,fontFamily){
   let size=maxSize;
+  const fam=fontFamily||'Noto Sans Thai';
   while(size>minSize){
-    ctx.font=`${weight} ${size}px "Noto Sans Thai",Tahoma,sans-serif`;
+    ctx.font=`${weight} ${size}px "${fam}",Tahoma,sans-serif`;
     if(ctx.measureText(text).width<=maxWidth) break;
     size-=1;
   }
   return size;
 }
+// Returns the effective header/accent color for a table: a manually
+// picked color (t.color) takes priority; otherwise falls back to the
+// automatic per-department color (or the default primary color).
+function tableHeaderColor(t){ return t.color || deptColor(t.dept); }
 
 // ══════════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════════
-let tables  = [];  // {id,name,x,y,w,h,cap,dept,seats:[pid|null,...]}
+let tables  = [];  // {id,name,x,y,w,h,cap,dept,color,font,fontSize,bold,italic,seats:[pid|null,...]}
 let stages  = [];  // {id,x,y,w,h,label}
 let textboxes=[];  // {id,x,y,w,h,text,font,fontSize,bold,italic,underline,align,textColor,fillColor,strokeColor,strokeWidth,opacity,cornerRadius,padding}
 let shapes  = [];  // {id,type:'rect'|'ellipse'|'line'|'arrow',x,y,w,h,fillColor,strokeColor,strokeWidth,opacity,cornerRadius,dash,arrowhead}
@@ -820,14 +825,15 @@ function drawTable(t){
   ctx.shadowColor='rgba(0,0,0,.12)'; ctx.shadowBlur=isSel?16:6; ctx.shadowOffsetY=isSel?4:2;
   ctx.fillStyle='#fff'; roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.fill();
   ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-  ctx.strokeStyle=isSel?'#1a5f7a':(t.dept?deptColor(t.dept):'#d8d2c8'); ctx.lineWidth=isSel?2.5*zoom:1.5*zoom;
+  ctx.strokeStyle=isSel?'#1a5f7a':((t.color||t.dept)?tableHeaderColor(t):'#d8d2c8'); ctx.lineWidth=isSel?2.5*zoom:1.5*zoom;
   roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.stroke();
   if(isSel){ctx.strokeStyle='rgba(26,95,122,.18)';ctx.lineWidth=6*zoom;roundRect(sr.x-3,sr.y-3,sr.w+6,sr.h+6,14*zoom);ctx.stroke();}
-  ctx.fillStyle=deptColor(t.dept); roundRectTop(sr.x,sr.y,sr.w,HEADER*zoom,12*zoom); ctx.fill();
+  ctx.fillStyle=tableHeaderColor(t); roundRectTop(sr.x,sr.y,sr.w,HEADER*zoom,12*zoom); ctx.fill();
   ctx.fillStyle='#fff'; ctx.textBaseline='middle';
   const headerLabel=t.dept?`${t.name} · ${deptShortLabel(t.dept)}`:t.name;
-  const headerFz=fitFontSize(headerLabel,sr.w-58*zoom,'700',Math.max(14,17*zoom),11);
-  ctx.font=`700 ${headerFz}px "Noto Sans Thai",Tahoma,sans-serif`;
+  const tFont=t.font||'Noto Sans Thai', tWeight=t.bold===false?'400':'700', tItalic=t.italic?'italic ':'';
+  const headerFz=fitFontSize(headerLabel,sr.w-58*zoom,tWeight,Math.max(14,(t.fontSize||17)*zoom),11,tFont);
+  ctx.font=`${tItalic}${tWeight} ${headerFz}px "${tFont}",Tahoma,sans-serif`;
   ctx.fillText(clipText(ctx,headerLabel,sr.w-58*zoom),sr.x+8*zoom,sr.y+HEADER*zoom/2);
   const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
   ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(10,11*zoom)}px "IBM Plex Mono",monospace`;
@@ -1479,17 +1485,47 @@ function openInspTable(tid){
   selectEl('table',tid);
   document.getElementById('insp-title').textContent='⚙️ ตั้งค่าโต๊ะ';
   const deptOpts=allDeptNames().map(d=>`<option value="${esc(d)}">`).join('');
+  const curColor=tableHeaderColor(t);
+  const fontOpts=['Noto Sans Thai','Noto Serif Thai','IBM Plex Mono','Tahoma','Arial','Georgia'];
   document.getElementById('insp-body').innerHTML=`
     <div class="insp-lbl">ชื่อโต๊ะ</div>
     <input class="insp-inp" id="ii-name" value="${esc(t.name)}">
-    <div class="insp-lbl">กลุ่มงาน (สีจะเปลี่ยนตามกลุ่มงานอัตโนมัติ)</div>
+    <div class="insp-lbl">กลุ่มงาน (สีจะเปลี่ยนตามกลุ่มงานอัตโนมัติ ถ้าไม่กำหนดสีเอง)</div>
     <div class="insp-row" style="align-items:center">
-      <input class="insp-inp" id="ii-dept" list="dept-datalist" value="${esc(t.dept||'')}" placeholder="พิมพ์หรือเลือกกลุ่มงาน…" style="flex:1" oninput="document.getElementById('ii-dept-swatch').style.background=deptColor(this.value)">
+      <input class="insp-inp" id="ii-dept" list="dept-datalist" value="${esc(t.dept||'')}" placeholder="พิมพ์หรือเลือกกลุ่มงาน…" style="flex:1" oninput="if(!document.getElementById('ii-color-auto').checked) return; document.getElementById('ii-color').value=deptColor(this.value)">
       <span id="ii-dept-swatch" style="display:inline-block;width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border2);flex-shrink:0;background:${deptColor(t.dept)}"></span>
     </div>
     <datalist id="dept-datalist">${deptOpts}</datalist>
-    <div class="insp-lbl">จำนวนที่นั่ง</div>
-    <input class="insp-inp" type="number" id="ii-cap" value="${t.cap}" min="1" max="50" style="font-family:var(--mono)">
+
+    <div class="insp-lbl">สีของโต๊ะ</div>
+    <div class="insp-row" style="align-items:center;gap:8px">
+      <input type="color" class="insp-inp" id="ii-color" value="${curColor.startsWith('#')?curColor:'#1a5f7a'}" style="width:48px;height:34px;padding:2px;flex-shrink:0" ${t.color?'':'disabled'} onchange="document.getElementById('ii-color-auto').checked=false">
+      <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-2);flex:1">
+        <input type="checkbox" id="ii-color-auto" ${t.color?'':'checked'} onchange="document.getElementById('ii-color').disabled=this.checked; if(this.checked) document.getElementById('ii-color').value=deptColor(document.getElementById('ii-dept').value)">
+        สีอัตโนมัติตามกลุ่มงาน
+      </label>
+    </div>
+    <div style="font-size:10px;color:var(--text-3);margin:-4px 0 6px">ยกเลิกติ๊กเพื่อกำหนดสีของโต๊ะนี้เอง — แก้ได้ทันทีไม่ต้องสร้างโต๊ะใหม่</div>
+
+    <div class="insp-lbl">รูปแบบตัวอักษร (ชื่อโต๊ะ)</div>
+    <select class="insp-inp" id="ii-font">
+      ${fontOpts.map(f=>`<option value="${f}" ${((t.font||'Noto Sans Thai')===f)?'selected':''}>${f}</option>`).join('')}
+    </select>
+    <div class="insp-row" style="align-items:center;gap:10px;margin-top:6px">
+      <div style="flex:1">
+        <div class="insp-lbl" style="margin-bottom:2px">ขนาด</div>
+        <input class="insp-inp" type="number" id="ii-fontsize" value="${t.fontSize||17}" min="10" max="30" style="font-family:var(--mono)">
+      </div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;padding-top:14px"><input type="checkbox" id="ii-bold" ${t.bold===false?'':'checked'}> <b>ตัวหนา</b></label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;padding-top:14px"><input type="checkbox" id="ii-italic" ${t.italic?'checked':''}> <i>ตัวเอียง</i></label>
+    </div>
+
+    <div class="insp-lbl">จำนวนเก้าอี้ (ที่นั่ง)</div>
+    <div class="insp-row" style="align-items:center;gap:6px">
+      <button class="insp-btn" style="width:34px;flex:none;padding:0" onclick="document.getElementById('ii-cap').stepDown();">−</button>
+      <input class="insp-inp" type="number" id="ii-cap" value="${t.cap}" min="1" max="50" style="font-family:var(--mono);text-align:center">
+      <button class="insp-btn" style="width:34px;flex:none;padding:0" onclick="document.getElementById('ii-cap').stepUp();">+</button>
+    </div>
     <div class="insp-lbl">ตำแหน่ง X / Y</div>
     <div class="insp-row">
       <input class="insp-inp" type="number" id="ii-x" value="${Math.round(t.x)}" style="width:60px">
@@ -1510,7 +1546,13 @@ function applyInspTable(tid){
   const name=document.getElementById('ii-name').value.trim()||t.name;
   const dept=document.getElementById('ii-dept').value.trim();
   const cap=Math.max(1,Math.min(50,parseInt(document.getElementById('ii-cap').value)||t.cap));
+  const colorAuto=document.getElementById('ii-color-auto').checked;
   t.name=name;t.dept=dept||null;t.x=+document.getElementById('ii-x').value||t.x;t.y=+document.getElementById('ii-y').value||t.y;
+  t.color=colorAuto?null:document.getElementById('ii-color').value;
+  t.font=document.getElementById('ii-font').value;
+  t.fontSize=Math.max(10,Math.min(30,parseInt(document.getElementById('ii-fontsize').value)||17));
+  t.bold=document.getElementById('ii-bold').checked;
+  t.italic=document.getElementById('ii-italic').checked;
   if(cap!==t.cap){const old=t.seats.slice();t.cap=cap;t.seats=Array(cap).fill(null);for(let i=0;i<Math.min(old.length,cap);i++) t.seats[i]=old[i];
     const cols=Math.ceil(Math.sqrt(cap));t.w=cols*CELL+(cols-1)*2+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;}
   drawAll();toast(`✔ อัปเดตโต๊ะ "${name}"`,'ok');
