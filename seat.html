@@ -277,6 +277,23 @@ body.view-only .vo-bar{display:flex}
 .seat-opt-name{font-size:12px;font-weight:600;flex:1}
 .seat-opt-dept{font-size:10px;color:var(--text-3)}.seat-opt-tag{font-size:10px;color:var(--amber)}
 
+/* ── TABLE DETAILS MODAL (double-click a table) ── */
+.td-modal{max-width:440px}
+.td-sub{font-size:12px;color:var(--text-2);margin:-8px 0 12px}
+.td-list-wrap{max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px}
+.td-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border)}
+.td-row:last-child{border-bottom:none}
+.td-row-name{font-size:12.5px;font-weight:700;color:var(--text)}
+.td-row-sub{font-size:10.5px;color:var(--text-3);margin-top:1px}
+.td-row .insp-btn{flex:none;width:auto;padding:5px 9px;font-size:12px}
+.td-empty{padding:22px 12px;text-align:center;color:var(--text-3);font-size:12.5px}
+
+/* ── SIDEBAR: department filter dropdown ── */
+.pool-dept-filter{width:100%;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  padding:7px 10px;font-family:var(--sans);font-size:12px;outline:none;
+  background:var(--surface2);transition:border-color .18s;margin-bottom:6px;color:var(--text);cursor:pointer}
+.pool-dept-filter:focus{border-color:var(--primary)}
+
 /* ── TOOLTIP ── */
 .tip{position:fixed;background:var(--text);color:#fff;padding:7px 11px;border-radius:var(--r);font-size:11.5px;line-height:1.55;pointer-events:none;z-index:800;opacity:0;transition:opacity .15s;max-width:220px;box-shadow:var(--sh)}
 .tip.show{opacity:1}
@@ -388,6 +405,9 @@ body.view-only .vo-bar{display:flex}
     </div>
     <div class="side-panel" id="tab-pool">
       <div class="pool-wrap">
+        <select class="pool-dept-filter" id="pool-dept-filter" onchange="renderPool()">
+          <option value="">🗂️ ทุกกลุ่มงาน</option>
+        </select>
         <input class="pool-search" type="text" id="pool-search" placeholder="🔍 ค้นหาชื่อ / กลุ่มงาน..." oninput="renderPool()">
         <div class="pool-hint">ลากมาวางบนโต๊ะ · <span id="pool-cnt">0</span> คนที่รอ</div>
         <div class="pool-list" id="pool-list"></div>
@@ -415,9 +435,13 @@ body.view-only .vo-bar{display:flex}
           <b>Ctrl+D</b> — ทำซ้ำ (Duplicate)<br>
           <b>[/]</b> — ขนาดตัวอักษร ±2<br><br>
           <b>ลากรายชื่อ</b> จากแถบ "รายชื่อ" มาวาง<br>
-          <b>ดับเบิลคลิก</b> — แก้ไขข้อความ<br>
+          <b>ดับเบิลคลิกโต๊ะ</b> — ดูรายชื่อในโต๊ะ<br>
           <b>Right-click</b> — เมนูตั้งค่า<br>
-          <b>8 จุดรอบ</b> — ปรับขนาดทุกทิศ
+          <b>8 จุดรอบ</b> — ปรับขนาดทุกทิศ<br><br>
+          <b>🔲 ลากคลุมพื้นที่ว่าง</b> — เลือกหลายรายการพร้อมกัน<br>
+          <b>Shift+คลิก</b> — เพิ่ม/เอาออกจากรายการที่เลือก<br>
+          <b>ลาก 1 รายการที่เลือกไว้</b> — ย้ายทั้งกลุ่มพร้อมกัน<br>
+          <b>Del / Ctrl+D</b> — ลบ/ทำซ้ำได้ทั้งกลุ่ม
         </div>
       </div>
     </div>
@@ -593,6 +617,19 @@ body.view-only .vo-bar{display:flex}
   </div>
 </div>
 
+<!-- MODAL: Table Details (double-click a table → view who's seated) -->
+<div class="modal-overlay" id="modal-table-details">
+  <div class="modal td-modal">
+    <div class="modal-title" id="td-title">👥 รายชื่อในโต๊ะ</div>
+    <div class="td-sub" id="td-sub"></div>
+    <div class="td-list-wrap" id="td-list"></div>
+    <div class="mbtns" style="justify-content:space-between">
+      <button class="btn-sec" onclick="openTableSettingsFromDetails()">⚙️ ตั้งค่าโต๊ะ (เปลี่ยนชื่อ/สี/จำนวนที่นั่ง)</button>
+      <button class="btn-p" onclick="closeModal('modal-table-details')">ปิด</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Text Edit -->
 <div class="modal-overlay" id="modal-text">
   <div class="modal">
@@ -628,7 +665,7 @@ body.view-only .vo-bar{display:flex}
 // ══════════════════════════════════════════════════════════════════
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwzimtNiUsNPYelNocjhzshTdoJ8392hYSix4lWxf2cGHVWsMBybBHBUzyFkq8iq2_EeQ/exec';
 
-const GRID=20, CELL=32, HEADER=30, PAD=6;
+const GRID=20, CELL=32, HEADER=36, PAD=6, SEAT_GAP=3;
 
 // ══════════════════════════════════════════════════════════════════
 //  DEPARTMENT / กลุ่มงาน — known list (from HR master data) so the
@@ -714,6 +751,11 @@ let elDrag=false,elDragType=null,elDragId=null;
 let elDragStart={x:0,y:0},elDragOrigin={x:0,y:0};
 let longPressTimer=null,longPressStart={x:0,y:0},longPressFired=false;
 
+// Multi-select ("marquee"/rubber-band select + group move/delete/duplicate)
+let multiSel=[];              // [{type,id}, ...] extra items selected alongside `sel`
+let isMarquee=false,marqueeStart={x:0,y:0},marqueeCurrent={x:0,y:0};
+let groupDragOrigin=null;     // snapshot of {type,id,x,y} for every selected item while group-dragging
+
 // Resize: 8 handles
 let elResize=false,elResHandle=null; // handle: 'nw','n','ne','e','se','s','sw','w'
 let elResType=null,elResId=null;
@@ -726,6 +768,7 @@ let isDrawing=false,drawStart={x:0,y:0},drawCurrent={x:0,y:0};
 let textEditId=null,textEditType=null;
 
 let seatModalTid=null,seatModalSi=null;
+let tableDetailsTid=null;
 
 // ══════════════════════════════════════════════════════════════════
 //  CANVAS
@@ -744,6 +787,21 @@ const s2w=(sx,sy)=>({x:(sx-panX)/zoom,y:(sy-panY)/zoom});
 const w2s=(wx,wy)=>({x:wx*zoom+panX,y:wy*zoom+panY});
 const snap=v=>Math.round(v/GRID)*GRID;
 const rHit=(r,px,py)=>px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h;
+const rectsIntersect=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+
+// ── Multi-select helpers ──
+// `sel` stays the single "primary" selection (used for the settings panel,
+// resize handles, format bar); `multiSel` holds every item captured together
+// by a marquee drag, and both draw with the same selected-look on canvas.
+function isInMultiSel(type,id){return multiSel.some(m=>m.type===type&&m.id===id);}
+function elIsSelected(type,id){return (sel&&sel.type===type&&sel.id===id)||isInMultiSel(type,id);}
+function allSelected(){
+  const out=[];
+  if(sel) out.push({type:sel.type,id:sel.id});
+  multiSel.forEach(m=>{if(!out.some(o=>o.type===m.type&&o.id===m.id)) out.push(m);});
+  return out;
+}
+function clearAllSelection(){sel=null;multiSel=[];}
 
 // ══════════════════════════════════════════════════════════════════
 //  DRAW — FULL PIPELINE
@@ -813,15 +871,28 @@ function hitHandle(sp,sr){
 
 /* ── TABLE ── */
 function tableScreenRect(t){const s=w2s(t.x,t.y);return{x:s.x,y:s.y,w:t.w*zoom,h:t.h*zoom};}
+// Seat cells always stretch to fill whatever box the table currently has
+// (auto-sized or dragged by hand) instead of staying a fixed 32px — this
+// keeps them snug against the table's edges at any size.
+function seatGridMetrics(t){
+  const cols=Math.max(1,Math.ceil(Math.sqrt(t.cap)));
+  const rows=Math.max(1,Math.ceil(t.cap/cols));
+  const availW=t.w-PAD*2-(cols-1)*SEAT_GAP;
+  const availH=t.h-HEADER-PAD*2-(rows-1)*SEAT_GAP;
+  const cw=Math.max(14,availW/cols);
+  const ch=Math.max(14,availH/rows);
+  return{cols,rows,cw,ch};
+}
 function seatScreenRect(t,si){
-  const cols=Math.ceil(Math.sqrt(t.cap));
-  const sc=w2s(t.x+PAD+(si%cols)*(CELL+2),t.y+HEADER+PAD+Math.floor(si/cols)*(CELL+2));
-  return{x:sc.x,y:sc.y,w:CELL*zoom,h:CELL*zoom};
+  const {cols,cw,ch}=seatGridMetrics(t);
+  const sc=w2s(t.x+PAD+(si%cols)*(cw+SEAT_GAP),t.y+HEADER+PAD+Math.floor(si/cols)*(ch+SEAT_GAP));
+  return{x:sc.x,y:sc.y,w:cw*zoom,h:ch*zoom};
 }
 
 function drawTable(t){
   const sr=tableScreenRect(t);
-  const isSel=sel&&sel.type==='table'&&sel.id===t.id;
+  const isSel=elIsSelected('table',t.id);
+  const isPrimary=sel&&sel.type==='table'&&sel.id===t.id;
   ctx.shadowColor='rgba(0,0,0,.12)'; ctx.shadowBlur=isSel?16:6; ctx.shadowOffsetY=isSel?4:2;
   ctx.fillStyle='#fff'; roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.fill();
   ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
@@ -832,13 +903,14 @@ function drawTable(t){
   ctx.fillStyle='#fff'; ctx.textBaseline='middle';
   const headerLabel=t.dept?`${t.name} · ${deptShortLabel(t.dept)}`:t.name;
   const tFont=t.font||'Noto Sans Thai', tWeight=t.bold===false?'400':'700', tItalic=t.italic?'italic ':'';
-  const headerFz=fitFontSize(headerLabel,sr.w-58*zoom,tWeight,Math.max(14,(t.fontSize||17)*zoom),11,tFont);
+  const headerPadL=10*zoom, headerReserveR=64*zoom; // left padding + room for the seat-count badge
+  const headerMaxW=Math.max(20*zoom,sr.w-headerPadL-headerReserveR);
+  const headerFz=fitFontSize(headerLabel,headerMaxW,tWeight,Math.max(15,(t.fontSize||19)*zoom),12,tFont);
   ctx.font=`${tItalic}${tWeight} ${headerFz}px "${tFont}",Tahoma,sans-serif`;
-  ctx.fillText(clipText(ctx,headerLabel,sr.w-58*zoom),sr.x+8*zoom,sr.y+HEADER*zoom/2);
+  ctx.fillText(clipText(ctx,headerLabel,headerMaxW),sr.x+headerPadL,sr.y+HEADER*zoom/2);
   const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
   ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(10,11*zoom)}px "IBM Plex Mono",monospace`;
   ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-8*zoom,sr.y+HEADER*zoom/2);
-  const cols=Math.ceil(Math.sqrt(t.cap));
   for(let si=0;si<t.cap;si++){
     const sc=seatScreenRect(t,si),pid=t.seats[si],p=pid?getPerson(pid):null,isCI=p&&p.status==='checkin';
     ctx.fillStyle=pid?(isCI?'#e6f4f0':'#fdf3e3'):'#e8f4f8';
@@ -860,13 +932,14 @@ function drawTable(t){
     }
     ctx.textBaseline='middle';
   }
-  if(isSel) drawHandles(sr);
+  if(isPrimary) drawHandles(sr);
 }
 
 /* ── STAGE ── */
 function stageScreenRect(s){const sp=w2s(s.x,s.y);return{x:sp.x,y:sp.y,w:s.w*zoom,h:s.h*zoom};}
 function drawStage(s){
-  const sr=stageScreenRect(s),isSel=sel&&sel.type==='stage'&&sel.id===s.id;
+  const sr=stageScreenRect(s),isSel=elIsSelected('stage',s.id);
+  const isPrimary=sel&&sel.type==='stage'&&sel.id===s.id;
   ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=isSel?14:5; ctx.shadowOffsetY=2;
   ctx.fillStyle='#0f172a'; roundRect(sr.x,sr.y,sr.w,sr.h,8*zoom); ctx.fill();
   ctx.shadowColor='transparent'; ctx.shadowBlur=0;
@@ -875,14 +948,15 @@ function drawStage(s){
   ctx.fillStyle='#94a3b8'; ctx.font=`700 ${Math.max(12,15*zoom)}px "Noto Sans Thai",Tahoma,sans-serif`;
   ctx.textBaseline='middle'; ctx.textAlign='center';
   ctx.fillText(s.label||'STAGE',sr.x+sr.w/2,sr.y+sr.h/2); ctx.textAlign='left';
-  if(isSel) drawHandles(sr);
+  if(isPrimary) drawHandles(sr);
 }
 
 /* ── TEXTBOX ── */
 function textboxScreenRect(tb){const s=w2s(tb.x,tb.y);return{x:s.x,y:s.y,w:tb.w*zoom,h:tb.h*zoom};}
 function drawTextbox(tb){
   const sr=textboxScreenRect(tb);
-  const isSel=sel&&sel.type==='textbox'&&sel.id===tb.id;
+  const isSel=elIsSelected('textbox',tb.id);
+  const isPrimary=sel&&sel.type==='textbox'&&sel.id===tb.id;
   ctx.save();
   ctx.globalAlpha=tb.opacity!==undefined?tb.opacity:1;
   // Fill
@@ -927,7 +1001,7 @@ function drawTextbox(tb){
     ty+=lineH;
   });
   ctx.restore();
-  if(isSel) drawHandles(sr);
+  if(isPrimary) drawHandles(sr);
 }
 
 /* ── SHAPE ── */
@@ -942,7 +1016,8 @@ function shapeScreenRect(sh){
 
 function drawShape(sh){
   const sr=shapeScreenRect(sh);
-  const isSel=sel&&sel.type==='shape'&&sel.id===sh.id;
+  const isSel=elIsSelected('shape',sh.id);
+  const isPrimary=sel&&sel.type==='shape'&&sel.id===sh.id;
   ctx.save();
   ctx.globalAlpha=sh.opacity!==undefined?sh.opacity:1;
   const sw=(sh.strokeWidth||2)*zoom;
@@ -971,7 +1046,7 @@ function drawShape(sh){
   if(isSel){
     ctx.strokeStyle='rgba(26,95,122,.5)'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
     ctx.strokeRect(sr.x-4,sr.y-4,sr.w+8,sr.h+8); ctx.setLineDash([]);
-    drawHandles({x:sr.x-4,y:sr.y-4,w:sr.w+8,h:sr.h+8});
+    if(isPrimary) drawHandles({x:sr.x-4,y:sr.y-4,w:sr.w+8,h:sr.h+8});
   }
   ctx.restore();
 }
@@ -1058,6 +1133,34 @@ function onDown(e){
   if(tool==='select'){
     if(hit){
       if(hit.type==='table'&&hit.seatIdx!==undefined&&assignArm!==null){placeArmedAtSeat(hit.id,hit.seatIdx);return;}
+
+      // Shift+click a table/stage/textbox/shape (not a specific seat) to add
+      // or remove it from the current multi-selection, without needing to
+      // drag a fresh marquee box every time.
+      if(e.shiftKey&&!(hit.type==='table'&&hit.seatIdx!==undefined)){
+        const already=elIsSelected(hit.type,hit.id);
+        if(already){
+          multiSel=multiSel.filter(m=>!(m.type===hit.type&&m.id===hit.id));
+          if(sel&&sel.type===hit.type&&sel.id===hit.id) sel=multiSel.length?multiSel.shift():null;
+        } else {
+          if(sel&&!(sel.type===hit.type&&sel.id===hit.id)&&!isInMultiSel(sel.type,sel.id)) multiSel.push({type:sel.type,id:sel.id});
+          sel={type:hit.type,id:hit.id};
+        }
+        updateFormatBar();drawAll();return;
+      }
+
+      // Clicking an item that's already part of an active multi-selection
+      // drags the whole group together instead of just that one item.
+      if(multiSel.length>0&&elIsSelected(hit.type,hit.id)){
+        if(hit.type==='table'&&hit.seatIdx!==undefined){openSeatModal(hit.id,hit.seatIdx);return;}
+        elDrag=true;elDragType='group';elDragId=null;
+        elDragStart={x:sp.x,y:sp.y};
+        groupDragOrigin=allSelected().map(m=>{const el=getEl(m.type,m.id);return{type:m.type,id:m.id,x:el?el.x:0,y:el?el.y:0};});
+        updateFormatBar();
+        return;
+      }
+
+      multiSel=[]; // plain click on a non-grouped item resets any prior group
       selectEl(hit.type,hit.id);
       if(hit.type==='table'&&hit.seatIdx!==undefined){openSeatModal(hit.id,hit.seatIdx);return;}
       const el=getEl(hit.type,hit.id);
@@ -1081,7 +1184,13 @@ function onDown(e){
           else if(lpType==='shape') openInspShape(lpId);
         },550);
       }
-    } else {sel=null;closeInsp();hideFormatBar();drawAll();}
+    } else {
+      // Empty canvas: drag a marquee box to select multiple items at once
+      // (mouse only — touch with no hit already turned into panning above).
+      clearAllSelection();closeInsp();hideFormatBar();
+      if(!e.touches){isMarquee=true;marqueeStart={x:sp.x,y:sp.y};marqueeCurrent={x:sp.x,y:sp.y};}
+      drawAll();
+    }
     return;
   }
 
@@ -1089,7 +1198,7 @@ function onDown(e){
   if(tool==='table'){
     saveHist();
     const cap=10,cols=Math.ceil(Math.sqrt(cap));
-    const tw=cols*CELL+(cols-1)*2+PAD*2,th=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+    const tw=cols*CELL+(cols-1)*SEAT_GAP+PAD*2,th=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*SEAT_GAP+PAD*2;
     tables.push({id:nextTId++,name:'โต๊ะ '+(tables.length+1),x:snap(wp.x),y:snap(wp.y),w:tw,h:th,cap,dept:null,seats:Array(cap).fill(null)});
     setTool('select');drawAll();toast('➕ วางโต๊ะแล้ว','ok');return;
   }
@@ -1127,6 +1236,18 @@ function onMove(e){
   if(longPressTimer&&(Math.abs(sp.x-longPressStart.x)>8||Math.abs(sp.y-longPressStart.y)>8)){
     clearTimeout(longPressTimer);longPressTimer=null;
   }
+  if(isMarquee){
+    marqueeCurrent={x:sp.x,y:sp.y};
+    drawMarqueePreview();return;
+  }
+  if(elDrag&&elDragType==='group'){
+    const dx=(sp.x-elDragStart.x)/zoom,dy=(sp.y-elDragStart.y)/zoom;
+    groupDragOrigin.forEach(g=>{
+      const el=getEl(g.type,g.id);
+      if(el){el.x=snap(g.x+dx);el.y=snap(g.y+dy);}
+    });
+    drawAll();return;
+  }
   if(elDrag){
     const dx=(sp.x-elDragStart.x)/zoom,dy=(sp.y-elDragStart.y)/zoom;
     const el=getEl(elDragType,elDragId);
@@ -1160,7 +1281,23 @@ function onUp(e){
   // ถ้าเพิ่งยกนิ้วหนึ่งออก แต่ยังมีนิ้วอื่นอยู่ = pinch กำลังจบ ไม่ต้อง process
   if(e.touches&&e.touches.length>0&&isPanning) return;
   if(isPanning){isPanning=false;_wasPanning=true;setTimeout(()=>{_wasPanning=false;},50);canvas.classList.remove('panning');canvas.style.cursor='';return;}
-  if(elDrag){elDrag=false;elDragType=null;elDragId=null;drawAll();return;}
+  if(isMarquee){
+    isMarquee=false;clearMarqueePreview();
+    const x0=Math.min(marqueeStart.x,marqueeCurrent.x),x1=Math.max(marqueeStart.x,marqueeCurrent.x);
+    const y0=Math.min(marqueeStart.y,marqueeCurrent.y),y1=Math.max(marqueeStart.y,marqueeCurrent.y);
+    const box={x:x0,y:y0,w:x1-x0,h:y1-y0};
+    if(box.w<5&&box.h<5){drawAll();return;} // basically a click on empty space — nothing to select
+    const found=[];
+    tables.forEach(t=>{if(rectsIntersect(tableScreenRect(t),box)) found.push({type:'table',id:t.id});});
+    stages.forEach(s=>{if(rectsIntersect(stageScreenRect(s),box)) found.push({type:'stage',id:s.id});});
+    textboxes.forEach(tb=>{if(rectsIntersect(textboxScreenRect(tb),box)) found.push({type:'textbox',id:tb.id});});
+    shapes.forEach(sh=>{if(rectsIntersect(shapeScreenRect(sh),box)) found.push({type:'shape',id:sh.id});});
+    if(!found.length){clearAllSelection();}
+    else if(found.length===1){sel=found[0];multiSel=[];}
+    else{sel=found[0];multiSel=found.slice(1);toast(`🔲 เลือก ${found.length} รายการ`,'ok');}
+    updateFormatBar();drawAll();return;
+  }
+  if(elDrag){elDrag=false;elDragType=null;elDragId=null;groupDragOrigin=null;drawAll();return;}
   if(elResize){elResize=false;elResHandle=null;canvas.style.cursor='';drawAll();return;}
   if(isDrawing){
     isDrawing=false; clearPreview();
@@ -1188,7 +1325,9 @@ function applyResize(sp){
   const dx=(sp.x-elResStart.x)/zoom,dy=(sp.y-elResStart.y)/zoom;
   const {x,y,w,h}=elResOrigin;
   let nx=el.x,ny=el.y,nw=el.w,nh=el.h;
-  const minW=40,minH=30;
+  // Tables need extra headroom so the header bar + at least a sliver of
+  // seat cell always stays visible/usable, however small it's dragged.
+  const minW=elResType==='table'?70:40, minH=elResType==='table'?HEADER+34:30;
   const h_id=elResHandle;
   // Horizontal
   if(h_id.includes('e')){nw=Math.max(minW,snap(w+dx));}
@@ -1200,9 +1339,11 @@ function applyResize(sp){
   if(elResType==='table'){
     // Mark this table as manually sized so later edits (e.g. changing
     // seat count from the settings panel) never silently resize it back —
-    // the user's own drag always wins from here on.
+    // the user's own drag always wins from here on. The seat cells
+    // themselves (seatGridMetrics) always stretch to fill whatever box
+    // this ends up being, so dragging a table bigger/smaller just makes
+    // its seats bigger/smaller — the seat count stays exactly as set.
     el.manualSize=true;
-    syncTableCap(el);
   }
 }
 
@@ -1239,6 +1380,14 @@ function drawPreview(){
 }
 function clearPreview(){svgOvr.innerHTML='';}
 
+// ── Marquee (rubber-band) selection preview ──
+function drawMarqueePreview(){
+  const x=Math.min(marqueeStart.x,marqueeCurrent.x),y=Math.min(marqueeStart.y,marqueeCurrent.y);
+  const w=Math.abs(marqueeCurrent.x-marqueeStart.x),h=Math.abs(marqueeCurrent.y-marqueeStart.y);
+  svgOvr.innerHTML=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(26,95,122,0.10)" stroke="#1a5f7a" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+}
+function clearMarqueePreview(){svgOvr.innerHTML='';}
+
 // ══════════════════════════════════════════════════════════════════
 //  DOUBLE-CLICK — rename / edit text
 // ══════════════════════════════════════════════════════════════════
@@ -1246,7 +1395,7 @@ canvas.addEventListener('dblclick',e=>{
   if(viewOnly) return;
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
   if(!hit) return;
-  if(hit.type==='table'){const t=getEl('table',hit.id);const name=prompt('ชื่อโต๊ะ:',t.name);if(name!==null&&name.trim()){saveHist();t.name=name.trim();drawAll();}}
+  if(hit.type==='table'){openTableDetails(hit.id);}
   else if(hit.type==='stage'){const s=getEl('stage',hit.id);const lbl=prompt('ข้อความเวที:',s.label);if(lbl!==null){saveHist();s.label=lbl.trim();drawAll();}}
   else if(hit.type==='textbox'){
     textEditId=hit.id;textEditType='textbox';
@@ -1266,6 +1415,7 @@ canvas.addEventListener('contextmenu',e=>{
   if(isPanning) return; // mid-drag pan, not a click
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
   if(hit){
+    multiSel=[]; // opening a single item's settings exits any active group selection
     selectEl(hit.type,hit.id);
     if(hit.type==='table') openInspTable(hit.id);
     else if(hit.type==='textbox') openInspTextbox(hit.id);
@@ -1314,18 +1464,19 @@ document.addEventListener('keydown',e=>{
   else if((e.ctrlKey||e.metaKey)&&k==='s'){e.preventDefault();saveLocal();}
   if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();undoAction();}
   if((e.ctrlKey||e.metaKey)&&k==='d'){e.preventDefault();duplicateSelected();}
-  if((k==='Delete'||k==='Backspace')&&sel){e.preventDefault();saveHist();deleteEl(sel);sel=null;closeInsp();hideFormatBar();drawAll();}
-  if(k==='Escape'){sel=null;closeInsp();hideFormatBar();drawAll();document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}
+  if((k==='Delete'||k==='Backspace')&&(sel||multiSel.length)){e.preventDefault();deleteSelectedUI();}
+  if(k==='Escape'){clearAllSelection();closeInsp();hideFormatBar();drawAll();document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}
   // Font size shortcuts
   if(k==='['&&sel){changeFontSize(-2);}
   if(k===']'&&sel){changeFontSize(2);}
-  // Arrow keys move selected
-  if(sel&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(k)){
+  // Arrow keys move the current selection (whole group, if one is active)
+  if((sel||multiSel.length)&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(k)){
     e.preventDefault();
-    const el=getEl(sel.type,sel.id);if(!el) return;
     const step=e.shiftKey?GRID:4;
-    if(k==='ArrowLeft')el.x-=step;if(k==='ArrowRight')el.x+=step;
-    if(k==='ArrowUp')el.y-=step;if(k==='ArrowDown')el.y+=step;
+    let dx=0,dy=0;
+    if(k==='ArrowLeft')dx=-step;if(k==='ArrowRight')dx=step;
+    if(k==='ArrowUp')dy=-step;if(k==='ArrowDown')dy=step;
+    allSelected().forEach(it=>{const el=getEl(it.type,it.id);if(el){el.x+=dx;el.y+=dy;}});
     drawAll();
   }
 });
@@ -1383,53 +1534,56 @@ function deleteEl(h){
 // Mirrors what right-click (desktop) / Delete key already do, but as
 // tappable buttons so they work with no mouse and no keyboard.
 function updateSelToolbarBtns(){
-  const has=!!sel;
+  const has=!!sel||multiSel.length>0;
+  const isGroup=multiSel.length>0;
   const eb=document.getElementById('btn-edit-sel'),db=document.getElementById('btn-del-sel');
-  if(eb) eb.disabled=!has;
+  if(eb) eb.disabled=!has||isGroup; // settings panel only makes sense for one item at a time
   if(db) db.disabled=!has;
 }
 function editSelected(){
-  if(!sel) return;
+  if(!sel||multiSel.length>0) return;
   if(sel.type==='table') openInspTable(sel.id);
   else if(sel.type==='stage') openInspStage(sel.id);
   else if(sel.type==='textbox') openInspTextbox(sel.id);
   else if(sel.type==='shape') openInspShape(sel.id);
 }
 function deleteSelectedUI(){
-  if(!sel) return;
-  saveHist();deleteEl(sel);sel=null;closeInsp();hideFormatBar();drawAll();updateSelToolbarBtns();
+  const items=allSelected();
+  if(!items.length) return;
+  saveHist();
+  items.forEach(it=>deleteEl(it));
+  clearAllSelection();closeInsp();hideFormatBar();drawAll();updateSelToolbarBtns();
+  if(items.length>1) toast(`🗑️ ลบแล้ว ${items.length} รายการ`,'ok');
 }
 
 function duplicateSelected(){
-  if(!sel) return;
+  const items=allSelected();
+  if(!items.length) return;
   saveHist();
-  const el=getEl(sel.type,sel.id);if(!el) return;
-  const copy=JSON.parse(JSON.stringify(el));
-  copy.x+=GRID*2;copy.y+=GRID*2;
-  if(sel.type==='table'){copy.id=nextTId++;copy.seats=copy.seats.map(()=>null);tables.push(copy);}
-  else if(sel.type==='stage'){copy.id=nextSId++;stages.push(copy);}
-  else if(sel.type==='textbox'){copy.id=nextTBId++;textboxes.push(copy);}
-  else if(sel.type==='shape'){copy.id=nextShId++;shapes.push(copy);}
-  sel={type:sel.type,id:copy.id};
-  drawAll();toast('⎘ ทำซ้ำแล้ว','ok');
-}
-
-function syncTableCap(t){
-  const cols=Math.max(1,Math.floor((t.w-PAD*2)/(CELL+2)));
-  const rows=Math.max(1,Math.floor((t.h-HEADER-PAD*2)/(CELL+2)));
-  const newCap=Math.max(1,Math.min(50,cols*rows));
-  if(newCap===t.cap) return;
-  const old=t.seats.slice();t.cap=newCap;t.seats=Array(newCap).fill(null);
-  for(let i=0;i<Math.min(old.length,newCap);i++) t.seats[i]=old[i];
+  const newSel=[];
+  items.forEach(it=>{
+    const el=getEl(it.type,it.id);if(!el) return;
+    const copy=JSON.parse(JSON.stringify(el));
+    copy.x+=GRID*2;copy.y+=GRID*2;
+    if(it.type==='table'){copy.id=nextTId++;copy.seats=copy.seats.map(()=>null);tables.push(copy);}
+    else if(it.type==='stage'){copy.id=nextSId++;stages.push(copy);}
+    else if(it.type==='textbox'){copy.id=nextTBId++;textboxes.push(copy);}
+    else if(it.type==='shape'){copy.id=nextShId++;shapes.push(copy);}
+    newSel.push({type:it.type,id:copy.id});
+  });
+  if(!newSel.length) return;
+  sel=newSel[0];multiSel=newSel.slice(1);
+  drawAll();toast(newSel.length>1?`⎘ ทำซ้ำแล้ว ${newSel.length} รายการ`:'⎘ ทำซ้ำแล้ว','ok');
 }
 
 // ══════════════════════════════════════════════════════════════════
 //  FORMAT BAR (dynamic, context-sensitive)
 // ══════════════════════════════════════════════════════════════════
 function updateFormatBar(){
+  const fb=document.getElementById('format-bar');
+  if(multiSel.length>0){fb.classList.remove('visible');return;} // mixed-type group — no single format panel
   if(!sel) return;
   const el=getEl(sel.type,sel.id);if(!el) return;
-  const fb=document.getElementById('format-bar');
   const isText=sel.type==='textbox';
   const isShape=sel.type==='shape';
   const isStage=sel.type==='stage';
@@ -1529,7 +1683,7 @@ function openInspTable(tid){
     <div class="insp-row" style="align-items:center;gap:10px;margin-top:6px">
       <div style="flex:1">
         <div class="insp-lbl" style="margin-bottom:2px">ขนาด</div>
-        <input class="insp-inp" type="number" id="ii-fontsize" value="${t.fontSize||17}" min="10" max="30" style="font-family:var(--mono)">
+        <input class="insp-inp" type="number" id="ii-fontsize" value="${t.fontSize||19}" min="10" max="30" style="font-family:var(--mono)">
       </div>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;padding-top:14px"><input type="checkbox" id="ii-bold" ${t.bold===false?'':'checked'}> <b>ตัวหนา</b></label>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;padding-top:14px"><input type="checkbox" id="ii-italic" ${t.italic?'checked':''}> <i>ตัวเอียง</i></label>
@@ -1569,7 +1723,7 @@ function applyInspTable(tid){
   t.name=name;t.dept=dept||null;t.x=+document.getElementById('ii-x').value||t.x;t.y=+document.getElementById('ii-y').value||t.y;
   t.color=colorAuto?null:document.getElementById('ii-color').value;
   t.font=document.getElementById('ii-font').value;
-  t.fontSize=Math.max(10,Math.min(30,parseInt(document.getElementById('ii-fontsize').value)||17));
+  t.fontSize=Math.max(10,Math.min(30,parseInt(document.getElementById('ii-fontsize').value)||19));
   t.bold=document.getElementById('ii-bold').checked;
   t.italic=document.getElementById('ii-italic').checked;
   if(cap!==t.cap){
@@ -1577,7 +1731,7 @@ function applyInspTable(tid){
     // Only auto-resize the table box when the user hasn't manually
     // stretched/shrunk it by hand — a manual size is never overwritten.
     if(!t.manualSize){
-      const cols=Math.ceil(Math.sqrt(cap));t.w=cols*CELL+(cols-1)*2+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+      const cols=Math.ceil(Math.sqrt(cap));t.w=cols*CELL+(cols-1)*SEAT_GAP+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*SEAT_GAP+PAD*2;
     }
   }
   drawAll();toast(`✔ อัปเดตโต๊ะ "${name}"`,'ok');
@@ -1590,7 +1744,7 @@ function resetTableManualSize(tid){
   saveHist();
   t.manualSize=false;
   const cap=t.cap,cols=Math.ceil(Math.sqrt(cap));
-  t.w=cols*CELL+(cols-1)*2+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+  t.w=cols*CELL+(cols-1)*SEAT_GAP+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*SEAT_GAP+PAD*2;
   drawAll();openInspTable(tid);toast('↺ กลับเป็นขนาดอัตโนมัติแล้ว','ok');
 }
 
@@ -1763,11 +1917,63 @@ function removeSeatPerson(){
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  TABLE DETAILS (double-click a table → view who's sitting there)
+// ══════════════════════════════════════════════════════════════════
+function openTableDetails(tid){
+  const t=getEl('table',tid);if(!t) return;
+  tableDetailsTid=tid;
+  const seated=t.seats.map((pid,i)=>({idx:i,pid,p:pid?getPerson(pid):null})).filter(s=>s.p);
+  document.getElementById('td-title').textContent=`👥 รายชื่อในโต๊ะ: ${t.name}`;
+  document.getElementById('td-sub').innerHTML=
+    `${t.dept?`กลุ่มงาน: <b>${esc(t.dept)}</b> · `:''}นั่งแล้ว <b>${seated.length}</b> / ${t.cap} คน`;
+  const body=document.getElementById('td-list');
+  if(!seated.length){
+    body.innerHTML='<div class="td-empty">🪑 ยังไม่มีใครนั่งที่โต๊ะนี้<br><span style="font-size:10.5px">ลากรายชื่อจากแท็บ "รอจัดที่นั่ง" มาวางได้เลย</span></div>';
+  } else {
+    seated.sort((a,b)=>a.idx-b.idx);
+    body.innerHTML=seated.map(s=>{
+      const noAttend=s.p.intent==='ไม่เข้าร่วม';
+      const dotColor=noAttend?'var(--red)':(s.p.status==='checkin'?'var(--green)':'var(--gold)');
+      return `<div class="td-row">
+        <div class="pc-dot" style="background:${dotColor};flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div class="td-row-name">ที่นั่ง ${s.idx+1} · ${esc(s.p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}</div>
+          <div class="td-row-sub">${esc(s.p.mission||'')}${s.p.dept?' · '+esc(s.p.dept):''}</div>
+        </div>
+        <button type="button" class="insp-btn" title="แก้ไขรายชื่อ" onclick="closeModal('modal-table-details');openEditPerson('${s.p.id}')">✏️</button>
+        <button type="button" class="insp-btn d" title="ถอดออกจากโต๊ะ" onclick="removeSeatFromDetails(${tid},${s.idx})">✕</button>
+      </div>`;
+    }).join('');
+  }
+  openModal('modal-table-details');
+}
+function removeSeatFromDetails(tid,si){
+  const t=getEl('table',tid);if(!t) return;
+  saveHist();t.seats[si]=null;drawAll();renderPool();openTableDetails(tid);toast('ถอดออกแล้ว','ok');
+}
+function openTableSettingsFromDetails(){
+  const tid=tableDetailsTid;
+  closeModal('modal-table-details');
+  if(tid!=null) openInspTable(tid);
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  POOL
 // ══════════════════════════════════════════════════════════════════
+// Rebuilds the department dropdown options, keeping whatever the user
+// currently has selected (so re-rendering the pool never resets their filter).
+function refreshPoolDeptFilter(){
+  const sel=document.getElementById('pool-dept-filter');if(!sel) return;
+  const cur=sel.value;
+  const depts=allDeptNames();
+  sel.innerHTML='<option value="">🗂️ ทุกกลุ่มงาน</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  if(cur&&depts.includes(cur)) sel.value=cur;
+}
 function renderPool(){
+  refreshPoolDeptFilter();
   const q=(document.getElementById('pool-search')?.value||'').toLowerCase(),seated=seatedSet();
-  const list=people.filter(p=>!seated.has(String(p.id))&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
+  const deptFilter=document.getElementById('pool-dept-filter')?.value||'';
+  const list=people.filter(p=>!seated.has(String(p.id))&&(!deptFilter||p.dept===deptFilter)&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
   document.getElementById('pool-cnt').textContent=list.length;
   const el=document.getElementById('pool-list');
   if(!list.length){el.innerHTML=`<div class="pool-empty">${q?'🔍 ไม่พบ':'✅ ทุกคนมีที่นั่งแล้ว'}</div>`;return;}
@@ -1880,7 +2086,7 @@ function autoAssignByDept(){
       const cap=Math.min(10,Math.max(4,list.length));
       const chunk=list.splice(0,cap);
       const cols=Math.ceil(Math.sqrt(cap));
-      const tw=cols*CELL+(cols-1)*2+PAD*2,th=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+      const tw=cols*CELL+(cols-1)*SEAT_GAP+PAD*2,th=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*SEAT_GAP+PAD*2;
       if(curX+tw>ROW_W){curX=40;curY+=rowH+30;rowH=0;}
       const nt={id:nextTId++,name:dept===NO_DEPT?'โต๊ะ '+(tables.length+1):dept,x:snap(curX),y:snap(curY),
         w:tw,h:th,cap,dept:dept===NO_DEPT?null:dept,seats:Array(cap).fill(null)};
@@ -2084,7 +2290,7 @@ function exportJSON(){const blob=new Blob([JSON.stringify(getSnapshot(),null,2)]
 function initDefaultLayout(){
   stages.push({id:nextSId++,x:200,y:30,w:320,h:54,label:'▲ STAGE / จอภาพ'});
   const mkT=(name,x,y,cap=10)=>{
-    const cols=Math.ceil(Math.sqrt(cap)),tw=cols*CELL+(cols-1)*2+PAD*2,th=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+    const cols=Math.ceil(Math.sqrt(cap)),tw=cols*CELL+(cols-1)*SEAT_GAP+PAD*2,th=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*SEAT_GAP+PAD*2;
     return{id:nextTId++,name,x,y,w:tw,h:th,cap,seats:Array(cap).fill(null)};
   };
   tables.push(mkT('กลุ่มการพยาบาล',40,140),mkT('กลุ่มการแพทย์',340,140),mkT('กลุ่มสนับสนุน',40,380),mkT('กลุ่มอำนวยการ',340,380));
