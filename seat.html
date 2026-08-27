@@ -693,7 +693,7 @@ function tableHeaderColor(t){ return t.color || deptColor(t.dept); }
 // ══════════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════════
-let tables  = [];  // {id,name,x,y,w,h,cap,dept,color,font,fontSize,bold,italic,seats:[pid|null,...]}
+let tables  = [];  // {id,name,x,y,w,h,cap,dept,color,font,fontSize,bold,italic,manualSize,seats:[pid|null,...]}
 let stages  = [];  // {id,x,y,w,h,label}
 let textboxes=[];  // {id,x,y,w,h,text,font,fontSize,bold,italic,underline,align,textColor,fillColor,strokeColor,strokeWidth,opacity,cornerRadius,padding}
 let shapes  = [];  // {id,type:'rect'|'ellipse'|'line'|'arrow',x,y,w,h,fillColor,strokeColor,strokeWidth,opacity,cornerRadius,dash,arrowhead}
@@ -1020,7 +1020,14 @@ function onDown(e){
   if(tool==='hand'||(isMiddleClick)||(e.button===0&&spaceDown)){
     isPanning=true;panStart={x:sp.x-panX,y:sp.y-panY};canvas.classList.add('panning');return;
   }
-  if(isRightClick){isPanning=true;panStart={x:sp.x-panX,y:sp.y-panY};canvas.classList.add('panning');return;}
+  if(isRightClick){
+    // Right-click on an element → let the 'contextmenu' event open its
+    // settings/edit panel (see below). Only pan when right-clicking
+    // empty canvas space.
+    const rhit=hitTest(sp,wp);
+    if(!rhit){isPanning=true;panStart={x:sp.x-panX,y:sp.y-panY};canvas.classList.add('panning');}
+    return;
+  }
   if(e.button!==0&&!e.touches) return;
 
   // Check resize handles for selected element
@@ -1190,7 +1197,13 @@ function applyResize(sp){
   if(h_id.includes('s')){nh=Math.max(minH,snap(h+dy));}
   if(h_id.includes('n')){const rh=Math.max(minH,snap(h-dy));ny=snap(y+h-rh);nh=rh;}
   el.x=nx;el.y=ny;el.w=nw;el.h=nh;
-  if(elResType==='table') syncTableCap(el);
+  if(elResType==='table'){
+    // Mark this table as manually sized so later edits (e.g. changing
+    // seat count from the settings panel) never silently resize it back —
+    // the user's own drag always wins from here on.
+    el.manualSize=true;
+    syncTableCap(el);
+  }
 }
 
 function getSelScreenRect(){
@@ -1244,11 +1257,13 @@ canvas.addEventListener('dblclick',e=>{
   }
 });
 
-// Right-click: inspector (ถ้าไม่ได้ pan)
+// Right-click on a table/stage/textbox/shape → open its settings/edit
+// panel directly (no browser context menu). Right-click on empty canvas
+// still pans (handled in onDown), so this only fires for a hit element.
 canvas.addEventListener('contextmenu',e=>{
   e.preventDefault();
   if(viewOnly) return;
-  if(isPanning||_wasPanning){_wasPanning=false;return;}
+  if(isPanning) return; // mid-drag pan, not a click
   const sp=getCP(e),wp=s2w(sp.x,sp.y),hit=hitTest(sp,wp);
   if(hit){
     selectEl(hit.type,hit.id);
@@ -1526,6 +1541,10 @@ function openInspTable(tid){
       <input class="insp-inp" type="number" id="ii-cap" value="${t.cap}" min="1" max="50" style="font-family:var(--mono);text-align:center">
       <button class="insp-btn" style="width:34px;flex:none;padding:0" onclick="document.getElementById('ii-cap').stepUp();">+</button>
     </div>
+    ${t.manualSize?`<div style="font-size:10px;color:var(--text-3);margin:2px 0 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span>📐 ขนาดโต๊ะถูกปรับด้วยมือ — จะไม่ถูกปรับอัตโนมัติเมื่อเปลี่ยนจำนวนเก้าอี้อีกต่อไป</span>
+      <button type="button" style="border:1px solid var(--border2);background:var(--surface2);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:10px;color:var(--text-2)" onclick="resetTableManualSize(${tid})">↺ กลับเป็นขนาดอัตโนมัติ</button>
+    </div>`:''}
     <div class="insp-lbl">ตำแหน่ง X / Y</div>
     <div class="insp-row">
       <input class="insp-inp" type="number" id="ii-x" value="${Math.round(t.x)}" style="width:60px">
@@ -1553,9 +1572,26 @@ function applyInspTable(tid){
   t.fontSize=Math.max(10,Math.min(30,parseInt(document.getElementById('ii-fontsize').value)||17));
   t.bold=document.getElementById('ii-bold').checked;
   t.italic=document.getElementById('ii-italic').checked;
-  if(cap!==t.cap){const old=t.seats.slice();t.cap=cap;t.seats=Array(cap).fill(null);for(let i=0;i<Math.min(old.length,cap);i++) t.seats[i]=old[i];
-    const cols=Math.ceil(Math.sqrt(cap));t.w=cols*CELL+(cols-1)*2+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;}
+  if(cap!==t.cap){
+    const old=t.seats.slice();t.cap=cap;t.seats=Array(cap).fill(null);for(let i=0;i<Math.min(old.length,cap);i++) t.seats[i]=old[i];
+    // Only auto-resize the table box when the user hasn't manually
+    // stretched/shrunk it by hand — a manual size is never overwritten.
+    if(!t.manualSize){
+      const cols=Math.ceil(Math.sqrt(cap));t.w=cols*CELL+(cols-1)*2+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+    }
+  }
   drawAll();toast(`✔ อัปเดตโต๊ะ "${name}"`,'ok');
+}
+
+// Clears the "manual size" lock so this table goes back to auto-sizing
+// itself from its seat count, like a freshly placed table.
+function resetTableManualSize(tid){
+  const t=getEl('table',tid);if(!t) return;
+  saveHist();
+  t.manualSize=false;
+  const cap=t.cap,cols=Math.ceil(Math.sqrt(cap));
+  t.w=cols*CELL+(cols-1)*2+PAD*2;t.h=HEADER+Math.ceil(cap/cols)*CELL+(Math.ceil(cap/cols)-1)*2+PAD*2;
+  drawAll();openInspTable(tid);toast('↺ กลับเป็นขนาดอัตโนมัติแล้ว','ok');
 }
 
 function openInspStage(sid){
