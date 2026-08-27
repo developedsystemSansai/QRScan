@@ -606,6 +606,10 @@ body.view-only .vo-bar{display:flex}
     <div class="modal-title">🪑 จัดที่นั่ง</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px" id="seat-info"></div>
     <div class="mf">
+      <label class="ml">กรองกลุ่มงาน</label>
+      <select class="pool-dept-filter" id="seat-dept-filter" onchange="renderSeatList()" style="margin-bottom:6px">
+        <option value="">🗂️ ทุกกลุ่มงาน</option>
+      </select>
       <label class="ml">ค้นหาชื่อ</label>
       <input class="mi" id="seat-q" placeholder="พิมพ์ชื่อ..." oninput="renderSeatList()" style="margin-bottom:6px">
       <div class="seat-list-wrap" id="seat-list"></div>
@@ -968,8 +972,8 @@ function drawTableViewOnly(t,sr,isSel){
 
   const nameMaxW=Math.max(20*zoom,sr.w-pad*2);
   const nameMaxH=Math.max(20*zoom,sr.h-pad*2-deptBlockH);
-  const nameMaxSize=Math.min(sr.h*0.4,40*zoom);
-  const fit=fitTextBlock(t.name,nameMaxW,nameMaxH,tWeight,tFont,nameMaxSize,13);
+  const nameMaxSize=Math.min(sr.h*0.55,64*zoom);
+  const fit=fitTextBlock(t.name,nameMaxW,nameMaxH,tWeight,tFont,nameMaxSize,18);
   ctx.font=`${tItalic}${tWeight} ${fit.size}px "${tFont}",Tahoma,sans-serif`;
   ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.textAlign='center';
   const lineH=fit.size*1.18;
@@ -1961,12 +1965,27 @@ function openSeatModal(tid,si){
   document.getElementById('seat-info').innerHTML=
     `<b>โต๊ะ:</b> ${esc(t.name)} · <b>ที่นั่ง:</b> ${si+1}`+(p?`<br><b>ผู้นั่ง:</b> <span style="color:var(--primary);font-weight:700">${esc(p.name)}</span>`:'<br><i style="color:var(--text-3)">ว่าง</i>');
   document.getElementById('seat-rm-btn').style.display=pid?'':'none';
-  document.getElementById('seat-q').value='';renderSeatList();openModal('modal-seat');
+  document.getElementById('seat-q').value='';
+  const df=document.getElementById('seat-dept-filter');if(df) df.value='';
+  renderSeatList();openModal('modal-seat');
+}
+
+// Keeps the seat-assign modal's dept dropdown in sync with whatever
+// departments currently exist among people/tables (same source as the
+// sidebar's pool filter — see refreshPoolDeptFilter/allDeptNames).
+function refreshSeatDeptFilter(){
+  const sel=document.getElementById('seat-dept-filter');if(!sel) return;
+  const cur=sel.value;
+  const depts=allDeptNames();
+  sel.innerHTML='<option value="">🗂️ ทุกกลุ่มงาน</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  if(cur&&depts.includes(cur)) sel.value=cur;
 }
 
 function renderSeatList(){
+  refreshSeatDeptFilter();
   const q=(document.getElementById('seat-q').value||'').toLowerCase(),seated=seatedSet(),t=getEl('table',seatModalTid);
-  const list=people.filter(p=>!q?(!seated.has(String(p.id))||p.id===t?.seats[seatModalSi]):p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q));
+  const deptFilter=document.getElementById('seat-dept-filter')?.value||'';
+  const list=people.filter(p=>(!deptFilter||p.dept===deptFilter)&&(!q?(!seated.has(String(p.id))||p.id===t?.seats[seatModalSi]):p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)));
   const el=document.getElementById('seat-list');
   if(!list.length){el.innerHTML='<div style="padding:12px;font-size:12px;color:var(--text-3);text-align:center">ไม่พบ</div>';return;}
   el.innerHTML=list.slice(0,30).map(p=>{
