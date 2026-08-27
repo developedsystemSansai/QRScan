@@ -109,6 +109,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
   background:var(--surface2);transition:border-color .18s;margin-bottom:4px}
 .pool-search:focus{border-color:var(--primary)}
 .pool-hint{font-size:10px;color:var(--text-3);margin-bottom:6px}
+.pool-attend-filter{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-2);
+  margin:-1px 0 6px;cursor:pointer;user-select:none}
+.pool-attend-filter input{cursor:pointer}
 .pool-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding-bottom:8px;-webkit-overflow-scrolling:touch}
 .pool-chip{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1.5px solid var(--border);
   border-radius:var(--r-sm);background:var(--surface2);cursor:grab;transition:all .15s;user-select:none}
@@ -229,6 +232,9 @@ body.view-only .vo-bar{display:flex}
 
 /* ── LIST VIEW ── */
 .list-outer{display:none;flex:1;overflow-y:auto;padding:14px}
+.list-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;position:sticky;top:0;
+  background:var(--bg);padding:4px 0 8px;z-index:5}
+.list-toolbar .pool-dept-filter,.list-toolbar .pool-search{margin-bottom:0;flex:1 1 200px;min-width:160px}
 .list-sec{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px}
 .list-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--primary);color:#fff}
 .list-hd-name{font-size:13px;font-weight:700;font-family:var(--serif)}
@@ -332,6 +338,7 @@ body.view-only .vo-bar{display:flex}
   .canvas-area,.canvas-outer{overflow:visible!important;height:auto!important}
   #room-canvas{display:none!important}
   .list-outer{display:block!important;height:auto!important}
+  .list-toolbar{display:none!important}
 }
 </style>
 </head>
@@ -417,6 +424,7 @@ body.view-only .vo-bar{display:flex}
           <option value="">🗂️ ทุกกลุ่มงาน</option>
         </select>
         <input class="pool-search" type="text" id="pool-search" placeholder="🔍 ค้นหาชื่อ / กลุ่มงาน..." oninput="renderPool()">
+        <label class="pool-attend-filter"><input type="checkbox" id="pool-attend-filter" onchange="renderPool()"> ✅ เฉพาะผู้ที่เข้าร่วม (ซ่อนผู้แจ้งไม่เข้าร่วม)</label>
         <div class="pool-hint">ลากมาวางบนโต๊ะ · <span id="pool-cnt">0</span> คนที่รอ</div>
         <div class="pool-list" id="pool-list"></div>
       </div>
@@ -573,7 +581,15 @@ body.view-only .vo-bar{display:flex}
     </div>
 
     <!-- List view -->
-    <div class="list-outer" id="list-outer"></div>
+    <div class="list-outer" id="list-outer">
+      <div class="list-toolbar" id="list-toolbar">
+        <select class="pool-dept-filter" id="list-table-filter" onchange="renderList()">
+          <option value="">🪑 ทุกโต๊ะ</option>
+        </select>
+        <input class="pool-search" type="text" id="list-name-search" placeholder="🔍 ค้นหาชื่อของฉัน..." oninput="renderList()">
+      </div>
+      <div id="list-body"></div>
+    </div>
   </div>
 </div>
 
@@ -2171,10 +2187,11 @@ function renderPool(){
   refreshPoolDeptFilter();
   const q=(document.getElementById('pool-search')?.value||'').toLowerCase(),seated=seatedSet();
   const deptFilter=document.getElementById('pool-dept-filter')?.value||'';
-  const list=people.filter(p=>!seated.has(String(p.id))&&(!deptFilter||(p.dept||'').trim()===deptFilter)&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
+  const attendOnly=document.getElementById('pool-attend-filter')?.checked;
+  const list=people.filter(p=>!seated.has(String(p.id))&&(!deptFilter||(p.dept||'').trim()===deptFilter)&&(!attendOnly||p.intent!=='ไม่เข้าร่วม')&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
   document.getElementById('pool-cnt').textContent=list.length;
   const el=document.getElementById('pool-list');
-  if(!list.length){el.innerHTML=`<div class="pool-empty">${q?'🔍 ไม่พบ':'✅ ทุกคนมีที่นั่งแล้ว'}</div>`;return;}
+  if(!list.length){el.innerHTML=`<div class="pool-empty">${q?'🔍 ไม่พบ':(attendOnly||deptFilter?'🔍 ไม่พบตามตัวกรองที่เลือก':'✅ ทุกคนมีที่นั่งแล้ว')}</div>`;return;}
   el.innerHTML=list.map(p=>{
     const noAttend=p.intent==='ไม่เข้าร่วม';
     const dotColor=noAttend?'var(--red)':(p.status==='checkin'?'var(--green)':'var(--gold)');
@@ -2382,10 +2399,49 @@ function openViewOnlyTab(){
   if(!w) toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — ลองใช้ 🔗 ลิงก์แสดงผัง แทน','warn');
 }
 
+function refreshListTableFilter(){
+  const sel=document.getElementById('list-table-filter');if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">🪑 ทุกโต๊ะ</option>'+
+    tables.map(t=>`<option value="${t.id}">🪑 ${esc(t.name)}</option>`).join('')+
+    '<option value="__unassigned">⚠️ ยังไม่มีที่นั่ง</option>';
+  if(cur&&[...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+
 function renderList(){
-  const el=document.getElementById('list-outer'),seated=seatedSet();
+  refreshListTableFilter();
+  const body=document.getElementById('list-body'),seated=seatedSet();
+  const tableFilter=document.getElementById('list-table-filter')?.value||'';
+  const q=(document.getElementById('list-name-search')?.value||'').trim().toLowerCase();
   let html='';
-  tables.forEach(t=>{
+
+  // ── Name search: find a specific person anywhere in the event,
+  //    regardless of which table they ended up at (or whether they
+  //    have a seat at all yet) — this is what lets an attendee find
+  //    their own name without knowing their table first. ──
+  if(q){
+    const matches=people.filter(p=>p.name.toLowerCase().includes(q));
+    if(!matches.length){
+      body.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text-3)">🔍 ไม่พบชื่อที่ตรงกับ "${esc(q)}"</div>`;
+      return;
+    }
+    html+=`<table class="lst"><thead><tr><th>ชื่อ-นามสกุล</th><th>กลุ่มงาน</th><th>โต๊ะ</th><th>สถานะ</th></tr></thead><tbody>`+
+      matches.map(p=>{
+        const loc=findSeat(p.id);
+        return `<tr><td style="font-weight:600">${esc(p.name)}</td><td style="color:var(--text-2);font-size:11px">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</td>`+
+          `<td style="font-weight:700;color:var(--primary)">${loc?'🪑 '+esc(loc.table.name):'<span style="color:var(--text-3);font-weight:400">ยังไม่มีที่นั่ง</span>'}</td>`+
+          `<td>${p.status==='checkin'?'<span class="badge ci">✅ เช็คอิน</span>':'<span class="badge reg">⏳ ลงทะเบียน</span>'}</td></tr>`;
+      }).join('')+`</tbody></table>`;
+    body.innerHTML=html;
+    return;
+  }
+
+  // ── No search text: normal grouped-by-table view, optionally
+  //    narrowed to one table (or the unassigned list) via the dropdown. ──
+  const showUnassigned=!tableFilter||tableFilter==='__unassigned';
+  const tablesToShow=tableFilter&&tableFilter!=='__unassigned'?tables.filter(t=>String(t.id)===String(tableFilter)):(tableFilter==='__unassigned'?[]:tables);
+
+  tablesToShow.forEach(t=>{
     const members=t.seats.filter(Boolean).map(pid=>getPerson(pid)).filter(Boolean);
     html+=`<div class="list-sec"><div class="list-hd"><span class="list-hd-name">🪑 ${esc(t.name)}</span><span class="list-hd-cnt">${members.length}/${t.cap}</span></div>`;
     if(!members.length) html+=`<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-3)">ยังว่าง</div>`;
@@ -2394,11 +2450,13 @@ function renderList(){
       `</tbody></table>`;
     html+=`</div>`;
   });
-  const unassigned=people.filter(p=>!seated.has(String(p.id)));
-  if(unassigned.length){html+=`<div class="list-sec" style="border-color:var(--gold)"><div class="list-hd" style="background:var(--gold)"><span class="list-hd-name">⚠️ ยังไม่มีที่นั่ง</span><span class="list-hd-cnt">${unassigned.length} คน</span></div><table class="lst"><thead><tr><th>#</th><th>ชื่อ</th><th>กลุ่มงาน</th></tr></thead><tbody>`+
+  if(showUnassigned){
+    const unassigned=people.filter(p=>!seated.has(String(p.id)));
+    if(unassigned.length){html+=`<div class="list-sec" style="border-color:var(--gold)"><div class="list-hd" style="background:var(--gold)"><span class="list-hd-name">⚠️ ยังไม่มีที่นั่ง</span><span class="list-hd-cnt">${unassigned.length} คน</span></div><table class="lst"><thead><tr><th>#</th><th>ชื่อ</th><th>กลุ่มงาน</th></tr></thead><tbody>`+
     unassigned.map((p,i)=>`<tr><td>${i+1}</td><td style="font-weight:600">${esc(p.name)}</td><td style="font-size:11px;color:var(--text-2)">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</td></tr>`).join('')+
     `</tbody></table></div>`;}
-  el.innerHTML=html||'<div style="padding:40px;text-align:center;color:var(--text-3)">ยังไม่มีข้อมูล</div>';
+  }
+  body.innerHTML=html||'<div style="padding:40px;text-align:center;color:var(--text-3)">ยังไม่มีข้อมูล</div>';
 }
 
 // ══════════════════════════════════════════════════════════════════
