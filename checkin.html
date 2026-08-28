@@ -24,6 +24,8 @@
 html,body{height:100%}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;
   display:flex;flex-direction:column;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 
 /* ── Header ── */
 header{background:var(--primary-dk);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex-shrink:0}
@@ -40,8 +42,17 @@ header .sub{font-size:11.5px;opacity:.8;font-weight:400}
   border-radius:var(--r);padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
 #reload-btn:hover{background:rgba(255,255,255,.2)}
 #reload-btn:disabled{opacity:.5;cursor:default}
+#last-updated{font-size:11px;opacity:.8}
 
-/* ── Search bar ── */
+/* ── Main tab switcher (เช็คอิน / Dashboard) ── */
+.maintabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 18px}
+.maintabs button{font-family:inherit;font-size:13.5px;font-weight:700;padding:13px 18px;border:none;background:none;
+  color:var(--text-3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.maintabs button.on{color:var(--primary);border-bottom-color:var(--primary)}
+.maintabs button:hover{color:var(--primary-dk)}
+
+/* ── Search bar (เช็คอิน view) ── */
+#view-checkin{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .search-wrap{padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
 #search{width:100%;font-size:18px;padding:14px 16px;border:1.5px solid var(--border2);border-radius:var(--r-lg);
   font-family:inherit;background:var(--surface2)}
@@ -51,7 +62,7 @@ header .sub{font-size:11.5px;opacity:.8;font-weight:400}
   border:1.5px solid var(--border2);background:var(--surface);color:var(--text-2);cursor:pointer}
 .filters button.on{background:var(--primary);border-color:var(--primary);color:#fff}
 
-/* ── List ── */
+/* ── Check-in list ── */
 #list{flex:1;overflow-y:auto;padding:10px 18px 90px}
 .empty{text-align:center;color:var(--text-3);padding:60px 20px;font-size:14px}
 .card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;
@@ -73,14 +84,54 @@ header .sub{font-size:11.5px;opacity:.8;font-weight:400}
 .action-btn.checkin:active{background:var(--primary-dk)}
 .action-btn.undo{background:transparent;color:var(--text-3);border:1.5px solid var(--border2);font-size:12.5px;padding:10px 14px}
 
-/* ── Toast ── */
+/* ── Dashboard view ── */
+#view-dashboard{flex:1;overflow-y:auto;padding:18px 20px 60px;display:none}
+.overview{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.gauge-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--sh);
+  padding:16px 22px;display:flex;align-items:center;gap:16px}
+.stat-cards{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh);
+  padding:12px 18px;min-width:110px}
+.stat-card b{display:block;font-size:22px;line-height:1.2}
+.stat-card span{font-size:11.5px;color:var(--text-3)}
+.stat-card.green b{color:var(--green)}
+.stat-card.gold b{color:var(--gold)}
+.stat-card.red b{color:var(--red)}
+.dash-controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+#dash-q{flex:1;min-width:180px;max-width:320px;font-family:inherit;font-size:13.5px;padding:9px 14px;
+  border:1.5px solid var(--border2);border-radius:20px;background:var(--surface)}
+#dash-q:focus{outline:none;border-color:var(--primary)}
+#dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.dept-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh);
+  padding:14px 16px;display:flex;align-items:center;gap:12px}
+.dept-card .name{font-size:13.5px;font-weight:700;line-height:1.3}
+.dept-card .count{font-size:12px;color:var(--text-2);margin-top:2px}
+.bar-track{height:6px;background:var(--bg2);border-radius:4px;margin-top:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:11px 14px;background:var(--surface2);color:var(--text-2);font-weight:700;
+  font-size:11.5px;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none}
+thead th:hover{color:var(--primary)}
+thead th.sorted::after{content:' ▾';font-size:10px}
+thead th.sorted.asc::after{content:' ▴'}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--surface2)}
+.tbl-name{font-weight:700}
+.tbl-dept-tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;
+  background:var(--primary-lt);color:var(--primary-dk);margin-top:2px}
+.progress-cell{display:flex;align-items:center;gap:8px;min-width:140px}
+.progress-cell .bar-track{flex:1;margin-top:0}
+.pct{font-size:11.5px;font-weight:700;color:var(--text-2);width:34px;text-align:right}
+
+/* ── Toast + loading ── */
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--text);
   color:#fff;padding:12px 22px;border-radius:24px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;
   transition:.25s;box-shadow:var(--sh);z-index:50}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.err{background:var(--red)}
 #toast.ok{background:var(--green)}
-
 #load-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;
   flex-direction:column;gap:10px;z-index:100;font-size:14px;color:var(--text-2)}
 #load-overlay.hidden{display:none}
@@ -90,7 +141,9 @@ header .sub{font-size:11.5px;opacity:.8;font-weight:400}
 
 @media(max-width:640px){
   header{padding:12px 14px}header h1{font-size:14px}.stats{gap:6px}.stat{padding:5px 8px;min-width:52px}
-  .search-wrap,#list{padding-left:14px;padding-right:14px}
+  .search-wrap,#list,#view-dashboard{padding-left:14px;padding-right:14px}
+  .maintabs{padding:0 14px}
+  thead th:nth-child(2),tbody td:nth-child(2){display:none}
 }
 </style>
 </head>
@@ -103,7 +156,7 @@ header .sub{font-size:11.5px;opacity:.8;font-weight:400}
 
 <header>
   <div>
-    <h1>✅ จุดเช็คอินหน้างาน</h1>
+    <h1>✅ เช็คอินหน้างาน</h1>
     <div class="sub">งานมุทิตาจิตแด่ผู้เกษียณอายุราชการ โรงพยาบาลสันทราย ประจำปี 2569</div>
   </div>
   <div class="stats">
@@ -111,19 +164,67 @@ header .sub{font-size:11.5px;opacity:.8;font-weight:400}
     <div class="stat gold"><b id="st-wait">0</b><span>รอเช็คอิน</span></div>
     <div class="stat"><b id="st-total">0</b><span>ทั้งหมด</span></div>
   </div>
-  <button id="reload-btn" onclick="loadPeople()">🔄 รีเฟรช</button>
+  <button id="reload-btn" onclick="loadData()">🔄 รีเฟรช</button>
 </header>
 
-<div class="search-wrap">
-  <input id="search" type="text" placeholder="พิมพ์ชื่อ / ฝ่ายงาน / ตำแหน่ง เพื่อค้นหา..." autofocus oninput="render()">
-  <div class="filters">
-    <button id="f-wait" class="on" onclick="setFilter('wait')">รอเช็คอิน</button>
-    <button id="f-done" onclick="setFilter('done')">เช็คอินแล้ว</button>
-    <button id="f-all" onclick="setFilter('all')">ทั้งหมด</button>
+<div class="maintabs">
+  <button id="mt-checkin" class="on" onclick="setMainView('checkin')">🔍 ค้นหา &amp; เช็คอิน</button>
+  <button id="mt-dashboard" onclick="setMainView('dashboard')">📊 Dashboard</button>
+  <span id="last-updated" style="margin-left:auto;align-self:center;color:var(--text-3);font-size:11.5px"></span>
+</div>
+
+<!-- ═══ VIEW 1: ค้นหา + เช็คอิน ═══ -->
+<div id="view-checkin">
+  <div class="search-wrap">
+    <input id="search" type="text" placeholder="พิมพ์ชื่อ / ฝ่ายงาน / ตำแหน่ง เพื่อค้นหา..." autofocus oninput="renderCheckin()">
+    <div class="filters">
+      <button id="f-wait" class="on" onclick="setCiFilter('wait')">รอเช็คอิน</button>
+      <button id="f-done" onclick="setCiFilter('done')">เช็คอินแล้ว</button>
+      <button id="f-all" onclick="setCiFilter('all')">ทั้งหมด</button>
+    </div>
+  </div>
+  <div id="list"></div>
+</div>
+
+<!-- ═══ VIEW 2: Dashboard ═══ -->
+<div id="view-dashboard">
+  <div class="overview">
+    <div class="gauge-card" id="overall-gauge"></div>
+    <div class="stat-cards">
+      <div class="stat-card green"><b id="s-arrived">0</b><span>มาแล้ว</span></div>
+      <div class="stat-card gold"><b id="s-waiting">0</b><span>ยังไม่มา (คาดว่าจะมา)</span></div>
+      <div class="stat-card red"><b id="s-declined">0</b><span>แจ้งไม่เข้าร่วม</span></div>
+      <div class="stat-card"><b id="s-total">0</b><span>ผู้ตอบแบบสำรวจทั้งหมด</span></div>
+      <div class="stat-card"><b id="s-seated">0</b><span>จัดที่นั่งแล้ว</span></div>
+    </div>
+  </div>
+
+  <div class="dash-controls">
+    <div class="filters">
+      <button id="dt-dept" class="on" onclick="setDashTab('dept')">แยกตามกลุ่มงาน</button>
+      <button id="dt-table" onclick="setDashTab('table')">แยกตามโต๊ะ</button>
+    </div>
+    <input id="dash-q" type="text" placeholder="ค้นหากลุ่มงาน..." oninput="renderDashboard()">
+  </div>
+
+  <div id="dept-grid"></div>
+  <div id="table-view" class="tbl-wrap" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th data-key="name">โต๊ะ</th>
+          <th data-key="dept">กลุ่มงาน</th>
+          <th data-key="cap">ที่นั่งทั้งหมด</th>
+          <th data-key="seated">จัดที่นั่งแล้ว</th>
+          <th data-key="arrived">มาแล้ว</th>
+          <th data-key="pct">% มาแล้ว</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
   </div>
 </div>
 
-<div id="list"></div>
 <div id="toast"></div>
 
 <script>
@@ -132,17 +233,19 @@ header .sub{font-size:11.5px;opacity:.8;font-weight:400}
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwzimtNiUsNPYelNocjhzshTdoJ8392hYSix4lWxf2cGHVWsMBybBHBUzyFkq8iq2_EeQ/exec';
 
 let people = [];
-let filter = 'wait'; // wait | done | all
-let busyIds = new Set(); // ป้องกันแตะรัว ๆ ระหว่างรอ request ค้าง
+let tables = [];
+let mainView = 'checkin';    // checkin | dashboard
+let ciFilter = 'wait';       // รอเช็คอิน | เช็คอินแล้ว | ทั้งหมด (สำหรับ view เช็คอิน)
+let dashTab  = 'dept';       // dept | table (สำหรับ view dashboard)
+let sortKey = 'pct', sortDir = 'asc';
+let busyIds = new Set();     // กันแตะรัว ๆ ระหว่างรอ request ค้าง
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
 async function gasPost(payload){
   const resp = await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});
   if(!resp.ok) throw new Error('HTTP '+resp.status);
   return resp.json();
 }
-
 function toast(msg,type){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='show'+(type?' '+type:'');
@@ -150,45 +253,67 @@ function toast(msg,type){
   toast._t=setTimeout(()=>t.classList.remove('show'),2200);
 }
 
-function setFilter(f){
-  filter=f;
-  ['wait','done','all'].forEach(k=>document.getElementById('f-'+k).classList.toggle('on',k===f));
-  render();
+// ══════════════════════════════════════════════════════════════════
+// เปิดหน้าตรงเข้าแท็บที่ต้องการได้ผ่าน ?tab=dashboard (ใช้จากปุ่มใน seat.html)
+// ══════════════════════════════════════════════════════════════════
+function setMainView(v){
+  mainView=v;
+  document.getElementById('mt-checkin').classList.toggle('on',v==='checkin');
+  document.getElementById('mt-dashboard').classList.toggle('on',v==='dashboard');
+  document.getElementById('view-checkin').style.display=v==='checkin'?'flex':'none';
+  document.getElementById('view-dashboard').style.display=v==='dashboard'?'block':'none';
+  if(v==='checkin') document.getElementById('search').focus();
+  renderAll();
 }
 
-async function loadPeople(){
+// ══════════════════════════════════════════════════════════════════
+// โหลดข้อมูล (ใช้ร่วมกันทั้งสอง view)
+// ══════════════════════════════════════════════════════════════════
+async function loadData(){
   const btn=document.getElementById('reload-btn');
   btn.disabled=true;
   try{
     const d=await gasPost({action:'get_seat_data'});
     if(d.status!=='ok') throw new Error(d.message||'โหลดข้อมูลไม่สำเร็จ');
     people=d.people||[];
+    tables=(d.layout&&d.layout.tables)||[];
     document.getElementById('load-overlay').classList.add('hidden');
-    render();
+    document.getElementById('last-updated').textContent='อัปเดตล่าสุด '+new Date().toLocaleTimeString('th-TH');
+    renderAll();
   }catch(err){
     document.getElementById('load-overlay').innerHTML =
       `<div style="color:var(--red);font-weight:700">โหลดข้อมูลไม่สำเร็จ</div>
        <div style="font-size:12.5px;color:var(--text-2)">${esc(err.message)}</div>
-       <button id="reload-btn" onclick="location.reload()" style="margin-top:8px;background:var(--primary);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer">ลองใหม่</button>`;
+       <button onclick="location.reload()" style="margin-top:8px;background:var(--primary);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer">ลองใหม่</button>`;
   }finally{
     btn.disabled=false;
   }
 }
+function renderAll(){
+  updateHeaderStats();
+  if(mainView==='checkin') renderCheckin(); else renderDashboard();
+}
 
-function updateStats(){
+// ══════════════════════════════════════════════════════════════════
+// VIEW 1 — ค้นหา + เช็คอิน
+// ══════════════════════════════════════════════════════════════════
+function setCiFilter(f){
+  ciFilter=f;
+  ['wait','done','all'].forEach(k=>document.getElementById('f-'+k).classList.toggle('on',k===f));
+  renderCheckin();
+}
+function updateHeaderStats(){
   const total=people.length;
   const done=people.filter(p=>p.status==='checkin').length;
   document.getElementById('st-total').textContent=total;
   document.getElementById('st-done').textContent=done;
   document.getElementById('st-wait').textContent=Math.max(0,total-done);
 }
-
-function render(){
-  updateStats();
+function renderCheckin(){
   const q=(document.getElementById('search').value||'').trim().toLowerCase();
   let list=people;
-  if(filter==='wait') list=list.filter(p=>p.status!=='checkin');
-  else if(filter==='done') list=list.filter(p=>p.status==='checkin');
+  if(ciFilter==='wait') list=list.filter(p=>p.status!=='checkin');
+  else if(ciFilter==='done') list=list.filter(p=>p.status==='checkin');
   if(q){
     list=list.filter(p=>
       p.name.toLowerCase().includes(q) ||
@@ -196,7 +321,6 @@ function render(){
       (p.position||'').toLowerCase().includes(q)
     );
   }
-  // เรียงคนที่ยังไม่เช็คอินขึ้นก่อน แล้วตามด้วยชื่อ
   list=list.slice().sort((a,b)=>{
     if((a.status==='checkin')!==(b.status==='checkin')) return a.status==='checkin'?1:-1;
     return a.name.localeCompare(b.name,'th');
@@ -206,7 +330,7 @@ function render(){
   if(!list.length){
     box.innerHTML = q
       ? `<div class="empty">ไม่พบชื่อที่ตรงกับ "${esc(q)}"</div>`
-      : (filter==='wait' ? `<div class="empty">🎉 เช็คอินครบทุกคนแล้ว</div>` : `<div class="empty">ไม่มีรายชื่อในหมวดนี้</div>`);
+      : (ciFilter==='wait' ? `<div class="empty">🎉 เช็คอินครบทุกคนแล้ว</div>` : `<div class="empty">ไม่มีรายชื่อในหมวดนี้</div>`);
     return;
   }
 
@@ -233,10 +357,9 @@ function render(){
     </div>`;
   }).join('');
 }
-
 async function doCheckin(id,name){
   if(busyIds.has(id)) return;
-  busyIds.add(id); render();
+  busyIds.add(id); renderCheckin();
   try{
     const d=await gasPost({action:'checkin',personId:id,personName:name});
     if(d.status!=='ok') throw new Error(d.message||'เช็คอินไม่สำเร็จ');
@@ -246,13 +369,12 @@ async function doCheckin(id,name){
   }catch(err){
     toast('เช็คอินไม่สำเร็จ: '+err.message,'err');
   }finally{
-    busyIds.delete(id); render();
+    busyIds.delete(id); updateHeaderStats(); renderCheckin();
   }
 }
-
 async function doUndo(id){
   if(busyIds.has(id)) return;
-  busyIds.add(id); render();
+  busyIds.add(id); renderCheckin();
   try{
     const d=await gasPost({action:'undo_checkin',personId:id});
     if(d.status!=='ok') throw new Error(d.message||'ยกเลิกไม่สำเร็จ');
@@ -262,18 +384,150 @@ async function doUndo(id){
   }catch(err){
     toast('ยกเลิกไม่สำเร็จ: '+err.message,'err');
   }finally{
-    busyIds.delete(id); render();
+    busyIds.delete(id); updateHeaderStats(); renderCheckin();
   }
 }
 
-// รีเฟรชอัตโนมัติทุก 20 วิ เผื่อมีเจ้าหน้าที่คนอื่นเช็คอินจากเครื่องอื่นพร้อมกัน
-// (ข้ามรอบถ้ากำลังพิมพ์ค้นหาอยู่ กันช่องค้นหากระตุกระหว่างพิมพ์)
+// ══════════════════════════════════════════════════════════════════
+// VIEW 2 — Dashboard (แยกตามกลุ่มงาน / แยกตามโต๊ะ)
+// ══════════════════════════════════════════════════════════════════
+function pctColor(pct){
+  if(pct>=100) return 'var(--green)';
+  if(pct>=50) return 'var(--gold)';
+  return 'var(--red)';
+}
+function halfGauge(pct,size,label,sub){
+  const r=size*0.42, cx=size/2, cy=size*0.52;
+  const L=Math.PI*r;
+  const clamped=Math.max(0,Math.min(100,pct));
+  const off=L*(1-clamped/100);
+  const color=pctColor(clamped);
+  return `<svg width="${size}" height="${size*0.62}" viewBox="0 0 ${size} ${size*0.62}">
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}" fill="none" stroke="var(--bg2)" stroke-width="${size*0.09}" stroke-linecap="round"/>
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}" fill="none" stroke="${color}" stroke-width="${size*0.09}"
+          stroke-linecap="round" stroke-dasharray="${L} ${L}" stroke-dashoffset="${off}"/>
+    <text x="${cx}" y="${cy-size*0.06}" text-anchor="middle" font-size="${size*0.17}" font-weight="800" fill="var(--text)" font-family="inherit">${Math.round(clamped)}%</text>
+  </svg>
+  <div style="text-align:center;margin-top:-4px">
+    <div style="font-size:12.5px;font-weight:700">${esc(label)}</div>
+    ${sub?`<div style="font-size:11px;color:var(--text-3)">${esc(sub)}</div>`:''}
+  </div>`;
+}
+function setDashTab(t){
+  dashTab=t;
+  document.getElementById('dt-dept').classList.toggle('on',t==='dept');
+  document.getElementById('dt-table').classList.toggle('on',t==='table');
+  document.getElementById('dept-grid').style.display = t==='dept' ? 'grid' : 'none';
+  document.getElementById('table-view').style.display = t==='table' ? 'block' : 'none';
+  document.getElementById('dash-q').placeholder = t==='dept' ? 'ค้นหากลุ่มงาน...' : 'ค้นหาชื่อโต๊ะ / กลุ่มงาน...';
+  renderDashboard();
+}
+function computeDeptStats(){
+  const map={};
+  people.forEach(p=>{
+    if(p.intent==='ไม่เข้าร่วม') return;
+    const dept=(p.dept||'').trim()||'ไม่ระบุฝ่ายงาน';
+    if(!map[dept]) map[dept]={dept,total:0,arrived:0};
+    map[dept].total++;
+    if(p.status==='checkin') map[dept].arrived++;
+  });
+  return Object.values(map).map(d=>({...d,pct:d.total?Math.round(d.arrived/d.total*100):0}));
+}
+function computeTableStats(){
+  const byId={};people.forEach(p=>byId[String(p.id)]=p);
+  return tables.map(t=>{
+    const seatedIds=t.seats.filter(Boolean);
+    const seated=seatedIds.length;
+    const arrived=seatedIds.filter(pid=>byId[String(pid)]&&byId[String(pid)].status==='checkin').length;
+    return {id:t.id,name:t.name,dept:t.dept||'',cap:t.cap,seated,arrived,pct:seated?Math.round(arrived/seated*100):0};
+  });
+}
+function renderDashboard(){
+  const total=people.length;
+  const declined=people.filter(p=>p.intent==='ไม่เข้าร่วม').length;
+  const expected=people.filter(p=>p.intent!=='ไม่เข้าร่วม');
+  const arrived=expected.filter(p=>p.status==='checkin').length;
+  const waiting=expected.length-arrived;
+  const seated=tables.reduce((n,t)=>n+t.seats.filter(Boolean).length,0);
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-declined').textContent=declined;
+  document.getElementById('s-arrived').textContent=arrived;
+  document.getElementById('s-waiting').textContent=Math.max(0,waiting);
+  document.getElementById('s-seated').textContent=seated;
+  const pct=expected.length?Math.round(arrived/expected.length*100):0;
+  document.getElementById('overall-gauge').innerHTML =
+    halfGauge(pct,150,'ภาพรวมการมาร่วมงาน',`${arrived}/${expected.length} คนที่คาดว่าจะมา`);
+
+  const q=(document.getElementById('dash-q').value||'').trim().toLowerCase();
+  if(dashTab==='dept'){
+    let list=computeDeptStats();
+    if(q) list=list.filter(d=>d.dept.toLowerCase().includes(q));
+    list.sort((a,b)=>a.dept.localeCompare(b.dept,'th'));
+    const grid=document.getElementById('dept-grid');
+    if(!list.length){grid.innerHTML=`<div class="empty">ไม่พบกลุ่มงานที่ตรงกับคำค้นหา</div>`;return;}
+    grid.innerHTML=list.map(d=>`
+      <div class="dept-card">
+        <div style="flex:1;min-width:0">
+          <div class="name">${esc(d.dept)}</div>
+          <div class="count">มาแล้ว ${d.arrived} / ${d.total} คน</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${d.pct}%;background:${pctColor(d.pct)}"></div></div>
+        </div>
+        <div style="font-size:18px;font-weight:800;color:${pctColor(d.pct)};flex-shrink:0">${d.pct}%</div>
+      </div>`).join('');
+  } else {
+    let list=computeTableStats();
+    if(q) list=list.filter(t=>t.name.toLowerCase().includes(q)||t.dept.toLowerCase().includes(q));
+    list.sort((a,b)=>{
+      let av=a[sortKey],bv=b[sortKey];
+      if(typeof av==='string') { const c=av.localeCompare(bv,'th'); return sortDir==='asc'?c:-c; }
+      return sortDir==='asc' ? av-bv : bv-av;
+    });
+    document.querySelectorAll('#table-view thead th').forEach(th=>{
+      th.classList.toggle('sorted', th.dataset.key===sortKey);
+      th.classList.toggle('asc', th.dataset.key===sortKey && sortDir==='asc');
+    });
+    const body=document.getElementById('table-body');
+    if(!list.length){body.innerHTML=`<tr><td colspan="6" class="empty">ไม่พบโต๊ะที่ตรงกับคำค้นหา</td></tr>`;return;}
+    body.innerHTML=list.map(t=>`
+      <tr>
+        <td class="tbl-name">${esc(t.name)}</td>
+        <td>${t.dept?`<span class="tbl-dept-tag">${esc(t.dept)}</span>`:'<span style="color:var(--text-3)">—</span>'}</td>
+        <td>${t.cap}</td>
+        <td>${t.seated}</td>
+        <td>${t.arrived}</td>
+        <td>
+          <div class="progress-cell">
+            <div class="bar-track"><div class="bar-fill" style="width:${t.pct}%;background:${pctColor(t.pct)}"></div></div>
+            <div class="pct">${t.pct}%</div>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+}
+document.querySelectorAll('#table-view thead th').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const key=th.dataset.key;
+    if(sortKey===key) sortDir = sortDir==='asc' ? 'desc' : 'asc';
+    else { sortKey=key; sortDir='asc'; }
+    renderDashboard();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════
+// เริ่มต้น — เปิดตรงแท็บ Dashboard ได้ทันทีด้วย ?tab=dashboard ในลิงก์
+// ══════════════════════════════════════════════════════════════════
+const urlParams=new URLSearchParams(location.search);
+if(urlParams.get('tab')==='dashboard') mainView='dashboard';
+setMainView(mainView);
+
+// รีเฟรชอัตโนมัติทุก 20 วิ (ข้ามรอบถ้ากำลังพิมพ์ค้นหาอยู่ในช่องไหนก็ตาม)
 setInterval(()=>{
-  if(document.activeElement && document.activeElement.id==='search') return;
-  loadPeople();
+  const ae=document.activeElement;
+  if(ae && (ae.id==='search' || ae.id==='dash-q')) return;
+  loadData();
 },20000);
 
-loadPeople();
+loadData();
 </script>
 </body>
 </html>
