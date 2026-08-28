@@ -229,6 +229,47 @@ body.view-only .vo-bar{display:flex}
 /* Drawing preview overlay (SVG on top of canvas) */
 #draw-overlay{position:absolute;inset:0;pointer-events:none;z-index:2}
 
+/* ── MAP SEARCH ("find my name") — view-only/participant mode only ── */
+.map-search-wrap{display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  z-index:60;width:min(340px,88vw)}
+body.view-only .canvas-outer .map-search-wrap{display:block}
+.map-search-box{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--sh);padding:2px 4px 2px 14px}
+.map-search-box input{flex:1;min-width:0;border:none;outline:none;background:transparent;
+  font-family:var(--sans);font-size:13.5px;padding:10px 4px;color:var(--text)}
+.map-search-clear{border:none;background:var(--bg2);color:var(--text-2);width:26px;height:26px;
+  border-radius:50%;cursor:pointer;font-size:15px;line-height:1;flex-shrink:0}
+.map-search-suggest{display:none;margin-top:6px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--sh);overflow-y:auto;max-height:240px}
+.map-search-suggest.show{display:block}
+.mss-row{padding:10px 14px;font-size:12.5px;color:var(--text-2);cursor:pointer;
+  border-bottom:1px solid var(--border)}
+.mss-row:last-child{border-bottom:none}
+.mss-row:hover{background:var(--primary-lt)}
+.mss-row b{font-weight:700;color:var(--text)}
+.mss-empty{padding:16px;text-align:center;color:var(--text-3);font-size:12px}
+
+/* Result card — slides up from the bottom of the viewport */
+.map-result-backdrop{display:none;position:fixed;inset:0;background:rgba(20,24,28,.25);z-index:255}
+.map-result-backdrop.show{display:block}
+.map-result-card{position:fixed;left:50%;bottom:0;transform:translate(-50%,120%);
+  width:min(400px,92vw);max-height:62vh;background:var(--surface);
+  border:1px solid var(--border);border-bottom:none;border-radius:var(--r-lg) var(--r-lg) 0 0;
+  box-shadow:var(--sh-lg);z-index:260;padding:18px 20px 22px;display:flex;flex-direction:column;
+  transition:transform .32s cubic-bezier(.22,1,.36,1)}
+.map-result-card.show{transform:translate(-50%,0)}
+.mrc-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.mrc-table{font-size:20px;font-weight:800;color:var(--primary);line-height:1.3}
+.mrc-close{border:none;background:var(--bg2);color:var(--text-2);width:28px;height:28px;
+  border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0}
+.mrc-you{font-size:12.5px;color:var(--text-2);margin-bottom:12px}
+.mrc-you b{color:var(--text);font-weight:700}
+.mrc-members{overflow-y:auto;border-top:1px solid var(--border);padding-top:10px;
+  display:flex;flex-direction:column;gap:2px;-webkit-overflow-scrolling:touch}
+.mrc-member{display:flex;align-items:center;gap:9px;padding:7px 6px;font-size:13px;border-radius:6px;color:var(--text-2)}
+.mrc-member.me{background:var(--primary-lt);font-weight:700;color:var(--primary)}
+.mrc-mdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
 /* ── LIST VIEW ── */
 .list-outer{display:none;flex:1;overflow-y:auto;padding:14px}
 .list-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;position:sticky;top:0;
@@ -577,6 +618,30 @@ body.view-only .vo-bar{display:flex}
     <div class="canvas-outer" id="canvas-outer">
       <canvas id="room-canvas" data-tool="select"></canvas>
       <svg id="draw-overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+
+      <!-- "Find my name" search — map/view-only mode only (see CSS gating
+           on body.view-only). Typing shows a suggestion list; picking a
+           name slides up the result card and highlights their table. -->
+      <div class="map-search-wrap" id="map-search-wrap">
+        <div class="map-search-box">
+          <input type="text" id="map-name-search" placeholder="ค้นหาชื่อของฉัน..."
+            oninput="onMapSearchInput()" onkeydown="if(event.key==='Enter')onMapSearchEnter()">
+          <button class="map-search-clear" id="map-search-clear" onclick="clearMapSearch()" style="display:none">×</button>
+        </div>
+        <div class="map-search-suggest" id="map-search-suggest"></div>
+      </div>
+    </div>
+
+    <!-- Result card + backdrop for the map search — fixed to the viewport
+         (not the canvas) so it slides up over everything, editor chrome included. -->
+    <div class="map-result-backdrop" id="map-result-backdrop" onclick="closeMapResult()"></div>
+    <div class="map-result-card" id="map-result-card">
+      <div class="mrc-hd">
+        <div class="mrc-table" id="mrc-table"></div>
+        <button class="mrc-close" onclick="closeMapResult()">×</button>
+      </div>
+      <div class="mrc-you" id="mrc-you"></div>
+      <div class="mrc-members" id="mrc-members"></div>
     </div>
 
     <!-- List view -->
@@ -793,6 +858,12 @@ let assignArm=null; // person id "armed" for tap-to-place seating (iPad-friendly
 let histStack=[], MAX_HIST=50;
 let panX=60,panY=40,zoom=1;
 const MIN_ZOOM=0.05,MAX_ZOOM=10; // widened so large/small layouts aren't clipped by the old 0.1–5 limit
+
+// "Find my name" search on the map view (view-only/participant mode only —
+// see the #map-search-wrap UI and selectMapSearchPerson()). Highlights the
+// matched person's table with a brief pulsing ring on the canvas while the
+// result card is open.
+let mapHighlightTableId=null, mapHighlightStart=0, mapHighlightRAF=null;
 let isPanning=false,panStart={x:0,y:0},_wasPanning=false;
 let spaceDown=false;
 
@@ -956,7 +1027,7 @@ function drawTable(t){
   // ── View-only (presentation) mode: show the table as one big, fully
   // readable name card — no header/seat-grid clutter. Seat/roster detail
   // is still reachable via double-click (see openTableDetails).
-  if(viewOnly){ drawTableViewOnly(t,sr,isSel); if(isPrimary) drawHandles(sr); return; }
+  if(viewOnly){ drawTableViewOnly(t,sr,isSel); if(t.id===mapHighlightTableId) drawMapHighlightRing(sr); if(isPrimary) drawHandles(sr); return; }
 
   ctx.strokeStyle=isSel?'#175f72':((t.color||t.dept)?tableHeaderColor(t):'#dcdee1'); ctx.lineWidth=isSel?2.5*zoom:1.5*zoom;
   roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.stroke();
@@ -2062,6 +2133,106 @@ function fitAll(){
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  MAP SEARCH ("find my name") — view-only/participant mode.
+//  Typing filters a live suggestion list; picking a name pans/zooms the
+//  canvas to their table, draws a brief pulsing highlight ring around
+//  it, and slides up a card with the table name + full seating roster.
+// ══════════════════════════════════════════════════════════════════
+function onMapSearchInput(){
+  const q=document.getElementById('map-name-search').value.trim().toLowerCase();
+  document.getElementById('map-search-clear').style.display=q?'flex':'none';
+  const sugg=document.getElementById('map-search-suggest');
+  if(!q){sugg.classList.remove('show');sugg.innerHTML='';return;}
+  const matches=people.filter(p=>p.name.toLowerCase().includes(q)).slice(0,8);
+  sugg.innerHTML=matches.length
+    ? matches.map(p=>`<div class="mss-row" onclick="selectMapSearchPerson('${p.id}')"><b>${esc(p.name)}</b>${p.dept?' · '+esc(p.dept):''}</div>`).join('')
+    : '<div class="mss-empty">ไม่พบชื่อนี้</div>';
+  sugg.classList.add('show');
+}
+function onMapSearchEnter(){
+  const q=document.getElementById('map-name-search').value.trim().toLowerCase();
+  if(!q) return;
+  const matches=people.filter(p=>p.name.toLowerCase().includes(q));
+  if(matches.length) selectMapSearchPerson(matches[0].id);
+}
+function clearMapSearch(){
+  document.getElementById('map-name-search').value='';
+  document.getElementById('map-search-clear').style.display='none';
+  document.getElementById('map-search-suggest').classList.remove('show');
+  document.getElementById('map-search-suggest').innerHTML='';
+}
+function selectMapSearchPerson(pid){
+  const p=getPerson(pid);if(!p) return;
+  document.getElementById('map-search-suggest').classList.remove('show');
+  document.getElementById('map-name-search').value=p.name;
+  document.getElementById('map-search-clear').style.display='flex';
+  const loc=findSeat(pid);
+  const tableEl=document.getElementById('mrc-table'),youEl=document.getElementById('mrc-you'),membersEl=document.getElementById('mrc-members');
+  if(!loc){
+    mapHighlightTableId=null;
+    tableEl.textContent='ยังไม่มีที่นั่ง';
+    youEl.innerHTML=`<b>${esc(p.name)}</b>${p.dept?' · '+esc(p.dept):''} — ยังไม่ได้รับมอบหมายโต๊ะ`;
+    membersEl.innerHTML='';
+  } else {
+    tableEl.textContent='โต๊ะ '+loc.table.name;
+    youEl.innerHTML=`พบชื่อ <b>${esc(p.name)}</b>${p.dept?' · '+esc(p.dept):''}`;
+    const members=loc.table.seats.filter(Boolean).map(id=>getPerson(id)).filter(Boolean);
+    membersEl.innerHTML=members.map(m=>{
+      const isMe=String(m.id)===String(pid);
+      const dot=m.status==='checkin'?'var(--green)':'var(--gold)';
+      return `<div class="mrc-member${isMe?' me':''}"><div class="mrc-mdot" style="background:${dot}"></div>${esc(m.name)}${isMe?' (คุณ)':''}</div>`;
+    }).join('')||'<div class="mrc-member" style="color:var(--text-3)">ยังไม่มีใครอื่นที่โต๊ะนี้</div>';
+    focusOnTable(loc.table);
+    mapHighlightTableId=loc.table.id;
+    startMapHighlightPulse();
+  }
+  document.getElementById('map-result-card').classList.add('show');
+  document.getElementById('map-result-backdrop').classList.add('show');
+  drawAll();
+}
+function closeMapResult(){
+  document.getElementById('map-result-card').classList.remove('show');
+  document.getElementById('map-result-backdrop').classList.remove('show');
+  mapHighlightTableId=null;
+  if(mapHighlightRAF){cancelAnimationFrame(mapHighlightRAF);mapHighlightRAF=null;}
+  drawAll();
+}
+// Centers the canvas on a table at a comfortable reading zoom, so the
+// searched-for table is guaranteed visible even if the viewer had panned
+// or zoomed elsewhere before searching.
+function focusOnTable(t){
+  zoom=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,1.1));
+  const pw=canvas.width,ph=canvas.height;
+  panX=pw/2-(t.x+t.w/2)*zoom;
+  panY=ph/2-(t.y+t.h/2)*zoom;
+}
+// Brief breathing-glow ring around the highlighted table for ~2.4s, then
+// settles into a steady outline for as long as the result card stays open.
+function startMapHighlightPulse(){
+  mapHighlightStart=performance.now();
+  if(mapHighlightRAF) cancelAnimationFrame(mapHighlightRAF);
+  const step=()=>{
+    if(!mapHighlightTableId){mapHighlightRAF=null;return;}
+    drawAll();
+    if(performance.now()-mapHighlightStart<2400) mapHighlightRAF=requestAnimationFrame(step);
+    else mapHighlightRAF=null;
+  };
+  mapHighlightRAF=requestAnimationFrame(step);
+}
+function drawMapHighlightRing(sr){
+  const elapsed=(performance.now()-mapHighlightStart)/1000;
+  const pulsing=elapsed<2.4;
+  const pulse=pulsing?(Math.sin(elapsed*5)+1)/2:0.5;
+  const ringPad=(6+pulse*5)*zoom;
+  ctx.save();
+  ctx.shadowColor='rgba(23,95,114,.45)'; ctx.shadowBlur=(pulsing?14+pulse*10:10);
+  ctx.strokeStyle='#175f72'; ctx.lineWidth=3.5*zoom;
+  roundRect(sr.x-ringPad,sr.y-ringPad,sr.w+ringPad*2,sr.h+ringPad*2,16*zoom);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════════════
 // SEAT MODAL
 // ══════════════════════════════════════════════════════════════════
 function openSeatModal(tid,si){
@@ -2346,6 +2517,7 @@ function setView(v){
   document.getElementById('btn-vlist').classList.toggle('active',v==='list');
   document.getElementById('vo-map')?.classList.toggle('active',v==='map');
   document.getElementById('vo-list')?.classList.toggle('active',v==='list');
+  if(v!=='map') closeMapResult();
   drawAll();
 }
 
