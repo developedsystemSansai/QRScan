@@ -1634,11 +1634,16 @@ function onMove(e){
     const sr=getSelScreenRect();
     if(sr){const h=hitHandle(sp,sr);if(h){canvas.style.cursor=h.cursor;return;}}
   }
-  // Hover tooltip
-  const hit=hitTest(sp,wp);
-  if(hit&&hit.type==='table'&&hit.seatIdx!==undefined){
-    const t=getEl('table',hit.id),pid=t.seats[hit.seatIdx];
-    if(pid){showTip(e,pid);return;}
+  // Hover tooltip — edit mode only. In presentation/view-only mode this is
+  // suppressed so attendee names don't pop up just from moving the mouse
+  // over the shared screen; tapping/double-clicking a table still opens the
+  // read-only roster modal (see the viewOnly branch in the dblclick handler).
+  if(!viewOnly){
+    const hit=hitTest(sp,wp);
+    if(hit&&hit.type==='table'&&hit.seatIdx!==undefined){
+      const t=getEl('table',hit.id),pid=t.seats[hit.seatIdx];
+      if(pid){showTip(e,pid);return;}
+    }
   }
   if(tool==='select') canvas.style.cursor='';
   hideTip();
