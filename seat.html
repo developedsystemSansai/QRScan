@@ -40,6 +40,64 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex
   .insp-btn{min-height:40px}
 }
 
+/* ── MOBILE: sidebar becomes a slide-in drawer, canvas gets full space ── */
+.mobile-sidebar-toggle{
+  display:none;position:absolute;top:10px;left:10px;z-index:130;
+  align-items:center;gap:6px;padding:9px 14px;border-radius:99px;
+  background:var(--primary-dk);color:#fff;border:1px solid rgba(255,255,255,.28);
+  font-family:var(--sans);font-size:12.5px;font-weight:700;box-shadow:var(--sh-lg);cursor:pointer;
+}
+.mobile-sidebar-toggle .msb-badge{
+  background:var(--gold);color:#fff;border-radius:99px;font-size:10.5px;font-weight:800;
+  padding:1px 6px;min-width:16px;text-align:center;
+}
+.sidebar-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(20,24,28,.45);z-index:255;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.sidebar-close-mobile{display:none}
+
+/* ── FLOATING ZOOM/VIEW CONTROLS (editor canvas, mobile-first) ── */
+.float-zoom{
+  position:absolute;right:12px;bottom:16px;z-index:120;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border:1px solid var(--border2);border-radius:99px;padding:8px 6px;box-shadow:var(--sh-lg);
+}
+.float-zoom button{
+  width:38px;height:38px;border-radius:50%;border:none;background:var(--surface2);
+  color:var(--primary-dk);font-size:18px;font-weight:700;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:background .15s;
+}
+.float-zoom button:active{background:var(--primary-lt)}
+.float-zoom .fz-val{font-family:var(--mono);font-size:10px;color:var(--text-2);padding:1px 0 2px}
+.float-zoom .fz-sep{width:22px;height:1px;background:var(--border);margin:2px 0}
+body.view-only .float-zoom{display:none}
+@media(pointer:coarse){.float-zoom button{width:44px;height:44px;font-size:21px}}
+
+@media(max-width:720px){
+  .mobile-sidebar-toggle{display:flex}
+  .sidebar-backdrop{display:block}
+  .sidebar-backdrop.show{opacity:1;pointer-events:auto}
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:85vw;max-width:340px;z-index:260;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.16,1,.3,1);
+    box-shadow:var(--sh-lg);border-right:none;
+  }
+  .sidebar.mobile-open{transform:translateX(0)}
+  .sidebar-close-mobile{
+    display:flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:50%;border:none;background:var(--bg2);
+    color:var(--text-2);font-size:16px;cursor:pointer;flex-shrink:0;
+  }
+  .side-tabs{padding-right:6px;gap:4px}
+  .side-tabs .side-tab{font-size:11.5px}
+  /* The toolbar's own zoom row is redundant with the floating control below,
+     and just adds clutter to an already-crowded scrolling toolbar. */
+  .zoom-row{display:none}
+}
+body.view-only .mobile-sidebar-toggle,body.view-only .sidebar-backdrop{display:none!important}
+
 /* ── TOP BAR ── */
 .top-bar{background:var(--primary-dk);border-bottom:1px solid rgba(255,255,255,.12);
   box-shadow:0 1px 3px rgba(0,0,0,.12);flex-shrink:0;z-index:200}
@@ -416,7 +474,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
 .gas-bar.ok{background:#e6f4f0;color:var(--green)}.gas-bar.err{background:var(--red-lt);color:var(--red)}.gas-bar.loading{background:var(--gold-lt);color:var(--amber)}
 
 @media print{
-  .top-bar,.toolbar,.format-bar,.sidebar,.insp,#toast-c,.modal-overlay,.tip,.gas-bar{display:none!important}
+  .top-bar,.toolbar,.format-bar,.sidebar,.insp,#toast-c,.modal-overlay,.tip,.gas-bar,.float-zoom,.mobile-sidebar-toggle,.sidebar-backdrop{display:none!important}
   .wrap{grid-template-columns:1fr!important}
   body,html{overflow:auto!important;height:auto!important}
   .canvas-area,.canvas-outer{overflow:visible!important;height:auto!important}
@@ -485,12 +543,16 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
 </div>
 
 <div class="wrap">
+  <!-- Backdrop shown behind the sidebar drawer on mobile -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebarMobile(false)"></div>
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="side-tabs">
       <button class="side-tab active" onclick="setSideTab('stats',this)">สรุป</button>
       <button class="side-tab" onclick="setSideTab('pool',this)">รายชื่อ</button>
       <button class="side-tab" onclick="setSideTab('help',this)">ช่วย</button>
+      <button class="sidebar-close-mobile" onclick="toggleSidebarMobile(false)" title="ปิด">✕</button>
     </div>
     <div class="side-panel active" id="tab-stats">
       <div class="stat-grid">
@@ -673,6 +735,21 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
     <div class="canvas-outer" id="canvas-outer">
       <canvas id="room-canvas" data-tool="select"></canvas>
       <svg id="draw-overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+
+      <!-- Mobile-only: opens the sidebar (summary / รายชื่อ / help) as a drawer -->
+      <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" onclick="toggleSidebarMobile()">
+        👥 รายชื่อ<span class="msb-badge" id="msb-badge">0</span>
+      </button>
+
+      <!-- Floating zoom / view controls — always reachable with a thumb -->
+      <div class="float-zoom" id="float-zoom">
+        <button onclick="dz(0.15)" title="ขยาย (+)">+</button>
+        <span class="fz-val" id="fz-val">100%</span>
+        <button onclick="dz(-0.15)" title="ย่อ (-)">−</button>
+        <div class="fz-sep"></div>
+        <button onclick="fitAll()" title="แสดงทั้งหมด" style="font-size:14px">⤢</button>
+        <button onclick="resetView()" title="รีเซ็ตมุมมอง">⊙</button>
+      </div>
 
       <!-- "Find my name" search — map/view-only mode only (see CSS gating
            on body.view-only). Typing shows a suggestion list; picking a
@@ -944,6 +1021,7 @@ let spaceDown=false;
 let elDrag=false,elDragType=null,elDragId=null;
 let elDragStart={x:0,y:0},elDragOrigin={x:0,y:0};
 let longPressTimer=null,longPressStart={x:0,y:0},longPressFired=false;
+let dragMoved=false; // false until pointer actually travels — lets touch onUp tell a tap from a drag
 
 // Multi-select ("marquee"/rubber-band select + group move/delete/duplicate)
 let multiSel=[]; // [{type,id}, ...] extra items selected alongside `sel`
@@ -1444,7 +1522,7 @@ function onDown(e){
       if(hit.type==='table'&&hit.seatIdx!==undefined){openSeatModal(hit.id,hit.seatIdx);return;}
       const el=getEl(hit.type,hit.id);
       elDrag=true;elDragType=hit.type;elDragId=hit.id;
-      elDragStart={x:sp.x,y:sp.y};elDragOrigin={x:el.x,y:el.y};
+      elDragStart={x:sp.x,y:sp.y};elDragOrigin={x:el.x,y:el.y};dragMoved=false;
       updateFormatBar();
       // Touch devices have no right-click, so a hold-still "long press"
       // opens the same settings/edit panel that right-click opens on desktop.
@@ -1530,6 +1608,7 @@ function onMove(e){
   }
   if(elDrag){
     const dx=(sp.x-elDragStart.x)/zoom,dy=(sp.y-elDragStart.y)/zoom;
+    if(Math.abs(sp.x-elDragStart.x)>5||Math.abs(sp.y-elDragStart.y)>5) dragMoved=true;
     const el=getEl(elDragType,elDragId);
     if(el){el.x=snap(elDragOrigin.x+dx);el.y=snap(elDragOrigin.y+dy);}
     drawAll();return;
@@ -1577,7 +1656,17 @@ function onUp(e){
     else{sel=found[0];multiSel=found.slice(1);toast(`เลือก ${found.length} รายการ`,'ok');}
     updateFormatBar();drawAll();return;
   }
-  if(elDrag){elDrag=false;elDragType=null;elDragId=null;groupDragOrigin=null;drawAll();return;}
+  if(elDrag){
+    // On touch, a tap on a table (no drag, no long-press) opens its seating
+    // details directly — double-tap is unreliable on mobile, so this
+    // replaces it as the primary "view who's at this table" gesture there.
+    const wasCleanTouchTap=e.changedTouches!==undefined&&!dragMoved&&!longPressFired;
+    const tappedType=elDragType,tappedId=elDragId;
+    elDrag=false;elDragType=null;elDragId=null;groupDragOrigin=null;
+    drawAll();
+    if(wasCleanTouchTap&&tappedType==='table'){openTableDetails(tappedId);}
+    return;
+  }
   if(elResize){elResize=false;elResHandle=null;canvas.style.cursor='';drawAll();return;}
   if(isDrawing){
     isDrawing=false; clearPreview();
@@ -1716,7 +1805,7 @@ canvas.addEventListener('wheel',e=>{
   const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
   const factor=e.deltaY<0?1.1:0.91,nz=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom*factor));
   panX=mx-(mx-panX)*(nz/zoom);panY=my-(my-panY)*(nz/zoom);zoom=nz;
-  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();
+  updateZoomDisplay();voSyncZoomSlider();drawAll();
 },{passive:false});
 
 // Touch pinch
@@ -1726,7 +1815,7 @@ canvas.addEventListener('touchmove',e=>{
   if(e.touches.length!==2) return; e.preventDefault();
   const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
   zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom*(d/lastPinchDist)));lastPinchDist=d;
-  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();
+  updateZoomDisplay();voSyncZoomSlider();drawAll();
 },{passive:false});
 
 // Keyboard shortcuts
@@ -2202,7 +2291,7 @@ function fitAll(){
   const cw=maxX-minX+margin*2,ch=maxY-minY+margin*2;
   zoom=Math.min(pw/cw,ph/ch,3);
   panX=(pw-(maxX+minX)*zoom)/2;panY=(ph-(maxY+minY)*zoom)/2;
-  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();
+  updateZoomDisplay();voSyncZoomSlider();drawAll();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2429,6 +2518,8 @@ function refreshPoolDeptFilter(){
 function renderPool(){
   refreshPoolDeptFilter();
   const q=(document.getElementById('pool-search')?.value||'').toLowerCase(),seated=seatedSet();
+  const msbBadge=document.getElementById('msb-badge');
+  if(msbBadge){const unassignedTotal=Math.max(0,people.length-seated.size);msbBadge.textContent=unassignedTotal;msbBadge.style.display=unassignedTotal>0?'inline-block':'none';}
   const deptFilter=document.getElementById('pool-dept-filter')?.value||'';
   const attendOnly=document.getElementById('pool-attend-filter')?.checked;
   const list=people.filter(p=>!seated.has(String(p.id))&&(!deptFilter||(p.dept||'').trim()===deptFilter)&&(!attendOnly||p.intent!=='ไม่เข้าร่วม')&&(!q||p.name.toLowerCase().includes(q)||(p.dept||'').toLowerCase().includes(q)||(p.mission||'').toLowerCase().includes(q)||(p.position||'').toLowerCase().includes(q)));
@@ -2468,6 +2559,7 @@ function armAssign(pid){
   renderPool();
   const p=getPerson(pid);
   toast(`แตะที่นั่งว่างบนผังเพื่อจัดที่นั่งให้ "${p?p.name:''}" (แตะปุ่ม อีกครั้งเพื่อยกเลิก)`,'ok');
+  if(window.innerWidth<=720) toggleSidebarMobile(false);
 }
 function placeArmedAtSeat(tid,si){
   const t=getEl('table',tid),pid=assignArm;
@@ -2711,10 +2803,24 @@ function renderList(){
 // ══════════════════════════════════════════════════════════════════
 function updateStats(){
   const seated=seatedSet().size;
+  const unassigned=Math.max(0,people.length-seated);
   document.getElementById('st-total').textContent=people.length;
   document.getElementById('st-seated').textContent=seated;
-  document.getElementById('st-unassigned').textContent=Math.max(0,people.length-seated);
+  document.getElementById('st-unassigned').textContent=unassigned;
   document.getElementById('st-tables').textContent=tables.length;
+  const badge=document.getElementById('msb-badge');
+  if(badge){badge.textContent=unassigned;badge.style.display=unassigned>0?'inline-block':'none';}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MOBILE SIDEBAR DRAWER
+// ══════════════════════════════════════════════════════════════════
+function toggleSidebarMobile(force){
+  const sb=document.querySelector('.sidebar'),bd=document.getElementById('sidebar-backdrop');
+  if(!sb||!bd) return;
+  const open=force!==undefined?force:!sb.classList.contains('mobile-open');
+  sb.classList.toggle('mobile-open',open);
+  bd.classList.toggle('show',open);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2729,8 +2835,13 @@ function setTool(t){
   canvas.dataset.tool=t;
   clearPreview();
 }
-function dz(delta){zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom+delta));document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();}
-function resetView(){zoom=1;panX=60;panY=40;document.getElementById('zoom-val').textContent='100%';voSyncZoomSlider();drawAll();}
+function updateZoomDisplay(){
+  const pct=Math.round(zoom*100)+'%';
+  const zv=document.getElementById('zoom-val');if(zv) zv.textContent=pct;
+  const fz=document.getElementById('fz-val');if(fz) fz.textContent=pct;
+}
+function dz(delta){zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom+delta));updateZoomDisplay();voSyncZoomSlider();drawAll();}
+function resetView(){zoom=1;panX=60;panY=40;updateZoomDisplay();voSyncZoomSlider();drawAll();}
 
 // ── View-only mode: single-thumb zoom slider (floating % label follows thumb) ──
 function voPositionBubble(){
@@ -2744,7 +2855,7 @@ function voPositionBubble(){
 }
 function voZoomInput(val){
   zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,(+val)/100));
-  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();
+  updateZoomDisplay();voSyncZoomSlider();
   voPositionBubble();
   drawAll();
 }
@@ -2844,7 +2955,7 @@ async function loadFromGAS(){
       nextTBId=Math.max(nextTBId,d.layout.nextTBId||1);nextShId=Math.max(nextShId,d.layout.nextShId||1);
       tables.forEach(t=>{t.seats=t.seats.map(sid=>sid&&getPerson(sid)?sid:null);});
       if(d.layout.panX!==undefined){panX=d.layout.panX;panY=d.layout.panY;zoom=d.layout.zoom||1;}
-      document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();
+      updateZoomDisplay();voSyncZoomSlider();
     } else if(!tables.length) initDefaultLayout();
     setApiStatus('ok');setGasBar('ok',`โหลดสำเร็จ — ${d.people.length} คน เมื่อ ${new Date().toLocaleTimeString('th-TH')}`);
     drawAll();renderPool();updateStats();toast(`โหลด ${d.people.length} คนจาก GAS`,'ok');
@@ -2876,7 +2987,7 @@ async function saveToGAS(auto){
 // ══════════════════════════════════════════════════════════════════
 function getSnapshot(){return{v:5,savedAt:new Date().toLocaleString('th-TH'),tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId,panX,panY,zoom};}
 function saveLocal(){localStorage.setItem('seatmap_v5',JSON.stringify(getSnapshot()));toast('บันทึก Local แล้ว','ok');setGasBar('','บันทึก Local เมื่อ '+new Date().toLocaleTimeString('th-TH'));}
-function loadLocal(){const raw=localStorage.getItem('seatmap_v5');if(!raw) return false;try{const d=JSON.parse(raw);if(d.v!==5) return false;({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId,panX,panY,zoom}=d);document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();return true;}catch(e){return false;}}
+function loadLocal(){const raw=localStorage.getItem('seatmap_v5');if(!raw) return false;try{const d=JSON.parse(raw);if(d.v!==5) return false;({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId,panX,panY,zoom}=d);updateZoomDisplay();voSyncZoomSlider();return true;}catch(e){return false;}}
 function exportJSON(){const blob=new Blob([JSON.stringify(getSnapshot(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='seat-v5-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Export JSON แล้ว','ok');}
 
 // ══════════════════════════════════════════════════════════════════
