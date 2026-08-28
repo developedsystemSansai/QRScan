@@ -515,6 +515,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
       <button class="btn-t" onclick="exportJSON()">Export</button>
       <button class="btn-t green vo-visible" onclick="window.print()">พิมพ์</button>
       <button class="btn-t green" onclick="openCheckinTab()" title="เปิดหน้าค้นหาชื่อ + เช็คอินในแท็บใหม่ — ใช้ที่จุดเช็คอินหน้างาน ไม่ต้องเลื่อนหาที่โต๊ะในผัง">✅ เช็คอิน</button>
+      <button class="btn-t gold" onclick="openDashboardTab()" title="เปิด Dashboard สรุปยอดผู้มาร่วมงาน แยกตามกลุ่มงานและแยกตามโต๊ะ ในแท็บใหม่">📊 Dashboard</button>
       <button class="btn-t vo-visible" id="btn-viewonly" onclick="openViewOnlyTab()" title="เปิดหน้าโหมดแสดงผังในแท็บใหม่ — สำหรับผู้เข้าร่วมงาน/ฉายจอ ดูได้อย่างเดียว ไม่มีปุ่มโหมดแก้ไขอยู่ในนั้นเลย แยกขาดจากหน้าแก้ไขนี้โดยสมบูรณ์">โหมดแสดงผัง</button>
       <button class="btn-t" onclick="copyViewLink()" title="คัดลอกลิงก์แสดงผังแบบแยกต่างหาก — ผู้เปิดลิงก์นี้จะเห็นแค่ผังที่นั่งอย่างเดียว ไม่มีทางกลับมาหน้าแก้ไข เหมาะสำหรับฉายจอ/ส่งให้คนอื่นดู">ลิงก์แสดงผัง</button>
     </div>
@@ -2770,6 +2771,15 @@ function openCheckinTab(){
   const url=location.origin+location.pathname.replace(/[^/]*$/,'checkin.html');
   const w=window.open(url,'_blank');
   if(!w) toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — เปิด checkin.html เองในแท็บใหม่แทนได้','warn');
+}
+
+// เปิดหน้า Dashboard สรุปยอดผู้มาร่วมงาน — ตอนนี้รวมอยู่ในหน้าเดียวกับ
+// checkin.html แล้ว (แท็บ "📊 Dashboard" ในหน้านั้น) จึงเปิดไฟล์เดียวกัน
+// แต่ใส่ ?tab=dashboard ต่อท้ายให้เด้งไปที่แท็บ Dashboard ทันที
+function openDashboardTab(){
+  const url=location.origin+location.pathname.replace(/[^/]*$/,'checkin.html')+'?tab=dashboard';
+  const w=window.open(url,'_blank');
+  if(!w) toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — เปิด checkin.html?tab=dashboard เองในแท็บใหม่แทนได้','warn');
 }
 
 function refreshListTableFilter(){
