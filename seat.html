@@ -452,6 +452,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
       <button class="btn-t" onclick="autoAssign()" title="เติมที่นั่งว่างตามลำดับ ไม่สนใจกลุ่มงาน">จัดอัตโนมัติ</button>
       <button class="btn-t gold" onclick="autoAssignByDept()" title="จัดคนแต่ละกลุ่มงานไปนั่งโต๊ะเดียวกัน สร้างโต๊ะใหม่อัตโนมัติถ้าที่ไม่พอ">จัดตามกลุ่มงาน</button>
       <button class="btn-t gold" onclick="saveToGAS()">บันทึก GAS</button>
+      <button class="btn-t" id="autosave-btn" onclick="toggleAutoSave()" title="เมื่อเปิดไว้ ทุกการแก้ไขจะถูกบันทึกขึ้น Google Sheet ให้อัตโนมัติหลังหยุดแก้ไข 3 วินาที">🟢 บันทึกอัตโนมัติ: เปิด</button>
       <button class="btn-t gold" onclick="saveLocal()">Local</button>
       <button class="btn-t" onclick="exportJSON()">Export</button>
       <button class="btn-t green vo-visible" onclick="window.print()">พิมพ์</button>
@@ -2791,8 +2792,34 @@ document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('cli
 // ══════════════════════════════════════════════════════════════════
 // HISTORY (Undo)
 // ══════════════════════════════════════════════════════════════════
-function saveHist(){histStack.push(JSON.parse(JSON.stringify({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId})));if(histStack.length>MAX_HIST)histStack.shift();}
-function undoAction(){if(!histStack.length){toast('ไม่มีอะไรให้เลิกทำ','err');return;}const st=histStack.pop();({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId}=st);drawAll();renderPool();toast('เลิกทำแล้ว','ok');}
+function saveHist(){histStack.push(JSON.parse(JSON.stringify({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId})));if(histStack.length>MAX_HIST)histStack.shift();scheduleAutoSave();}
+function undoAction(){if(!histStack.length){toast('ไม่มีอะไรให้เลิกทำ','err');return;}const st=histStack.pop();({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId}=st);drawAll();renderPool();toast('เลิกทำแล้ว','ok');scheduleAutoSave();}
+
+// ══════════════════════════════════════════════════════════════════
+// AUTO-SAVE — every edit that goes through saveHist()/undoAction()
+// schedules a save to GAS 3s after the last change (debounced so a
+// burst of edits results in one save, not one per keystroke/drag).
+// ══════════════════════════════════════════════════════════════════
+let autoSaveTimer=null;
+let autoSaveEnabled=localStorage.getItem('seatmap_autosave')!=='off';
+const AUTOSAVE_DELAY_MS=3000;
+function scheduleAutoSave(){
+  if(!autoSaveEnabled) return;
+  clearTimeout(autoSaveTimer);
+  setGasBar('','แก้ไขแล้ว — จะบันทึกอัตโนมัติใน 3 วิ...');
+  autoSaveTimer=setTimeout(()=>{saveToGAS(true);},AUTOSAVE_DELAY_MS);
+}
+function toggleAutoSave(){
+  autoSaveEnabled=!autoSaveEnabled;
+  localStorage.setItem('seatmap_autosave',autoSaveEnabled?'on':'off');
+  updateAutoSaveBtn();
+  toast(autoSaveEnabled?'เปิดบันทึกอัตโนมัติแล้ว':'ปิดบันทึกอัตโนมัติแล้ว (อย่าลืมกด "บันทึก GAS" เอง)','ok');
+  if(!autoSaveEnabled) clearTimeout(autoSaveTimer);
+}
+function updateAutoSaveBtn(){
+  const b=document.getElementById('autosave-btn');if(!b) return;
+  b.textContent=autoSaveEnabled?'🟢 บันทึกอัตโนมัติ: เปิด':'⚪ บันทึกอัตโนมัติ: ปิด';
+}
 
 // ══════════════════════════════════════════════════════════════════
 // GAS API
@@ -2825,14 +2852,23 @@ async function loadFromGAS(){
   finally{document.getElementById('load-overlay').classList.add('hidden');}
 }
 
-async function saveToGAS(){
-  setApiStatus('loading','กำลังบันทึก...');setGasBar('loading','กำลังบันทึกขึ้น GAS...');
+async function saveToGAS(auto){
+  clearTimeout(autoSaveTimer);
+  setApiStatus('loading',auto?'กำลังบันทึกอัตโนมัติ...':'กำลังบันทึก...');
+  setGasBar('loading',auto?'กำลังบันทึกอัตโนมัติขึ้น GAS...':'กำลังบันทึกขึ้น GAS...');
   try{
     const layout={tables,stages,textboxes,shapes,nextTId,nextSId,nextTBId,nextShId,panX,panY,zoom,savedAt:new Date().toLocaleString('th-TH')};
     const d=await gasPost({action:'save_seat_layout',layout});
     if(d.status!=='ok') throw new Error(d.message||'Unknown error');
-    setApiStatus('ok');setGasBar('ok','บันทึกขึ้น GAS สำเร็จ เมื่อ '+new Date().toLocaleTimeString('th-TH'));toast('บันทึกขึ้น GAS สำเร็จ','ok');
-  }catch(err){setApiStatus('err');setGasBar('err','บันทึก GAS ไม่สำเร็จ: '+err.message);toast(''+err.message,'err');}
+    setApiStatus('ok');
+    setGasBar('ok',(auto?'บันทึกอัตโนมัติสำเร็จ':'บันทึกขึ้น GAS สำเร็จ')+' เมื่อ '+new Date().toLocaleTimeString('th-TH'));
+    if(!auto) toast('บันทึกขึ้น GAS สำเร็จ','ok');
+  }catch(err){
+    setApiStatus('err');
+    setGasBar('err',(auto?'บันทึกอัตโนมัติไม่สำเร็จ: ':'บันทึก GAS ไม่สำเร็จ: ')+err.message);
+    toast(''+err.message,'err');
+    if(auto) autoSaveTimer=setTimeout(()=>{saveToGAS(true);},AUTOSAVE_DELAY_MS*2);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2885,6 +2921,7 @@ window.addEventListener('load',()=>{
   const hadLocal=loadLocal();
   if(!hadLocal) initDefaultLayout();
   setView('map');setTool('select');drawAll();renderPool();updateStats();
+  updateAutoSaveBtn();
   // ?view=1 in the URL opens straight into a LOCKED presentation/view-only
   // mode — a dedicated link for a projector screen or for sharing, with no
   // path back into editing (see toggleViewOnly()/copyViewLink()).
