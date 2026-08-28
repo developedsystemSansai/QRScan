@@ -1584,9 +1584,18 @@ function onDown(e){
 }
 
 function onMove(e){
+  // On touch, only hijack the gesture (and block native scroll) while we're
+  // actually panning/dragging/resizing/drawing/marquee-selecting the canvas.
+  // Without this, the browser never gets to scroll anything else on the
+  // page — including the sidebar drawer's name list — because this is a
+  // document-wide listener that would otherwise preventDefault every touch
+  // move anywhere, not just on the canvas.
+  if(e.touches){
+    if(e.touches.length===2) return; // pinch zoom is handled by its own canvas-only listener
+    const activeCanvasGesture=isPanning||isMarquee||elDrag||elResize||isDrawing;
+    if(!activeCanvasGesture) return;
+  }
   e.preventDefault&&e.preventDefault();
-  // ถ้าสองนิ้ว = pinch zoom ไม่ต้อง pan
-  if(e.touches&&e.touches.length===2) return;
   const sp=getCP(e),wp=s2w(sp.x,sp.y);
   lastMouseWorld=wp; // tracked so pasteClipboard() can drop items at the cursor
   if(isPanning){panX=sp.x-panStart.x;panY=sp.y-panStart.y;drawAll();return;}
@@ -1657,10 +1666,19 @@ function onUp(e){
     updateFormatBar();drawAll();return;
   }
   if(elDrag){
-    // On touch, a tap on a table (no drag, no long-press) opens its seating
-    // details directly — double-tap is unreliable on mobile, so this
-    // replaces it as the primary "view who's at this table" gesture there.
-    const wasCleanTouchTap=e.changedTouches!==undefined&&!dragMoved&&!longPressFired;
+    // On touch, a tap on a table (no real drag, no long-press) opens its
+    // seating details directly — double-tap is unreliable on mobile, so
+    // this replaces it as the primary "view who's at this table" gesture
+    // there. Measured from the touch's *release* position (changedTouches)
+    // vs where it started, not from accumulated onmove deltas — touchscreens
+    // report small jitter during an otherwise-still tap, and path-based
+    // tracking was misreading that jitter as a drag.
+    let wasCleanTouchTap=false;
+    if(e.changedTouches&&e.changedTouches.length&&!longPressFired){
+      const r=canvas.getBoundingClientRect(),ct=e.changedTouches[0];
+      const ex=ct.clientX-r.left,ey=ct.clientY-r.top;
+      wasCleanTouchTap=Math.hypot(ex-elDragStart.x,ey-elDragStart.y)<14;
+    }
     const tappedType=elDragType,tappedId=elDragId;
     elDrag=false;elDragType=null;elDragId=null;groupDragOrigin=null;
     drawAll();
