@@ -190,6 +190,26 @@ body.view-only .vo-bar{display:flex}
 .vo-btn.active{background:var(--primary);color:#fff}
 .vo-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
 
+/* ── VIEW-ONLY ZOOM SLIDER (single-thumb, floating top label) ── */
+.vo-zoom{display:flex;align-items:center;gap:6px;padding:0 4px}
+.vo-zoom-btn{width:24px;height:24px;border:1.5px solid var(--border);border-radius:5px;background:var(--surface2);
+  color:var(--text-2);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .15s}
+.vo-zoom-btn:hover{background:var(--bg2)}
+.vo-zoom-track-wrap{position:relative;width:120px;height:24px;display:flex;align-items:center;padding-top:14px}
+.vo-zoom-bubble{position:absolute;top:-4px;left:0;transform:translateX(-50%);background:var(--primary-dk);color:#fff;
+  font-family:var(--mono);font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;white-space:nowrap;
+  pointer-events:none;transition:left .05s linear}
+.vo-zoom-bubble::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:4px solid transparent;border-top-color:var(--primary-dk)}
+.vo-zoom-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;
+  background:var(--border2);outline:none;cursor:pointer;margin:0}
+.vo-zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;
+  background:var(--primary);border:2.5px solid #fff;box-shadow:0 1px 3px rgba(20,24,28,.35);cursor:pointer}
+.vo-zoom-slider::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--primary);
+  border:2.5px solid #fff;box-shadow:0 1px 3px rgba(20,24,28,.35);cursor:pointer}
+.vo-zoom-slider::-moz-range-track{height:4px;border-radius:2px;background:var(--border2)}
+
 /* ── FORMAT BAR (context sensitive) ── */
 .format-bar{display:none;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);
   border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
@@ -324,6 +344,30 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
 .btn-sec:hover{background:var(--bg2)}
 .btn-d{padding:8px 16px;border:1.5px solid var(--red);border-radius:var(--r);background:var(--red-lt);color:var(--red);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer}
 .btn-d:hover{background:var(--red);color:#fff}
+/* ── PERSON MODAL v2 (share/invite style) ── */
+.minv2{max-width:420px;padding:24px}
+.minv2-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.minv2-icon{width:40px;height:40px;border-radius:var(--r-lg);border:1px solid var(--border);
+  background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--text-2);flex-shrink:0}
+.minv2-icon svg{width:19px;height:19px}
+.minv2-close{width:28px;height:28px;border:none;background:none;border-radius:var(--r-sm);color:var(--text-3);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,color .15s}
+.minv2-close:hover{background:var(--bg2);color:var(--text)}
+.minv2-close svg{width:16px;height:16px}
+.minv2-title{font-size:16px;font-weight:700;color:var(--text);font-family:var(--serif);margin-bottom:3px}
+.minv2-sub{font-size:12.5px;color:var(--text-3);margin-bottom:16px;line-height:1.5}
+.minv2-preview{display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:6px;border-bottom:1px solid var(--border)}
+.minv2-avatar{width:38px;height:38px;border-radius:50%;background:var(--primary);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;font-family:var(--sans)}
+.minv2-preview-info{flex:1;min-width:0}
+.minv2-preview-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.minv2-preview-sub{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.minv2-remove{border:none;background:none;color:var(--red);font-family:var(--sans);font-size:12px;font-weight:700;
+  cursor:pointer;flex-shrink:0;padding:4px 2px}
+.minv2-remove:hover{text-decoration:underline}
+.minv2-btns{margin-top:18px}
+.minv2-btns .btn-sec,.minv2-btns .btn-p{flex:1;padding:10px 16px;border-radius:var(--r-lg);font-size:13.5px}
+
 .seat-list-wrap{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)}
 .seat-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s}
 .seat-opt:last-child{border-bottom:none}.seat-opt:hover{background:var(--primary-lt)}
@@ -427,6 +471,16 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
 <div class="vo-bar" id="vo-bar">
   <button class="vo-btn" id="vo-map" onclick="setView('map')">ผังที่นั่ง</button>
   <button class="vo-btn" id="vo-list" onclick="setView('list')">รายชื่อ</button>
+  <div class="vo-sep"></div>
+  <div class="vo-zoom">
+    <button class="vo-zoom-btn" onclick="voZoomStep(-10)" title="ย่อ">−</button>
+    <div class="vo-zoom-track-wrap">
+      <div class="vo-zoom-bubble" id="vo-zoom-bubble">100%</div>
+      <input type="range" class="vo-zoom-slider" id="vo-zoom-slider" min="25" max="300" step="5" value="100"
+        oninput="voZoomInput(this.value)" aria-label="ระดับการซูม">
+    </div>
+    <button class="vo-zoom-btn" onclick="voZoomStep(10)" title="ขยาย">+</button>
+  </div>
 </div>
 
 <div class="wrap">
@@ -671,21 +725,39 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
 
 <!-- MODAL: Person -->
 <div class="modal-overlay" id="modal-person">
-  <div class="modal">
-    <div class="modal-title" id="mperson-title">เพิ่มรายชื่อ</div>
-    <div class="mf"><label class="ml">ชื่อ-นามสกุล *</label><input class="mi" id="mp-name" placeholder="ชื่อ นามสกุล"></div>
-    <div class="mf"><label class="ml">กลุ่มภารกิจ</label><input class="mi" id="mp-mission" placeholder="เช่น กลุ่มการพยาบาล"></div>
-    <div class="mf"><label class="ml">กลุ่มงาน</label><input class="mi" id="mp-dept" placeholder="เช่น งานผู้ป่วยนอก"></div>
+  <div class="modal minv2">
+    <div class="minv2-head">
+      <div class="minv2-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>
+      </div>
+      <button class="minv2-close" onclick="closeModal('modal-person')" title="ปิด">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="minv2-title" id="mperson-title">เพิ่มรายชื่อ</div>
+    <div class="minv2-sub" id="mperson-sub">กรอกข้อมูลผู้เข้าร่วมงานเพื่อเพิ่มลงในผังที่นั่ง</div>
+
+    <div class="minv2-preview" id="mp-preview" style="display:none">
+      <div class="minv2-avatar" id="mp-avatar">-</div>
+      <div class="minv2-preview-info">
+        <div class="minv2-preview-name" id="mp-preview-name">-</div>
+        <div class="minv2-preview-sub" id="mp-preview-sub">-</div>
+      </div>
+      <button class="minv2-remove" id="mp-del-btn" style="display:none" onclick="deletePerson()">ลบออก</button>
+    </div>
+
+    <div class="mf"><label class="ml">ชื่อ-นามสกุล *</label><input class="mi" id="mp-name" placeholder="ชื่อ นามสกุล" oninput="mpUpdatePreview()"></div>
+    <div class="mf"><label class="ml">กลุ่มภารกิจ</label><input class="mi" id="mp-mission" placeholder="เช่น กลุ่มการพยาบาล" oninput="mpUpdatePreview()"></div>
+    <div class="mf"><label class="ml">กลุ่มงาน</label><input class="mi" id="mp-dept" placeholder="เช่น งานผู้ป่วยนอก" oninput="mpUpdatePreview()"></div>
     <div class="mf"><label class="ml">สถานะ</label>
-      <select class="mi" id="mp-status">
+      <select class="mi" id="mp-status" onchange="mpUpdatePreview()">
         <option value="registered">ลงทะเบียนแล้ว</option>
         <option value="checkin">เช็คอินแล้ว </option>
       </select>
     </div>
     <input type="hidden" id="mp-edit-id">
-    <div class="mbtns">
+    <div class="mbtns minv2-btns">
       <button class="btn-sec" onclick="closeModal('modal-person')">ยกเลิก</button>
-      <button class="btn-d" id="mp-del-btn" style="display:none" onclick="deletePerson()">ลบ</button>
       <button class="btn-p" onclick="savePerson()">บันทึก</button>
     </div>
   </div>
@@ -1643,7 +1715,7 @@ canvas.addEventListener('wheel',e=>{
   const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
   const factor=e.deltaY<0?1.1:0.91,nz=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom*factor));
   panX=mx-(mx-panX)*(nz/zoom);panY=my-(my-panY)*(nz/zoom);zoom=nz;
-  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();
+  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();
 },{passive:false});
 
 // Touch pinch
@@ -1653,7 +1725,7 @@ canvas.addEventListener('touchmove',e=>{
   if(e.touches.length!==2) return; e.preventDefault();
   const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
   zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom*(d/lastPinchDist)));lastPinchDist=d;
-  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();
+  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();
 },{passive:false});
 
 // Keyboard shortcuts
@@ -2129,7 +2201,7 @@ function fitAll(){
   const cw=maxX-minX+margin*2,ch=maxY-minY+margin*2;
   zoom=Math.min(pw/cw,ph/ch,3);
   panX=(pw-(maxX+minX)*zoom)/2;panY=(ph-(maxY+minY)*zoom)/2;
-  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();
+  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2429,8 +2501,10 @@ canvas.addEventListener('drop',e=>{
 // ══════════════════════════════════════════════════════════════════
 // PERSON CRUD
 // ══════════════════════════════════════════════════════════════════
-function openAddPerson(){['mp-name','mp-mission','mp-dept'].forEach(id=>document.getElementById(id).value='');document.getElementById('mp-status').value='registered';document.getElementById('mp-edit-id').value='';document.getElementById('mp-del-btn').style.display='none';document.getElementById('mperson-title').textContent='เพิ่มรายชื่อ';openModal('modal-person');}
-function openEditPerson(pid){const p=getPerson(pid);if(!p) return;document.getElementById('mp-name').value=p.name;document.getElementById('mp-mission').value=p.mission||'';document.getElementById('mp-dept').value=p.dept||'';document.getElementById('mp-status').value=p.status||'registered';document.getElementById('mp-edit-id').value=pid;document.getElementById('mp-del-btn').style.display='';document.getElementById('mperson-title').textContent='แก้ไขรายชื่อ';openModal('modal-person');}
+function mpInitials(name){const t=String(name||'').trim();if(!t)return'-';const parts=t.split(/\s+/).filter(Boolean);if(parts.length>=2)return(parts[0][0]+parts[1][0]).toUpperCase();return t.slice(0,2).toUpperCase();}
+function mpUpdatePreview(){const name=document.getElementById('mp-name').value.trim();const mission=document.getElementById('mp-mission').value.trim();const dept=document.getElementById('mp-dept').value.trim();const status=document.getElementById('mp-status').value;document.getElementById('mp-avatar').textContent=mpInitials(name);document.getElementById('mp-preview-name').textContent=name||'ยังไม่ระบุชื่อ';const subParts=[dept,mission].filter(Boolean);document.getElementById('mp-preview-sub').textContent=subParts.length?subParts.join(' · '):(status==='checkin'?'เช็คอินแล้ว':'ลงทะเบียนแล้ว');}
+function openAddPerson(){['mp-name','mp-mission','mp-dept'].forEach(id=>document.getElementById(id).value='');document.getElementById('mp-status').value='registered';document.getElementById('mp-edit-id').value='';document.getElementById('mp-del-btn').style.display='none';document.getElementById('mp-preview').style.display='none';document.getElementById('mperson-title').textContent='เพิ่มรายชื่อ';document.getElementById('mperson-sub').textContent='กรอกข้อมูลผู้เข้าร่วมงานเพื่อเพิ่มลงในผังที่นั่ง';openModal('modal-person');}
+function openEditPerson(pid){const p=getPerson(pid);if(!p) return;document.getElementById('mp-name').value=p.name;document.getElementById('mp-mission').value=p.mission||'';document.getElementById('mp-dept').value=p.dept||'';document.getElementById('mp-status').value=p.status||'registered';document.getElementById('mp-edit-id').value=pid;document.getElementById('mp-del-btn').style.display='';document.getElementById('mp-preview').style.display='flex';mpUpdatePreview();document.getElementById('mperson-title').textContent='แก้ไขรายชื่อ';document.getElementById('mperson-sub').textContent='แก้ไขข้อมูลหรือลบรายชื่อนี้ออกจากระบบ';openModal('modal-person');}
 function savePerson(){const name=document.getElementById('mp-name').value.trim();if(!name){document.getElementById('mp-name').focus();toast('กรุณากรอกชื่อ','err');return;}const mission=document.getElementById('mp-mission').value.trim(),dept=document.getElementById('mp-dept').value.trim(),status=document.getElementById('mp-status').value,editId=document.getElementById('mp-edit-id').value;if(editId){const p=getPerson(editId);if(p){p.name=name;p.mission=mission;p.dept=dept;p.status=status;}toast(`แก้ไข "${name}" แล้ว`,'ok');}else{people.push({id:'L'+nextPId++,name,mission,dept,status});toast(`เพิ่ม "${name}" แล้ว`,'ok');}closeModal('modal-person');drawAll();renderPool();}
 function deletePerson(){const editId=document.getElementById('mp-edit-id').value,p=getPerson(editId);if(!p) return;confirm2('ลบรายชื่อ',`ต้องการลบ "${p.name}"?`,()=>{saveHist();people=people.filter(x=>String(x.id)!==String(editId));tables.forEach(t=>{t.seats=t.seats.map(s=>String(s)===String(editId)?null:s);});closeModal('modal-person');drawAll();renderPool();toast(`ลบ "${p.name}" แล้ว`,'ok');});}
 
@@ -2541,6 +2615,7 @@ function toggleViewOnly(force){
   if(viewOnly){
     sel=null;closeInsp();hideFormatBar();assignArm=null;
     setTool('hand'); // panning/zooming only — blocks placement & drag-editing
+    setTimeout(voSyncZoomSlider,0); // slider only exists/visible once .view-only is applied
   } else {
     setTool('select');
   }
@@ -2653,8 +2728,37 @@ function setTool(t){
   canvas.dataset.tool=t;
   clearPreview();
 }
-function dz(delta){zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom+delta));document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';drawAll();}
-function resetView(){zoom=1;panX=60;panY=40;document.getElementById('zoom-val').textContent='100%';drawAll();}
+function dz(delta){zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,zoom+delta));document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();drawAll();}
+function resetView(){zoom=1;panX=60;panY=40;document.getElementById('zoom-val').textContent='100%';voSyncZoomSlider();drawAll();}
+
+// ── View-only mode: single-thumb zoom slider (floating % label follows thumb) ──
+function voPositionBubble(){
+  const sl=document.getElementById('vo-zoom-slider'),bub=document.getElementById('vo-zoom-bubble');
+  if(!sl||!bub) return;
+  const min=+sl.min,max=+sl.max,val=+sl.value,pct=(val-min)/(max-min);
+  const thumbW=15,trackW=sl.offsetWidth||120;
+  const x=thumbW/2+pct*(trackW-thumbW);
+  bub.style.left=x+'px';
+  bub.textContent=Math.round(val)+'%';
+}
+function voZoomInput(val){
+  zoom=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,(+val)/100));
+  document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();
+  voPositionBubble();
+  drawAll();
+}
+function voZoomStep(deltaPct){
+  const sl=document.getElementById('vo-zoom-slider');if(!sl) return;
+  let v=Math.min(+sl.max,Math.max(+sl.min,(+sl.value)+deltaPct));
+  sl.value=v;voZoomInput(v);
+}
+function voSyncZoomSlider(){
+  const sl=document.getElementById('vo-zoom-slider');if(!sl) return;
+  const pct=Math.round(zoom*100);
+  sl.value=Math.min(+sl.max,Math.max(+sl.min,pct));
+  voPositionBubble();
+}
+window.addEventListener('resize',voPositionBubble);
 
 // ══════════════════════════════════════════════════════════════════
 // SIDEBAR TABS
@@ -2713,7 +2817,7 @@ async function loadFromGAS(){
       nextTBId=Math.max(nextTBId,d.layout.nextTBId||1);nextShId=Math.max(nextShId,d.layout.nextShId||1);
       tables.forEach(t=>{t.seats=t.seats.map(sid=>sid&&getPerson(sid)?sid:null);});
       if(d.layout.panX!==undefined){panX=d.layout.panX;panY=d.layout.panY;zoom=d.layout.zoom||1;}
-      document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';
+      document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();
     } else if(!tables.length) initDefaultLayout();
     setApiStatus('ok');setGasBar('ok',`โหลดสำเร็จ — ${d.people.length} คน เมื่อ ${new Date().toLocaleTimeString('th-TH')}`);
     drawAll();renderPool();updateStats();toast(`โหลด ${d.people.length} คนจาก GAS`,'ok');
@@ -2736,7 +2840,7 @@ async function saveToGAS(){
 // ══════════════════════════════════════════════════════════════════
 function getSnapshot(){return{v:5,savedAt:new Date().toLocaleString('th-TH'),tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId,panX,panY,zoom};}
 function saveLocal(){localStorage.setItem('seatmap_v5',JSON.stringify(getSnapshot()));toast('บันทึก Local แล้ว','ok');setGasBar('','บันทึก Local เมื่อ '+new Date().toLocaleTimeString('th-TH'));}
-function loadLocal(){const raw=localStorage.getItem('seatmap_v5');if(!raw) return false;try{const d=JSON.parse(raw);if(d.v!==5) return false;({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId,panX,panY,zoom}=d);document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';return true;}catch(e){return false;}}
+function loadLocal(){const raw=localStorage.getItem('seatmap_v5');if(!raw) return false;try{const d=JSON.parse(raw);if(d.v!==5) return false;({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId,panX,panY,zoom}=d);document.getElementById('zoom-val').textContent=Math.round(zoom*100)+'%';voSyncZoomSlider();return true;}catch(e){return false;}}
 function exportJSON(){const blob=new Blob([JSON.stringify(getSnapshot(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='seat-v5-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Export JSON แล้ว','ok');}
 
 // ══════════════════════════════════════════════════════════════════
