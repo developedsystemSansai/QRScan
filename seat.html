@@ -7,6 +7,10 @@
 <title>Seat Map v5 – ระบบจัดที่นั่งสัมมนา · โรงพยาบาลสันทราย</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Noto+Serif+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<!-- ใช้เฉพาะตอนกดปุ่ม "ใบเซ็นชื่อ (Excel)" เพื่อสร้างไฟล์ .xlsx ฝั่งเบราว์เซอร์
+     (ต้องใช้ ExcelJS ไม่ใช่ SheetJS/xlsx เพราะรุ่นฟรีของ SheetJS ไม่รองรับ
+     การเขียน page setup แนวนอน/ขนาดกระดาษ และสไตล์เซลล์ตอน export จริง) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 :root{
   --bg:#f4f5f6;--bg2:#e9eaec;--surface:#fff;--surface2:#fbfbfc;--surface3:#eff0f1;
@@ -515,6 +519,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
       <button class="btn-t" onclick="exportJSON()" title="สำรองข้อมูลดิบเป็นไฟล์ .json (สำหรับกู้คืน/ย้ายเครื่อง ไม่ใช่ไฟล์สำหรับพิมพ์แจก)">Export JSON</button>
       <button class="btn-t green vo-visible" onclick="printSeatMap()" title="เปิดแท็บใหม่ พร้อมผังที่นั่งจัดหน้า A4 มีสัญลักษณ์ครบ กดพิมพ์/บันทึกเป็น PDF ได้ทันที">🖨️ พิมพ์ผังที่นั่ง</button>
       <button class="btn-t green vo-visible" onclick="printAttendeeList()" title="เปิดแท็บใหม่ พร้อมรายชื่อผู้เข้าร่วมจัดหน้า A4 แยกตามโต๊ะ พร้อมดัชนีค้นชื่อ">🖨️ พิมพ์รายชื่อ</button>
+      <button class="btn-t gold vo-visible" id="btn-signsheet" onclick="exportSignInSheet()" title="ดาวน์โหลดไฟล์ Excel ใบเซ็นชื่อ จัดหน้า A4 แนวนอน มีช่องลายเซ็นกว้าง พร้อมพิมพ์แจกหน้างาน">📝 ใบเซ็นชื่อ (Excel)</button>
       <button class="btn-t vo-visible" id="btn-viewonly" onclick="openViewOnlyTab()" title="เปิดหน้าโหมดแสดงผังในแท็บใหม่ — สำหรับผู้เข้าร่วมงาน/ฉายจอ ดูได้อย่างเดียว ไม่มีปุ่มโหมดแก้ไขอยู่ในนั้นเลย แยกขาดจากหน้าแก้ไขนี้โดยสมบูรณ์">โหมดแสดงผัง</button>
       <button class="btn-t" onclick="copyViewLink()" title="คัดลอกลิงก์แสดงผังแบบแยกต่างหาก — ผู้เปิดลิงก์นี้จะเห็นแค่ผังที่นั่งอย่างเดียว ไม่มีทางกลับมาหน้าแก้ไข เหมาะสำหรับฉายจอ/ส่งให้คนอื่นดู">ลิงก์แสดงผัง</button>
     </div>
@@ -957,7 +962,7 @@ function rebuildPersonCodes(){
   people.forEach(p=>{
     if(!p.dept) return;
     counters[p.dept]=(counters[p.dept]||0)+1;
-    personCodeMap[p.id]=deptShortLabel(p.dept)+counters[p.dept];
+    personCodeMap[p.id]=deptShortLabel(p.dept)+'('+counters[p.dept]+')';
   });
 }
 function personCode(p){ return p?personCodeMap[p.id]||null:null; }
@@ -3342,6 +3347,127 @@ footer{margin-top:14px;font-size:9px;color:#8b9096;text-align:center;}
 function printAttendeeList(){
   if(!people.length){ toast('ยังไม่มีรายชื่อให้พิมพ์','warn'); return; }
   _printWindowHTML(buildAttendeeListPrintHTML());
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ใบเซ็นชื่อ (Excel) — จัดหน้า A4 แนวนอนพอดี ช่องลายเซ็นกว้างพิเศษ
+// เพราะคนเซ็นชื่อจริงต้องการพื้นที่กว้างกว่าตัวอักษรพิมพ์ปกติมาก ใช้
+// ExcelJS (ไม่ใช่ SheetJS/xlsx รุ่นฟรีที่เขียน page setup กับสไตล์เซลล์
+// ตอน export ไม่ได้จริง — ทดสอบแล้วว่าเขียนไม่ติด)
+// ══════════════════════════════════════════════════════════════════
+
+// ชื่อที่ backend ส่งมา (p.name) มีคำนำหน้าติดมาด้วยเสมอ (นาย/นาง/...)
+// ใบเซ็นชื่อไม่ต้องการคำนำหน้า — ใช้ p.rawName จาก backend เป็นหลัก
+// ส่วน regex นี้เป็นเผื่อ fallback กรณียังไม่ได้อัปเดต code.gs เป็นเวอร์ชัน
+// ที่ส่ง rawName มาด้วย
+function stripHonorific(name){
+  return String(name||'').replace(/^(นางสาว|นาง|นาย|ดร\.?|ศาสตราจารย์|รองศาสตราจารย์|ผู้ช่วยศาสตราจารย์|ผศ\.?|รศ\.?|ศ\.?|นพ\.?|พญ\.?|ทพ\.?|ทพญ\.?|ภก\.?|ภญ\.?|น\.ส\.?)\s*/,'').trim();
+}
+
+async function exportSignInSheet(){
+  if(!people.length){ toast('ยังไม่มีรายชื่อให้สร้างใบเซ็นชื่อ','warn'); return; }
+  if(typeof ExcelJS==='undefined'){
+    toast('โหลดไลบรารีสร้างไฟล์ Excel ไม่สำเร็จ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่','err');
+    return;
+  }
+  const btn=document.getElementById('btn-signsheet');
+  const origLbl=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='กำลังสร้างไฟล์...'; }
+
+  try{
+    const wb=new ExcelJS.Workbook();
+    wb.creator='ระบบผังที่นั่งอัตโนมัติ · โรงพยาบาลสันทราย';
+    wb.created=new Date();
+
+    const ws=wb.addWorksheet('ใบเซ็นชื่อ',{
+      pageSetup:{
+        orientation:'landscape', paperSize:9, // 9 = A4
+        fitToPage:true, fitToWidth:1, fitToHeight:0,
+        margins:{left:0.4,right:0.4,top:0.5,bottom:0.5,header:0.2,footer:0.2}
+      }
+    });
+    const COLS=6;
+    ws.columns=[
+      {width:6},   // ลำดับ
+      {width:26},  // ชื่อ-นามสกุล
+      {width:24},  // ฝ่าย/กลุ่มงาน
+      {width:24},  // ตำแหน่ง
+      {width:13},  // โต๊ะที่นั่ง
+      {width:36},  // ลายเซ็น — กว้างพิเศษ
+    ];
+
+    ws.mergeCells(1,1,1,COLS);
+    const title=ws.getCell(1,1);
+    title.value='ใบเซ็นชื่อผู้เข้าร่วมงาน — '+EVENT_TITLE;
+    title.font={bold:true,size:15,name:'TH SarabunPSK'};
+    title.alignment={horizontal:'center',vertical:'middle'};
+    ws.getRow(1).height=30;
+
+    ws.mergeCells(2,1,2,COLS);
+    const sub=ws.getCell(2,1);
+    sub.value=`พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}    รวมทั้งหมด ${people.length} คน`;
+    sub.font={size:11,name:'TH SarabunPSK',color:{argb:'FF565B60'}};
+    sub.alignment={horizontal:'center'};
+    ws.getRow(2).height=16;
+
+    const headers=['ลำดับ','ชื่อ-นามสกุล','ฝ่าย/กลุ่มงาน','ตำแหน่ง','โต๊ะที่นั่ง','ลายเซ็น'];
+    const headerRow=ws.getRow(4);
+    headers.forEach((h,i)=>{ headerRow.getCell(i+1).value=h; });
+    headerRow.height=22;
+    headerRow.eachCell(c=>{
+      c.font={bold:true,size:13,name:'TH SarabunPSK'};
+      c.alignment={horizontal:'center',vertical:'middle'};
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7F0F2'}};
+      c.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
+    });
+
+    // เรียงตามโต๊ะก่อน (ตามลำดับที่นั่งจริงในโต๊ะ) แล้วต่อท้ายด้วยคนที่ยัง
+    // ไม่มีที่นั่ง — ให้ลำดับการเซ็นชื่อสอดคล้องกับโต๊ะจริงหน้างาน
+    const rowsData=[];
+    tables.forEach(t=>{
+      t.seats.forEach(pid=>{
+        if(!pid) return;
+        const p=getPerson(pid);
+        if(!p) return;
+        rowsData.push({p,tableName:t.name});
+      });
+    });
+    const seated=seatedSet();
+    people.forEach(p=>{
+      if(!seated.has(String(p.id))) rowsData.push({p,tableName:'ยังไม่มีที่นั่ง'});
+    });
+
+    let r=5;
+    rowsData.forEach((item,idx)=>{
+      const p=item.p;
+      const row=ws.getRow(r);
+      row.getCell(1).value=idx+1;
+      row.getCell(2).value=p.rawName||stripHonorific(p.name);
+      row.getCell(3).value=p.dept||p.mission||'';
+      row.getCell(4).value=p.position||'';
+      row.getCell(5).value=item.tableName;
+      row.getCell(6).value='';
+      row.height=40;
+      row.eachCell({includeEmpty:true},(c,colNum)=>{
+        c.font={size:13,name:'TH SarabunPSK'};
+        c.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
+        c.alignment={vertical:'middle',horizontal:colNum===1?'center':'left',wrapText:true};
+      });
+      r++;
+    });
+
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='ใบเซ็นชื่อ-'+new Date().toISOString().slice(0,10)+'.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('สร้างใบเซ็นชื่อ (Excel) แล้ว','ok');
+  }catch(err){
+    toast('สร้างใบเซ็นชื่อไม่สำเร็จ: '+err.message,'err');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent=origLbl; }
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
