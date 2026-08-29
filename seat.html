@@ -1293,6 +1293,46 @@ function fitTextBlock(text,maxW,maxH,weight,fontFamily,maxSize,minSize){
   return{lines:[clipText(ctx,text,maxW)],size:minSize};
 }
 
+// ── สำหรับพิมพ์ผังที่นั่งเท่านั้น (ไม่ใช้บนจอ) ──
+// ต่างจาก drawTableViewOnly() ตรงที่ตัดป้ายกลุ่มงานออก (มีสีบอกอยู่แล้ว
+// ในตัวการ์ด + legend ท้ายเอกสาร) เพื่อยกพื้นที่ทั้งหมดให้ "ชื่อโต๊ะ" ตัว
+// เดียวใหญ่สุดเท่าที่จะใหญ่ได้ — บนกระดาษอ่านจากระยะไกลกว่าจอคอมมาก จึง
+// ต้องใหญ่กว่าตัวอักษรบนจอแก้ไขค่อนข้างมาก ไม่ใช่แค่ปรับสัดส่วนเดิม
+function drawTableForPrint(t){
+  const sr=tableScreenRect(t);
+  const color=tableHeaderColor(t);
+  ctx.save();
+  roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.clip();
+  ctx.fillStyle=color; ctx.fillRect(sr.x,sr.y,sr.w,sr.h);
+  ctx.restore();
+  ctx.strokeStyle=color; ctx.lineWidth=1.5*zoom;
+  roundRect(sr.x,sr.y,sr.w,sr.h,12*zoom); ctx.stroke();
+
+  const pad=Math.max(10,sr.w*0.06);
+
+  // ป้ายจำนวนที่นั่ง มุมขวาบน — ข้อมูลรอง ขนาดพอดี ไม่แย่งพื้นที่ชื่อโต๊ะ
+  const seated=t.seats.filter(Boolean).length,cntTxt=`${seated}/${t.cap}`;
+  ctx.fillStyle='rgba(255,255,255,.88)';
+  ctx.font=`700 ${Math.max(13,sr.h*0.08)}px "IBM Plex Mono",monospace`;
+  ctx.textBaseline='top'; ctx.textAlign='left';
+  ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-pad,sr.y+pad*0.6);
+
+  // ชื่อโต๊ะ — ให้ใหญ่แทบเต็มกล่อง อ่านจากระยะไกลได้โดยไม่ต้องเพ่ง
+  const tFont=t.font||'Noto Sans Thai';
+  const nameMaxW=Math.max(20*zoom,sr.w-pad*2);
+  const nameMaxH=Math.max(20*zoom,sr.h-pad*2.6);
+  const nameMaxSize=Math.min(sr.h*0.9, sr.w*0.34);
+  const nameMinSize=Math.max(18,sr.h*0.14);
+  const fit=fitTextBlock(t.name,nameMaxW,nameMaxH,'800',tFont,nameMaxSize,nameMinSize);
+  ctx.font=`800 ${fit.size}px "${tFont}",Tahoma,sans-serif`;
+  ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.textAlign='center';
+  const lineH=fit.size*1.12;
+  const totalH=fit.lines.length*lineH;
+  let ty=sr.y+(sr.h-totalH)/2+lineH/2;
+  fit.lines.forEach(line=>{ ctx.fillText(line,sr.x+sr.w/2,ty); ty+=lineH; });
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+}
+
 /* ── STAGE ── */
 function stageScreenRect(s){const sp=w2s(s.x,s.y);return{x:sp.x,y:sp.y,w:s.w*zoom,h:s.h*zoom};}
 function drawStage(s){
@@ -3118,7 +3158,7 @@ function renderSceneToDataURL(exportW, exportH){
     shapes.forEach(drawShape);
     stages.forEach(drawStage);
     textboxes.forEach(drawTextbox);
-    tables.forEach(drawTable);
+    tables.forEach(drawTableForPrint);
 
     return {dataUrl:canvas.toDataURL('image/png'), w:exportW, h:exportH};
   } finally {
