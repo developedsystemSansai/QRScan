@@ -3090,14 +3090,12 @@ function renderSceneToDataURL(exportW, exportH){
     panX, panY, zoom, cw:canvas.width, ch:canvas.height,
     viewOnly, sel, multiSel:multiSel.slice(), assignArm, mapHighlightTableId
   };
-  // บนหน้าจอแก้ไข seatLabel() ย่อเหลือรหัสกลุ่มงาน หรืออย่างมากก็ชื่อย่อ 2
-  // ตัวอักษร (เหมาะกับพื้นที่จำกัดตอน zoom เล็ก ๆ) — แต่บนกระดาษที่พิมพ์
-  // แจกจริง ผู้เข้าร่วมต้องเห็น "ชื่อเต็ม" ถึงจะหาที่นั่งตัวเองเจอ จึง
-  // สลับฟังก์ชันนี้ชั่วคราวเฉพาะตอน export แล้วคืนค่าเดิมทันทีหลังจบ
-  const savedSeatLabelFn=seatLabel;
-  seatLabel=function(p){ return p?p.name:''; };
   try{
-    sel=null; multiSel=[]; assignArm=null; mapHighlightTableId=null; viewOnly=false;
+    // viewOnly=true → แต่ละโต๊ะวาดเป็นการ์ดใหญ่สีเดียว ชื่อโต๊ะตัวโตอ่านง่าย
+    // (เหมือน "โหมดแสดงผัง" บนหน้าจอ) แทนตารางที่นั่งย่อยแบบละเอียด — เหมาะ
+    // เป็นแผนที่หาโต๊ะตอนหน้างานมากกว่า ส่วนใครนั่งไหนแบบละเอียด ไปดูจาก
+    // ปุ่ม "พิมพ์รายชื่อ" อีกใบแยกต่างหาก
+    sel=null; multiSel=[]; assignArm=null; mapHighlightTableId=null; viewOnly=true;
 
     const bbox=computeLayoutBBox();
     const pad=50;
@@ -3127,7 +3125,6 @@ function renderSceneToDataURL(exportW, exportH){
     ({panX,panY,zoom,viewOnly}=saved);
     sel=saved.sel; multiSel=saved.multiSel; assignArm=saved.assignArm; mapHighlightTableId=saved.mapHighlightTableId;
     canvas.width=saved.cw; canvas.height=saved.ch;
-    seatLabel=savedSeatLabelFn;
     drawAll();
   }
 }
@@ -3178,7 +3175,6 @@ header{display:flex;align-items:flex-end;justify-content:space-between;border-bo
 .legend h4{font-size:10.5px;font-weight:700;margin-bottom:5px;color:#25282b;}
 .lg-group{min-width:150px;}
 .lg-item{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
-.lg-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1.5px solid;}
 .lg-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 footer{margin-top:10px;font-size:9.5px;color:#8b9096;text-align:center;}
 .no-print{position:fixed;top:12px;right:12px;display:flex;gap:8px;}
@@ -3195,10 +3191,10 @@ footer{margin-top:10px;font-size:9.5px;color:#8b9096;text-align:center;}
 <div class="map-wrap"><img src="${capture.dataUrl}" alt="ผังที่นั่ง"></div>
 <div class="legend">
   <div class="lg-group">
-    <h4>สัญลักษณ์ที่นั่ง</h4>
-    <div class="lg-item"><span class="lg-swatch" style="background:#e6f4f0;border-color:#1c6b52"></span> เช็คอินแล้ว</div>
-    <div class="lg-item"><span class="lg-swatch" style="background:#fdf3e3;border-color:#96702f"></span> ลงทะเบียนแล้ว ยังไม่เช็คอิน</div>
-    <div class="lg-item"><span class="lg-swatch" style="background:#e8f4f8;border-color:#175f72"></span> ที่นั่งว่าง</div>
+    <h4>วิธีอ่านผัง</h4>
+    <div class="lg-item">แต่ละกล่อง = 1 โต๊ะ</div>
+    <div class="lg-item">ตัวเลขมุมขวาบน = จำนวนที่นั่งแล้ว/ความจุโต๊ะ</div>
+    <div class="lg-item">หารายชื่อทีละคนว่านั่งโต๊ะไหน ดูจากเอกสาร "รายชื่อผู้เข้าร่วม" แยกต่างหาก</div>
   </div>
   ${deptLegendHTML?`<div class="lg-group"><h4>สีประจำกลุ่มงาน</h4>${deptLegendHTML}</div>`:''}
 </div>
