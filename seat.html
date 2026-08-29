@@ -512,10 +512,9 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
       <button class="btn-t gold" onclick="saveToGAS()">บันทึก GAS</button>
       <button class="btn-t" id="autosave-btn" onclick="toggleAutoSave()" title="เมื่อเปิดไว้ ทุกการแก้ไขจะถูกบันทึกขึ้น Google Sheet ให้อัตโนมัติหลังหยุดแก้ไข 3 วินาที">🟢 บันทึกอัตโนมัติ: เปิด</button>
       <button class="btn-t gold" onclick="saveLocal()">Local</button>
-      <button class="btn-t" onclick="exportJSON()">Export</button>
-      <button class="btn-t green vo-visible" onclick="window.print()">พิมพ์</button>
-      <button class="btn-t green" onclick="openCheckinTab()" title="เปิดหน้าค้นหาชื่อ + เช็คอินในแท็บใหม่ — ใช้ที่จุดเช็คอินหน้างาน ไม่ต้องเลื่อนหาที่โต๊ะในผัง">✅ เช็คอิน</button>
-      <button class="btn-t gold" onclick="openDashboardTab()" title="เปิด Dashboard สรุปยอดผู้มาร่วมงาน แยกตามกลุ่มงานและแยกตามโต๊ะ ในแท็บใหม่">📊 Dashboard</button>
+      <button class="btn-t" onclick="exportJSON()" title="สำรองข้อมูลดิบเป็นไฟล์ .json (สำหรับกู้คืน/ย้ายเครื่อง ไม่ใช่ไฟล์สำหรับพิมพ์แจก)">Export JSON</button>
+      <button class="btn-t green vo-visible" onclick="printSeatMap()" title="เปิดแท็บใหม่ พร้อมผังที่นั่งจัดหน้า A4 มีสัญลักษณ์ครบ กดพิมพ์/บันทึกเป็น PDF ได้ทันที">🖨️ พิมพ์ผังที่นั่ง</button>
+      <button class="btn-t green vo-visible" onclick="printAttendeeList()" title="เปิดแท็บใหม่ พร้อมรายชื่อผู้เข้าร่วมจัดหน้า A4 แยกตามโต๊ะ พร้อมดัชนีค้นชื่อ">🖨️ พิมพ์รายชื่อ</button>
       <button class="btn-t vo-visible" id="btn-viewonly" onclick="openViewOnlyTab()" title="เปิดหน้าโหมดแสดงผังในแท็บใหม่ — สำหรับผู้เข้าร่วมงาน/ฉายจอ ดูได้อย่างเดียว ไม่มีปุ่มโหมดแก้ไขอยู่ในนั้นเลย แยกขาดจากหน้าแก้ไขนี้โดยสมบูรณ์">โหมดแสดงผัง</button>
       <button class="btn-t" onclick="copyViewLink()" title="คัดลอกลิงก์แสดงผังแบบแยกต่างหาก — ผู้เปิดลิงก์นี้จะเห็นแค่ผังที่นั่งอย่างเดียว ไม่มีทางกลับมาหน้าแก้ไข เหมาะสำหรับฉายจอ/ส่งให้คนอื่นดู">ลิงก์แสดงผัง</button>
     </div>
@@ -1636,16 +1635,11 @@ function onMove(e){
     const sr=getSelScreenRect();
     if(sr){const h=hitHandle(sp,sr);if(h){canvas.style.cursor=h.cursor;return;}}
   }
-  // Hover tooltip — edit mode only. In presentation/view-only mode this is
-  // suppressed so attendee names don't pop up just from moving the mouse
-  // over the shared screen; tapping/double-clicking a table still opens the
-  // read-only roster modal (see the viewOnly branch in the dblclick handler).
-  if(!viewOnly){
-    const hit=hitTest(sp,wp);
-    if(hit&&hit.type==='table'&&hit.seatIdx!==undefined){
-      const t=getEl('table',hit.id),pid=t.seats[hit.seatIdx];
-      if(pid){showTip(e,pid);return;}
-    }
+  // Hover tooltip
+  const hit=hitTest(sp,wp);
+  if(hit&&hit.type==='table'&&hit.seatIdx!==undefined){
+    const t=getEl('table',hit.id),pid=t.seats[hit.seatIdx];
+    if(pid){showTip(e,pid);return;}
   }
   if(tool==='select') canvas.style.cursor='';
   hideTip();
@@ -2623,7 +2617,55 @@ function mpInitials(name){const t=String(name||'').trim();if(!t)return'-';const 
 function mpUpdatePreview(){const name=document.getElementById('mp-name').value.trim();const mission=document.getElementById('mp-mission').value.trim();const dept=document.getElementById('mp-dept').value.trim();const status=document.getElementById('mp-status').value;document.getElementById('mp-avatar').textContent=mpInitials(name);document.getElementById('mp-preview-name').textContent=name||'ยังไม่ระบุชื่อ';const subParts=[dept,mission].filter(Boolean);document.getElementById('mp-preview-sub').textContent=subParts.length?subParts.join(' · '):(status==='checkin'?'เช็คอินแล้ว':'ลงทะเบียนแล้ว');}
 function openAddPerson(){['mp-name','mp-mission','mp-dept'].forEach(id=>document.getElementById(id).value='');document.getElementById('mp-status').value='registered';document.getElementById('mp-edit-id').value='';document.getElementById('mp-del-btn').style.display='none';document.getElementById('mp-preview').style.display='none';document.getElementById('mperson-title').textContent='เพิ่มรายชื่อ';document.getElementById('mperson-sub').textContent='กรอกข้อมูลผู้เข้าร่วมงานเพื่อเพิ่มลงในผังที่นั่ง';openModal('modal-person');}
 function openEditPerson(pid){const p=getPerson(pid);if(!p) return;document.getElementById('mp-name').value=p.name;document.getElementById('mp-mission').value=p.mission||'';document.getElementById('mp-dept').value=p.dept||'';document.getElementById('mp-status').value=p.status||'registered';document.getElementById('mp-edit-id').value=pid;document.getElementById('mp-del-btn').style.display='';document.getElementById('mp-preview').style.display='flex';mpUpdatePreview();document.getElementById('mperson-title').textContent='แก้ไขรายชื่อ';document.getElementById('mperson-sub').textContent='แก้ไขข้อมูลหรือลบรายชื่อนี้ออกจากระบบ';openModal('modal-person');}
-function savePerson(){const name=document.getElementById('mp-name').value.trim();if(!name){document.getElementById('mp-name').focus();toast('กรุณากรอกชื่อ','err');return;}const mission=document.getElementById('mp-mission').value.trim(),dept=document.getElementById('mp-dept').value.trim(),status=document.getElementById('mp-status').value,editId=document.getElementById('mp-edit-id').value;if(editId){const p=getPerson(editId);if(p){p.name=name;p.mission=mission;p.dept=dept;p.status=status;}toast(`แก้ไข "${name}" แล้ว`,'ok');}else{people.push({id:'L'+nextPId++,name,mission,dept,status});toast(`เพิ่ม "${name}" แล้ว`,'ok');}closeModal('modal-person');drawAll();renderPool();}
+// หมายเหตุ: การ "เพิ่มรายชื่อ" ใหม่ (ไม่ใช่แก้ไขคนเดิม) จะถูกบันทึกขึ้น
+// GAS ผ่าน action "add_walkin" ทันที (เหมือนปุ่ม "เพิ่มรายชื่อ" ใน
+// checkin.html) แทนที่จะใช้ id ขึ้นต้นด้วย "L" แบบเดิมที่เก็บไว้ใน
+// เบราว์เซอร์เท่านั้นและหายไปเมื่อรีเฟรชหน้า — ทำให้คนที่เพิ่มจากตรงนี้
+// โผล่ในหน้าเช็คอินหน้างาน (checkin.html) ได้ด้วยเช่นกัน
+async function savePerson(){
+  const name=document.getElementById('mp-name').value.trim();
+  if(!name){document.getElementById('mp-name').focus();toast('กรุณากรอกชื่อ','err');return;}
+  const mission=document.getElementById('mp-mission').value.trim(),
+        dept=document.getElementById('mp-dept').value.trim(),
+        status=document.getElementById('mp-status').value,
+        editId=document.getElementById('mp-edit-id').value;
+
+  // แก้ไขคนเดิม — ยังคงเป็นการแก้ไขในเครื่องนี้เท่านั้นเหมือนเดิม (ไม่แตะ
+  // ข้อมูลต้นทางไม่ว่าจะเป็นแบบสำรวจหรือ Walk-in ที่เพิ่มไปแล้ว)
+  if(editId){
+    const p=getPerson(editId);
+    if(p){p.name=name;p.mission=mission;p.dept=dept;p.status=status;}
+    toast(`แก้ไข "${name}" แล้ว`,'ok');
+    closeModal('modal-person');drawAll();renderPool();
+    return;
+  }
+
+  // เพิ่มคนใหม่ — บันทึกขึ้น GAS ให้จริง เพื่อให้ id คงที่และซิงก์ข้าม
+  // หน้า/เครื่องได้ (เหมือนกับที่ checkin.html ทำ)
+  const saveBtn=document.querySelector('#modal-person .btn-p');
+  const origLbl=saveBtn?saveBtn.textContent:'';
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='กำลังบันทึก...';}
+  try{
+    const d=await gasPost({action:'add_walkin',name,dept,position:''});
+    if(d.status!=='ok') throw new Error(d.message||'เพิ่มรายชื่อไม่สำเร็จ');
+    const person=d.person;
+    person.mission=mission;
+    if(status==='checkin'){
+      const ci=await gasPost({action:'checkin',personId:person.id,personName:person.name});
+      if(ci.status==='ok'){person.status='checkin';person.checkinTime=ci.time||'';}
+      else{person.status='registered';}
+    }else{
+      person.status='registered';
+    }
+    people.push(person);
+    toast(`เพิ่ม "${name}" แล้ว (ซิงก์กับเช็คอินหน้างานแล้ว)`,'ok');
+    closeModal('modal-person');drawAll();renderPool();
+  }catch(err){
+    toast('เพิ่มรายชื่อไม่สำเร็จ: '+err.message,'err');
+  }finally{
+    if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=origLbl;}
+  }
+}
 function deletePerson(){const editId=document.getElementById('mp-edit-id').value,p=getPerson(editId);if(!p) return;confirm2('ลบรายชื่อ',`ต้องการลบ "${p.name}"?`,()=>{saveHist();people=people.filter(x=>String(x.id)!==String(editId));tables.forEach(t=>{t.seats=t.seats.map(s=>String(s)===String(editId)?null:s);});closeModal('modal-person');drawAll();renderPool();toast(`ลบ "${p.name}" แล้ว`,'ok');});}
 
 // ══════════════════════════════════════════════════════════════════
@@ -2761,25 +2803,6 @@ function openViewOnlyTab(){
   const url=location.origin+location.pathname+'?view=1';
   const w=window.open(url,'_blank');
   if(!w) toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — ลองใช้ ลิงก์แสดงผัง แทน','warn');
-}
-
-// Opens the dedicated check-in page (checkin.html, same folder as this
-// editor) in a new tab — a separate search-and-tap screen so staff at the
-// door never has to scroll the seat map to find someone. Independent page,
-// independent tab: this editor stays exactly as it was.
-function openCheckinTab(){
-  const url=location.origin+location.pathname.replace(/[^/]*$/,'checkin.html');
-  const w=window.open(url,'_blank');
-  if(!w) toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — เปิด checkin.html เองในแท็บใหม่แทนได้','warn');
-}
-
-// เปิดหน้า Dashboard สรุปยอดผู้มาร่วมงาน — ตอนนี้รวมอยู่ในหน้าเดียวกับ
-// checkin.html แล้ว (แท็บ "📊 Dashboard" ในหน้านั้น) จึงเปิดไฟล์เดียวกัน
-// แต่ใส่ ?tab=dashboard ต่อท้ายให้เด้งไปที่แท็บ Dashboard ทันที
-function openDashboardTab(){
-  const url=location.origin+location.pathname.replace(/[^/]*$/,'checkin.html')+'?tab=dashboard';
-  const w=window.open(url,'_blank');
-  if(!w) toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — เปิด checkin.html?tab=dashboard เองในแท็บใหม่แทนได้','warn');
 }
 
 function refreshListTableFilter(){
@@ -3033,6 +3056,257 @@ function getSnapshot(){return{v:5,savedAt:new Date().toLocaleString('th-TH'),tab
 function saveLocal(){localStorage.setItem('seatmap_v5',JSON.stringify(getSnapshot()));toast('บันทึก Local แล้ว','ok');setGasBar('','บันทึก Local เมื่อ '+new Date().toLocaleTimeString('th-TH'));}
 function loadLocal(){const raw=localStorage.getItem('seatmap_v5');if(!raw) return false;try{const d=JSON.parse(raw);if(d.v!==5) return false;({tables,stages,textboxes,shapes,people,nextTId,nextSId,nextTBId,nextShId,nextPId,panX,panY,zoom}=d);updateZoomDisplay();voSyncZoomSlider();return true;}catch(e){return false;}}
 function exportJSON(){const blob=new Blob([JSON.stringify(getSnapshot(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='seat-v5-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Export JSON แล้ว','ok');}
+
+// ══════════════════════════════════════════════════════════════════
+// PRINT / EXPORT — ผังที่นั่ง (A4) และ รายชื่อผู้เข้าร่วม (A4)
+// จัดหน้าสำหรับปริ้นแจกผู้เข้าร่วมงานจริง (ไม่ใช่แค่ export ข้อมูลดิบ):
+// - ผังที่นั่ง: ถ่ายภาพฉากบนแคนวาสจริง (ใช้ pipeline วาดเดียวกับหน้าจอ
+//   แก้ไข ไม่ใช่การจำลองแยกต่างหาก) มา fit ลงกระดาษ A4 พร้อมสัญลักษณ์
+// - รายชื่อ: จัดกลุ่มตามโต๊ะ + ดัชนีเรียงตามตัวอักษรสำหรับค้นชื่อตัวเอง
+// เปิดในแท็บใหม่แล้วเรียก window.print() ให้อัตโนมัติ — แยกขาดจากหน้า
+// แก้ไขโดยสมบูรณ์ ไม่ไปยุ่งกับ state ของแคนวาสที่กำลังแก้ไขอยู่
+// ══════════════════════════════════════════════════════════════════
+const EVENT_TITLE = 'งานมุทิตาจิตแด่ผู้เกษียณอายุราชการ โรงพยาบาลสันทราย ประจำปี 2569';
+
+// กล่องขอบเขต (world space) ของทุกองค์ประกอบในผัง — ใช้คำนวณ zoom/pan
+// ที่จะ "fit" ทั้งผังลงกระดาษพอดี ไม่ตัดขอบ ไม่มีที่ว่างเหลือเฟือ
+function computeLayoutBBox(){
+  const pts=[];
+  tables.forEach(t=>{pts.push([t.x,t.y],[t.x+t.w,t.y+t.h]);});
+  stages.forEach(s=>{pts.push([s.x,s.y],[s.x+s.w,s.y+s.h]);});
+  textboxes.forEach(tb=>{pts.push([tb.x,tb.y],[tb.x+tb.w,tb.y+tb.h]);});
+  shapes.forEach(sh=>{pts.push([sh.x,sh.y],[sh.x+sh.w,sh.y+sh.h]);});
+  if(!pts.length) return {minX:0,minY:0,maxX:800,maxY:600};
+  const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
+  return {minX:Math.min(...xs),minY:Math.min(...ys),maxX:Math.max(...xs),maxY:Math.max(...ys)};
+}
+
+// ถ่ายภาพผังทั้งหมดเป็น PNG ที่ความละเอียดสำหรับพิมพ์ — ใช้แคนวาสจริง
+// เป็น "กระดานร่างชั่วคราว" (สลับขนาด/zoom/pan วาดใหม่ แล้วคืนค่าเดิม
+// ทั้งหมดก่อนออกจากฟังก์ชัน) เพื่อให้ได้ภาพเป๊ะเหมือนที่เห็นในตัวแก้ไข
+// จริง ๆ โดยไม่ต้องเขียนตัววาดผังแยกอีกชุดที่อาจไม่ตรงกัน
+function renderSceneToDataURL(exportW, exportH){
+  const saved={
+    panX, panY, zoom, cw:canvas.width, ch:canvas.height,
+    viewOnly, sel, multiSel:multiSel.slice(), assignArm, mapHighlightTableId
+  };
+  // บนหน้าจอแก้ไข seatLabel() ย่อเหลือรหัสกลุ่มงาน หรืออย่างมากก็ชื่อย่อ 2
+  // ตัวอักษร (เหมาะกับพื้นที่จำกัดตอน zoom เล็ก ๆ) — แต่บนกระดาษที่พิมพ์
+  // แจกจริง ผู้เข้าร่วมต้องเห็น "ชื่อเต็ม" ถึงจะหาที่นั่งตัวเองเจอ จึง
+  // สลับฟังก์ชันนี้ชั่วคราวเฉพาะตอน export แล้วคืนค่าเดิมทันทีหลังจบ
+  const savedSeatLabelFn=seatLabel;
+  seatLabel=function(p){ return p?p.name:''; };
+  try{
+    sel=null; multiSel=[]; assignArm=null; mapHighlightTableId=null; viewOnly=false;
+
+    const bbox=computeLayoutBBox();
+    const pad=50;
+    const contentW=Math.max(1,(bbox.maxX-bbox.minX)+pad*2);
+    const contentH=Math.max(1,(bbox.maxY-bbox.minY)+pad*2);
+    const scale=Math.min(exportW/contentW, exportH/contentH);
+    const drawnW=contentW*scale, drawnH=contentH*scale;
+    const offsetX=(exportW-drawnW)/2, offsetY=(exportH-drawnH)/2;
+
+    zoom=scale;
+    panX=offsetX-(bbox.minX-pad)*scale;
+    panY=offsetY-(bbox.minY-pad)*scale;
+
+    canvas.width=exportW; canvas.height=exportH;
+
+    // พื้นหลังเรียบสีครีม — ไม่มีเส้นกริดของหน้าแก้ไข ให้ดูเป็นเอกสารพิมพ์
+    ctx.clearRect(0,0,exportW,exportH);
+    ctx.fillStyle='#faf9f7'; ctx.fillRect(0,0,exportW,exportH);
+
+    shapes.forEach(drawShape);
+    stages.forEach(drawStage);
+    textboxes.forEach(drawTextbox);
+    tables.forEach(drawTable);
+
+    return {dataUrl:canvas.toDataURL('image/png'), w:exportW, h:exportH};
+  } finally {
+    ({panX,panY,zoom,viewOnly}=saved);
+    sel=saved.sel; multiSel=saved.multiSel; assignArm=saved.assignArm; mapHighlightTableId=saved.mapHighlightTableId;
+    canvas.width=saved.cw; canvas.height=saved.ch;
+    seatLabel=savedSeatLabelFn;
+    drawAll();
+  }
+}
+
+function _printWindowHTML(html){
+  const w=window.open('','_blank');
+  if(!w){ toast('เบราว์เซอร์บล็อกการเปิดแท็บใหม่ — กรุณาอนุญาต popup แล้วลองใหม่','warn'); return false; }
+  w.document.open(); w.document.write(html); w.document.close();
+  return true;
+}
+
+function printSeatMap(){
+  if(!tables.length){ toast('ยังไม่มีผังที่นั่งให้พิมพ์','warn'); return; }
+  let capture, orientation;
+  try{
+    const bbox=computeLayoutBBox();
+    const aspect=(bbox.maxX-bbox.minX)/Math.max(1,(bbox.maxY-bbox.minY));
+    orientation = aspect>=1 ? 'landscape' : 'portrait';
+    const exportW = orientation==='landscape'?2480:1748;
+    const exportH = orientation==='landscape'?1748:2480;
+    capture = renderSceneToDataURL(exportW, exportH);
+  }catch(err){
+    toast('สร้างผังที่นั่งไม่สำเร็จ: '+err.message,'err');
+    return;
+  }
+
+  const deptList=Array.from(new Set(tables.map(t=>t.dept).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'th'));
+  const deptLegendHTML=deptList.length
+    ? deptList.map(d=>`<div class="lg-item"><span class="lg-dot" style="background:${deptColor(d)}"></span>${esc(d)}</div>`).join('')
+    : '';
+  const seated=seatedSet().size, total=people.length;
+  const genTime=new Date().toLocaleString('th-TH');
+
+  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<title>ผังที่นั่ง — ${esc(EVENT_TITLE)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=Noto+Serif+Thai:wght@700&family=IBM+Plex+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+@page{ size:A4 ${orientation}; margin:12mm; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans Thai',Tahoma,sans-serif;color:#25282b;}
+header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:3px solid #96702f;padding-bottom:10px;margin-bottom:12px;}
+.h-title{font-family:'Noto Serif Thai',serif;font-size:21px;font-weight:700;}
+.h-sub{font-size:11.5px;color:#565b60;margin-top:2px;}
+.h-meta{text-align:right;font-size:10.5px;color:#8b9096;font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+.map-wrap{width:100%;border:1px solid #dcdee1;border-radius:8px;overflow:hidden;background:#faf9f7;}
+.map-wrap img{width:100%;display:block;}
+.legend{display:flex;gap:28px;margin-top:12px;flex-wrap:wrap;font-size:10.5px;align-items:flex-start;}
+.legend h4{font-size:10.5px;font-weight:700;margin-bottom:5px;color:#25282b;}
+.lg-group{min-width:150px;}
+.lg-item{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.lg-swatch{display:inline-block;width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1.5px solid;}
+.lg-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+footer{margin-top:10px;font-size:9.5px;color:#8b9096;text-align:center;}
+.no-print{position:fixed;top:12px;right:12px;display:flex;gap:8px;}
+.no-print button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #c7cacd;background:#fff;cursor:pointer;}
+.no-print button.primary{background:#175f72;color:#fff;border-color:#175f72;}
+@media print{ .no-print{display:none!important;} }
+</style></head>
+<body>
+<div class="no-print"><button onclick="window.print()" class="primary">🖨️ พิมพ์ / บันทึกเป็น PDF</button><button onclick="window.close()">ปิด</button></div>
+<header>
+  <div><div class="h-title">ผังที่นั่ง</div><div class="h-sub">${esc(EVENT_TITLE)}</div></div>
+  <div class="h-meta">พิมพ์เมื่อ ${esc(genTime)}<br>เช็คอินแล้ว ${seated}/${total} คน</div>
+</header>
+<div class="map-wrap"><img src="${capture.dataUrl}" alt="ผังที่นั่ง"></div>
+<div class="legend">
+  <div class="lg-group">
+    <h4>สัญลักษณ์ที่นั่ง</h4>
+    <div class="lg-item"><span class="lg-swatch" style="background:#e6f4f0;border-color:#1c6b52"></span> เช็คอินแล้ว</div>
+    <div class="lg-item"><span class="lg-swatch" style="background:#fdf3e3;border-color:#96702f"></span> ลงทะเบียนแล้ว ยังไม่เช็คอิน</div>
+    <div class="lg-item"><span class="lg-swatch" style="background:#e8f4f8;border-color:#175f72"></span> ที่นั่งว่าง</div>
+  </div>
+  ${deptLegendHTML?`<div class="lg-group"><h4>สีประจำกลุ่มงาน</h4>${deptLegendHTML}</div>`:''}
+</div>
+<footer>สร้างโดยระบบผังที่นั่งอัตโนมัติ · โรงพยาบาลสันทราย</footer>
+<script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script>
+</body></html>`;
+
+  _printWindowHTML(html);
+}
+
+function buildAttendeeListPrintHTML(){
+  const seated=seatedSet();
+  const genTime=new Date().toLocaleString('th-TH');
+  const totalCI=people.filter(p=>p.status==='checkin').length;
+
+  let byTableHTML='';
+  tables.forEach(t=>{
+    const members=t.seats.map((pid,i)=>pid?{p:getPerson(pid),seatNo:i+1}:null).filter(m=>m&&m.p);
+    byTableHTML+=`<div class="tsec"><div class="tsec-hd"><span>${esc(t.name)}</span><span class="tsec-cnt">${members.length}/${t.cap} คน</span></div>`;
+    if(!members.length){
+      byTableHTML+=`<div class="tsec-empty">ยังไม่มีผู้เข้าร่วมที่โต๊ะนี้</div>`;
+    }else{
+      byTableHTML+=members.map(m=>{
+        const p=m.p, ci=p.status==='checkin';
+        return `<div class="prow"><span class="pnum">${m.seatNo}</span><span class="pname">${esc(p.name)}${p.walkin?' <span class="pwalkin">Walk-in</span>':''}</span><span class="pdept">${esc(p.dept||p.mission||'')}</span><span class="pstat ${ci?'ci':'reg'}">${ci?'✓ เช็คอิน':'○ ลงทะเบียน'}</span></div>`;
+      }).join('');
+    }
+    byTableHTML+=`</div>`;
+  });
+
+  const unassigned=people.filter(p=>!seated.has(String(p.id)));
+  let unassignedHTML='';
+  if(unassigned.length){
+    unassignedHTML=`<div class="tsec unassigned"><div class="tsec-hd"><span>ยังไม่มีที่นั่ง</span><span class="tsec-cnt">${unassigned.length} คน</span></div>`+
+      unassigned.map((p,i)=>{
+        const ci=p.status==='checkin';
+        return `<div class="prow"><span class="pnum">${i+1}</span><span class="pname">${esc(p.name)}${p.walkin?' <span class="pwalkin">Walk-in</span>':''}</span><span class="pdept">${esc(p.dept||p.mission||'')}</span><span class="pstat ${ci?'ci':'reg'}">${ci?'✓ เช็คอิน':'○ ลงทะเบียน'}</span></div>`;
+      }).join('')+`</div>`;
+  }
+
+  const alphaSorted=people.slice().sort((a,b)=>a.name.localeCompare(b.name,'th'));
+  const alphaHTML=alphaSorted.map(p=>{
+    const loc=findSeat(p.id);
+    return `<div class="arow"><span class="aname">${esc(p.name)}</span><span class="atable">${loc?esc(loc.table.name):'—'}</span></div>`;
+  }).join('');
+
+  return `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<title>รายชื่อผู้เข้าร่วม — ${esc(EVENT_TITLE)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Noto+Serif+Thai:wght@700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+@page{ size:A4 portrait; margin:14mm 12mm; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans Thai',Tahoma,sans-serif;color:#25282b;font-size:11.5px;line-height:1.4;}
+header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:3px solid #96702f;padding-bottom:8px;margin-bottom:10px;}
+.h-title{font-family:'Noto Serif Thai',serif;font-size:19px;font-weight:700;}
+.h-sub{font-size:11px;color:#565b60;margin-top:2px;}
+.h-meta{text-align:right;font-size:10px;color:#8b9096;font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+.legend{display:flex;gap:18px;margin-bottom:12px;font-size:10px;color:#565b60;flex-wrap:wrap;align-items:center;}
+.legend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.cols{column-count:2;column-gap:20px;}
+.tsec{break-inside:avoid;margin-bottom:12px;border:1px solid #dcdee1;border-radius:6px;overflow:hidden;}
+.tsec-hd{display:flex;justify-content:space-between;background:#e7f0f2;color:#0f4552;font-weight:700;padding:5px 9px;font-size:11px;}
+.tsec.unassigned .tsec-hd{background:#f3ede3;color:#7a5a25;}
+.tsec-cnt{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+.tsec-empty{padding:8px 9px;color:#8b9096;font-size:10.5px;font-style:italic}
+.prow{display:flex;align-items:center;gap:6px;padding:3px 9px;border-top:1px solid #eff0f1;font-size:10.5px;}
+.tsec .prow:first-of-type{border-top:none}
+.pnum{color:#8b9096;font-family:'IBM Plex Mono',monospace;width:14px;flex-shrink:0;}
+.pname{font-weight:600;flex:1;min-width:0;}
+.pwalkin{font-style:normal;color:#96702f;font-size:9px;font-weight:700;background:#f3ede3;padding:0 5px;border-radius:99px;}
+.pdept{color:#565b60;font-size:9.5px;flex:0 0 30%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pstat{font-size:9px;font-weight:700;flex-shrink:0;width:60px;text-align:right;}
+.pstat.ci{color:#1c6b52;}
+.pstat.reg{color:#96702f;}
+.idx-title{font-family:'Noto Serif Thai',serif;font-size:15px;font-weight:700;margin:16px 0 8px;border-top:2px solid #dcdee1;padding-top:12px;break-before:column;}
+.idx-cols{column-count:3;column-gap:16px;font-size:10px;}
+.arow{display:flex;justify-content:space-between;gap:6px;padding:2px 0;border-bottom:1px dotted #dcdee1;break-inside:avoid;}
+.aname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.atable{color:#175f72;font-weight:700;flex-shrink:0;}
+footer{margin-top:14px;font-size:9px;color:#8b9096;text-align:center;}
+.no-print{position:fixed;top:12px;right:12px;display:flex;gap:8px;}
+.no-print button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #c7cacd;background:#fff;cursor:pointer;}
+.no-print button.primary{background:#175f72;color:#fff;border-color:#175f72;}
+@media print{ .no-print{display:none!important;} }
+</style></head>
+<body>
+<div class="no-print"><button onclick="window.print()" class="primary">🖨️ พิมพ์ / บันทึกเป็น PDF</button><button onclick="window.close()">ปิด</button></div>
+<header>
+  <div><div class="h-title">รายชื่อผู้เข้าร่วมงาน</div><div class="h-sub">${esc(EVENT_TITLE)}</div></div>
+  <div class="h-meta">พิมพ์เมื่อ ${esc(genTime)}<br>ทั้งหมด ${people.length} คน · เช็คอินแล้ว ${totalCI} คน</div>
+</header>
+<div class="legend">
+  <span><span class="sw" style="background:#1c6b52"></span>✓ เช็คอินแล้ว</span>
+  <span><span class="sw" style="background:#96702f"></span>○ ลงทะเบียนแล้ว ยังไม่เช็คอิน</span>
+  <span><span class="pwalkin">Walk-in</span> = ไม่ได้ลงทะเบียนล่วงหน้า</span>
+</div>
+<div class="cols">${byTableHTML}${unassignedHTML}</div>
+<div class="idx-title">ดัชนีค้นหารายชื่อ (เรียงตามตัวอักษร)</div>
+<div class="idx-cols">${alphaHTML}</div>
+<footer>สร้างโดยระบบผังที่นั่งอัตโนมัติ · โรงพยาบาลสันทราย</footer>
+<script>window.onload=()=>setTimeout(()=>window.print(),250);<\/script>
+</body></html>`;
+}
+
+function printAttendeeList(){
+  if(!people.length){ toast('ยังไม่มีรายชื่อให้พิมพ์','warn'); return; }
+  _printWindowHTML(buildAttendeeListPrintHTML());
+}
 
 // ══════════════════════════════════════════════════════════════════
 // DEFAULT LAYOUT
