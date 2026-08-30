@@ -122,6 +122,28 @@ body.view-only .mobile-sidebar-toggle,body.view-only .sidebar-backdrop{display:n
 .btn-t.green{background:rgba(28,107,82,.4);border-color:rgba(120,200,175,.5)}
 .btn-t:disabled{opacity:.5;cursor:not-allowed}
 .btn-t:active{opacity:.85}
+
+/* ── Toolbar dropdown groups (Products/Services-style header menu) ── */
+.menu-group{position:relative}
+.menu-group>.btn-t .care{font-size:9px;margin-left:1px;opacity:.85;transition:transform .15s}
+.menu-group.open>.btn-t .care{transform:rotate(180deg)}
+.menu-group.open>.btn-t{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4)}
+.menu-dropdown{
+  position:absolute;top:calc(100% + 6px);left:0;min-width:230px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--sh-lg);padding:6px;display:none;flex-direction:column;gap:1px;z-index:250;
+}
+.menu-group.open .menu-dropdown{display:flex}
+.menu-item{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  padding:9px 11px;border:none;background:none;border-radius:var(--r);
+  font-family:var(--sans);font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;
+  white-space:nowrap;transition:background .12s;
+}
+.menu-item:hover{background:var(--surface3)}
+.menu-item:disabled{opacity:.5;cursor:not-allowed}
+.menu-sep{height:1px;background:var(--border);margin:4px 2px}
+
 .api-dot{width:6px;height:6px;border-radius:50%;background:#94a3b8;flex-shrink:0;transition:background .3s}
 .api-dot.ok{background:#5cb88a}.api-dot.err{background:#d97757}
 .api-dot.loading{background:#c9a961;animation:apipulse 1s ease infinite}
@@ -240,6 +262,8 @@ body.view-only .gas-bar,body.view-only .insp{display:none!important}
 body.view-only .wrap{grid-template-columns:1fr!important}
 body.view-only .top-acts .btn-t{display:none}
 body.view-only .top-acts .btn-t.vo-visible{display:flex}
+body.view-only .top-acts .menu-group{display:none}
+body.view-only .top-acts .menu-group.vo-visible{display:block}
 /* No path back to editing from view-only mode, ever — not just when locked. */
 body.view-only #vo-back-sep,body.view-only #vo-back-edit-btn,body.view-only #btn-viewonly{display:none!important}
 .vo-bar{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:250;
@@ -510,18 +534,45 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
         <span id="api-txt">กำลังเชื่อมต่อ...</span>
       </div>
       <button class="btn-t vo-visible" onclick="loadFromGAS()">รีโหลด</button>
-      <button class="btn-t" onclick="openAddPerson()">เพิ่มรายชื่อ</button>
-      <button class="btn-t" onclick="autoAssign()" title="เติมที่นั่งว่างตามลำดับ ไม่สนใจกลุ่มงาน">จัดอัตโนมัติ</button>
-      <button class="btn-t gold" onclick="autoAssignByDept()" title="จัดคนแต่ละกลุ่มงานไปนั่งโต๊ะเดียวกัน สร้างโต๊ะใหม่อัตโนมัติถ้าที่ไม่พอ">จัดตามกลุ่มงาน</button>
-      <button class="btn-t gold" onclick="saveToGAS()">บันทึก GAS</button>
       <button class="btn-t" id="autosave-btn" onclick="toggleAutoSave()" title="เมื่อเปิดไว้ ทุกการแก้ไขจะถูกบันทึกขึ้น Google Sheet ให้อัตโนมัติหลังหยุดแก้ไข 3 วินาที">🟢 บันทึกอัตโนมัติ: เปิด</button>
-      <button class="btn-t gold" onclick="saveLocal()">Local</button>
-      <button class="btn-t" onclick="exportJSON()" title="สำรองข้อมูลดิบเป็นไฟล์ .json (สำหรับกู้คืน/ย้ายเครื่อง ไม่ใช่ไฟล์สำหรับพิมพ์แจก)">Export JSON</button>
-      <button class="btn-t green vo-visible" onclick="printSeatMap()" title="เปิดแท็บใหม่ พร้อมผังที่นั่งจัดหน้า A4 มีสัญลักษณ์ครบ กดพิมพ์/บันทึกเป็น PDF ได้ทันที">🖨️ พิมพ์ผังที่นั่ง</button>
-      <button class="btn-t green vo-visible" onclick="printAttendeeList()" title="เปิดแท็บใหม่ พร้อมรายชื่อผู้เข้าร่วมจัดหน้า A4 แยกตามโต๊ะ พร้อมดัชนีค้นชื่อ">🖨️ พิมพ์รายชื่อ</button>
-      <button class="btn-t gold vo-visible" id="btn-signsheet" onclick="exportSignInSheet()" title="ดาวน์โหลดไฟล์ Excel ใบเซ็นชื่อ จัดหน้า A4 แนวนอน มีช่องลายเซ็นกว้าง พร้อมพิมพ์แจกหน้างาน">📝 ใบเซ็นชื่อ (Excel)</button>
-      <button class="btn-t vo-visible" id="btn-viewonly" onclick="openViewOnlyTab()" title="เปิดหน้าโหมดแสดงผังในแท็บใหม่ — สำหรับผู้เข้าร่วมงาน/ฉายจอ ดูได้อย่างเดียว ไม่มีปุ่มโหมดแก้ไขอยู่ในนั้นเลย แยกขาดจากหน้าแก้ไขนี้โดยสมบูรณ์">โหมดแสดงผัง</button>
-      <button class="btn-t" onclick="copyViewLink()" title="คัดลอกลิงก์แสดงผังแบบแยกต่างหาก — ผู้เปิดลิงก์นี้จะเห็นแค่ผังที่นั่งอย่างเดียว ไม่มีทางกลับมาหน้าแก้ไข เหมาะสำหรับฉายจอ/ส่งให้คนอื่นดู">ลิงก์แสดงผัง</button>
+
+      <div class="menu-group" id="mg-manage">
+        <button class="btn-t" onclick="toggleMenu(this)">จัดการรายชื่อ <span class="care">▾</span></button>
+        <div class="menu-dropdown">
+          <button class="menu-item" onclick="closeAllMenus();openAddPerson()">➕ เพิ่มรายชื่อ</button>
+          <button class="menu-item" onclick="closeAllMenus();autoAssign()" title="เติมที่นั่งว่างตามลำดับ ไม่สนใจกลุ่มงาน">🔀 จัดอัตโนมัติ</button>
+          <button class="menu-item" onclick="closeAllMenus();autoAssignByDept()" title="จัดคนแต่ละกลุ่มงานไปนั่งโต๊ะเดียวกัน สร้างโต๊ะใหม่อัตโนมัติถ้าที่ไม่พอ">🏷️ จัดตามกลุ่มงาน</button>
+        </div>
+      </div>
+
+      <div class="menu-group" id="mg-save">
+        <button class="btn-t gold" onclick="toggleMenu(this)">บันทึก <span class="care">▾</span></button>
+        <div class="menu-dropdown">
+          <button class="menu-item" onclick="closeAllMenus();saveToGAS()">☁️ บันทึก GAS</button>
+          <button class="menu-item" onclick="closeAllMenus();saveLocal()">💾 บันทึกในเครื่อง (Local)</button>
+          <div class="menu-sep"></div>
+          <button class="menu-item" onclick="closeAllMenus();exportJSON()" title="สำรองข้อมูลดิบเป็นไฟล์ .json (สำหรับกู้คืน/ย้ายเครื่อง ไม่ใช่ไฟล์สำหรับพิมพ์แจก)">📄 Export JSON</button>
+        </div>
+      </div>
+
+      <div class="menu-group vo-visible" id="mg-print">
+        <button class="btn-t green vo-visible" onclick="toggleMenu(this)">🖨️ พิมพ์ <span class="care">▾</span></button>
+        <div class="menu-dropdown">
+          <button class="menu-item" onclick="closeAllMenus();printSeatMap()" title="เปิดแท็บใหม่ พร้อมผังที่นั่งจัดหน้า A4 มีสัญลักษณ์ครบ กดพิมพ์/บันทึกเป็น PDF ได้ทันที">🗺️ พิมพ์ผังที่นั่ง</button>
+          <button class="menu-item" onclick="closeAllMenus();printAttendeeList()" title="เปิดแท็บใหม่ พร้อมรายชื่อผู้เข้าร่วมจัดหน้า A4 แยกตามโต๊ะ พร้อมดัชนีค้นชื่อ">📋 พิมพ์รายชื่อ</button>
+          <div class="menu-sep"></div>
+          <button class="menu-item" id="btn-signsheet" onclick="closeAllMenus();exportSignInSheet()" title="ดาวน์โหลดไฟล์ Excel ใบเซ็นชื่อ จัดหน้า A4 แนวนอน มีช่องลายเซ็นกว้าง พร้อมพิมพ์แจกหน้างาน">📝 ใบเซ็นชื่อ (Excel)</button>
+          <button class="menu-item" onclick="closeAllMenus();printSignInSheet()" title="เปิดแท็บใหม่ พร้อมใบเซ็นชื่อจัดหน้า A4 แนวนอน กดพิมพ์หรือบันทึกเป็น PDF ได้ทันที ไม่ต้องเปิด Excel">🖊️ ใบเซ็นชื่อ (PDF)</button>
+        </div>
+      </div>
+
+      <div class="menu-group" id="mg-present">
+        <button class="btn-t" onclick="toggleMenu(this)">แสดงผล <span class="care">▾</span></button>
+        <div class="menu-dropdown">
+          <button class="menu-item" id="btn-viewonly" onclick="closeAllMenus();openViewOnlyTab()" title="เปิดหน้าโหมดแสดงผังในแท็บใหม่ — สำหรับผู้เข้าร่วมงาน/ฉายจอ ดูได้อย่างเดียว ไม่มีปุ่มโหมดแก้ไขอยู่ในนั้นเลย แยกขาดจากหน้าแก้ไขนี้โดยสมบูรณ์">🖥️ โหมดแสดงผัง</button>
+          <button class="menu-item" onclick="closeAllMenus();copyViewLink()" title="คัดลอกลิงก์แสดงผังแบบแยกต่างหาก — ผู้เปิดลิงก์นี้จะเห็นแค่ผังที่นั่งอย่างเดียว ไม่มีทางกลับมาหน้าแก้ไข เหมาะสำหรับฉายจอ/ส่งให้คนอื่นดู">🔗 ลิงก์แสดงผัง</button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -3044,6 +3095,25 @@ function updateAutoSaveBtn(){
   b.textContent=autoSaveEnabled?'🟢 บันทึกอัตโนมัติ: เปิด':'⚪ บันทึกอัตโนมัติ: ปิด';
 }
 
+// ── แถบเมนูข้างบน (dropdown group) — เปิดได้ทีละอันเดียว, ปิดเมื่อคลิก
+// นอกเมนู หรือกด Esc, ปิดตัวเองทันทีที่กดรายการใดรายการหนึ่งไปแล้ว ──
+function toggleMenu(triggerBtn){
+  const grp=triggerBtn.closest('.menu-group');
+  if(!grp) return;
+  const wasOpen=grp.classList.contains('open');
+  closeAllMenus();
+  if(!wasOpen) grp.classList.add('open');
+}
+function closeAllMenus(){
+  document.querySelectorAll('.menu-group.open').forEach(g=>g.classList.remove('open'));
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.menu-group')) closeAllMenus();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeAllMenus();
+});
+
 // ══════════════════════════════════════════════════════════════════
 // GAS API
 // ══════════════════════════════════════════════════════════════════
@@ -3364,6 +3434,26 @@ function stripHonorific(name){
   return String(name||'').replace(/^(นางสาว|นาง|นาย|ดร\.?|ศาสตราจารย์|รองศาสตราจารย์|ผู้ช่วยศาสตราจารย์|ผศ\.?|รศ\.?|ศ\.?|นพ\.?|พญ\.?|ทพ\.?|ทพญ\.?|ภก\.?|ภญ\.?|น\.ส\.?)\s*/,'').trim();
 }
 
+// เรียงตามโต๊ะก่อน (ตามลำดับที่นั่งจริงในโต๊ะ) แล้วต่อท้ายด้วยคนที่ยังไม่มี
+// ที่นั่ง — ให้ลำดับการเซ็นชื่อสอดคล้องกับโต๊ะจริงหน้างาน ใช้ร่วมกันทั้ง
+// เวอร์ชัน Excel และเวอร์ชันพิมพ์ PDF เพื่อไม่ให้ลำดับสองไฟล์ไม่ตรงกัน
+function buildSignInRows(){
+  const rowsData=[];
+  tables.forEach(t=>{
+    t.seats.forEach(pid=>{
+      if(!pid) return;
+      const p=getPerson(pid);
+      if(!p) return;
+      rowsData.push({p,tableName:t.name});
+    });
+  });
+  const seated=seatedSet();
+  people.forEach(p=>{
+    if(!seated.has(String(p.id))) rowsData.push({p,tableName:'ยังไม่มีที่นั่ง'});
+  });
+  return rowsData;
+}
+
 async function exportSignInSheet(){
   if(!people.length){ toast('ยังไม่มีรายชื่อให้สร้างใบเซ็นชื่อ','warn'); return; }
   if(typeof ExcelJS==='undefined'){
@@ -3383,30 +3473,31 @@ async function exportSignInSheet(){
       pageSetup:{
         orientation:'landscape', paperSize:9, // 9 = A4
         fitToPage:true, fitToWidth:1, fitToHeight:0,
-        margins:{left:0.4,right:0.4,top:0.5,bottom:0.5,header:0.2,footer:0.2}
+        printTitlesRow:'4:4', // ขึ้นหน้าใหม่แล้วแสดงหัวตาราง (แถว 4) ซ้ำทุกหน้า
+        margins:{left:0.3,right:0.3,top:0.4,bottom:0.4,header:0.2,footer:0.2}
       }
     });
     const COLS=6;
     ws.columns=[
       {width:6},   // ลำดับ
-      {width:26},  // ชื่อ-นามสกุล
-      {width:24},  // ฝ่าย/กลุ่มงาน
-      {width:24},  // ตำแหน่ง
-      {width:13},  // โต๊ะที่นั่ง
-      {width:36},  // ลายเซ็น — กว้างพิเศษ
+      {width:30},  // ชื่อ-นามสกุล
+      {width:29.9},// ฝ่าย/กลุ่มงาน — เลี่ยงเลขซ้ำกับคอลัมน์ข้างเคียงเป๊ะๆ
+      {width:30.1},// ตำแหน่ง         (ExcelJS มีบั๊ก: 3 คอลัมน์ติดกันกว้าง
+      {width:14},  // โต๊ะที่นั่ง      เท่ากันเป๊ะ คอลัมน์กลางจะถูกเขียนผิดค่า)
+      {width:46},  // ลายเซ็น — กว้างพิเศษ
     ];
 
     ws.mergeCells(1,1,1,COLS);
     const title=ws.getCell(1,1);
     title.value='ใบเซ็นชื่อผู้เข้าร่วมงาน — '+EVENT_TITLE;
-    title.font={bold:true,size:15,name:'TH SarabunPSK'};
+    title.font={bold:true,size:15,name:'Sarabun'};
     title.alignment={horizontal:'center',vertical:'middle'};
     ws.getRow(1).height=30;
 
     ws.mergeCells(2,1,2,COLS);
     const sub=ws.getCell(2,1);
     sub.value=`พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}    รวมทั้งหมด ${people.length} คน`;
-    sub.font={size:11,name:'TH SarabunPSK',color:{argb:'FF565B60'}};
+    sub.font={size:11,name:'Sarabun',color:{argb:'FF565B60'}};
     sub.alignment={horizontal:'center'};
     ws.getRow(2).height=16;
 
@@ -3415,27 +3506,13 @@ async function exportSignInSheet(){
     headers.forEach((h,i)=>{ headerRow.getCell(i+1).value=h; });
     headerRow.height=22;
     headerRow.eachCell(c=>{
-      c.font={bold:true,size:13,name:'TH SarabunPSK'};
+      c.font={bold:true,size:13,name:'Sarabun'};
       c.alignment={horizontal:'center',vertical:'middle'};
       c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7F0F2'}};
       c.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
     });
 
-    // เรียงตามโต๊ะก่อน (ตามลำดับที่นั่งจริงในโต๊ะ) แล้วต่อท้ายด้วยคนที่ยัง
-    // ไม่มีที่นั่ง — ให้ลำดับการเซ็นชื่อสอดคล้องกับโต๊ะจริงหน้างาน
-    const rowsData=[];
-    tables.forEach(t=>{
-      t.seats.forEach(pid=>{
-        if(!pid) return;
-        const p=getPerson(pid);
-        if(!p) return;
-        rowsData.push({p,tableName:t.name});
-      });
-    });
-    const seated=seatedSet();
-    people.forEach(p=>{
-      if(!seated.has(String(p.id))) rowsData.push({p,tableName:'ยังไม่มีที่นั่ง'});
-    });
+    const rowsData=buildSignInRows();
 
     let r=5;
     rowsData.forEach((item,idx)=>{
@@ -3447,9 +3524,9 @@ async function exportSignInSheet(){
       row.getCell(4).value=p.position||'';
       row.getCell(5).value=item.tableName;
       row.getCell(6).value='';
-      row.height=40;
+      row.height=48;
       row.eachCell({includeEmpty:true},(c,colNum)=>{
-        c.font={size:13,name:'TH SarabunPSK'};
+        c.font={size:13,name:'Sarabun'};
         c.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
         c.alignment={vertical:'middle',horizontal:colNum===1?'center':'left',wrapText:true};
       });
@@ -3468,6 +3545,80 @@ async function exportSignInSheet(){
   }finally{
     if(btn){ btn.disabled=false; btn.textContent=origLbl; }
   }
+}
+
+// ใบเซ็นชื่อ (PDF) — เวอร์ชันพิมพ์ตรงจากเบราว์เซอร์ (ไม่ต้องพึ่ง Excel/
+// Google Sheets เลย) ใช้ตาราง HTML จริง + <thead> ซึ่งเบราว์เซอร์ทุกตัว
+// พิมพ์หัวตารางซ้ำทุกหน้าให้อัตโนมัติอยู่แล้วโดยไม่ต้องตั้งค่าอะไรเพิ่ม
+// ใช้ชุดข้อมูลเดียวกับเวอร์ชัน Excel (buildSignInRows()) ให้ลำดับตรงกัน
+function buildSignInSheetPrintHTML(){
+  const rowsData=buildSignInRows();
+  const genTime=new Date().toLocaleString('th-TH');
+
+  const bodyRows=rowsData.map((item,idx)=>{
+    const p=item.p;
+    const name=esc(p.rawName||stripHonorific(p.name));
+    return `<tr>
+      <td class="c-idx">${idx+1}</td>
+      <td class="c-name">${name}</td>
+      <td>${esc(p.dept||p.mission||'')}</td>
+      <td>${esc(p.position||'')}</td>
+      <td class="c-table">${esc(item.tableName)}</td>
+      <td class="c-sign"></td>
+    </tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<title>ใบเซ็นชื่อ — ${esc(EVENT_TITLE)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+@page{ size:A4 landscape; margin:10mm; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',Tahoma,sans-serif;color:#25282b;font-size:13.5px;}
+header{text-align:center;border-bottom:3px solid #96702f;padding-bottom:8px;margin-bottom:10px;}
+.h-title{font-size:19px;font-weight:700;}
+.h-sub{font-size:11.5px;color:#565b60;margin-top:3px;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead{display:table-header-group;break-inside:avoid;} /* หัวตารางซ้ำทุกหน้า — break-inside:avoid ตรงนี้จำเป็นสำหรับ Chrome/Edge (Blink) ไม่ใช่แค่ตกแต่ง */
+tr{break-inside:avoid;}
+th,td{border:1px solid #565b60;padding:8px 10px;vertical-align:middle;text-align:left;overflow-wrap:break-word;}
+th{background:#e7f0f2;color:#0f4552;font-weight:700;text-align:center;font-size:13px;}
+col.c-idx,th.c-idx,td.c-idx{width:4%;text-align:center;}
+col.c-name{width:19%;}
+col.c-dept{width:19%;}
+col.c-pos{width:19%;}
+col.c-table{width:10%;}
+col.c-sign{width:29%;}
+td.c-idx{text-align:center;font-weight:600;}
+td.c-sign{height:34px;}
+.no-print{position:fixed;top:12px;right:12px;display:flex;gap:8px;}
+.no-print button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #c7cacd;background:#fff;cursor:pointer;}
+.no-print button.primary{background:#175f72;color:#fff;border-color:#175f72;}
+@media print{ .no-print{display:none!important;} }
+</style></head>
+<body>
+<div class="no-print"><button onclick="window.print()" class="primary">🖨️ พิมพ์ / บันทึกเป็น PDF</button><button onclick="window.close()">ปิด</button></div>
+<header>
+  <div class="h-title">ใบเซ็นชื่อผู้เข้าร่วมงาน</div>
+  <div class="h-sub">${esc(EVENT_TITLE)}</div>
+  <div class="h-sub">พิมพ์เมื่อ ${esc(genTime)} · รวมทั้งหมด ${people.length} คน</div>
+</header>
+<table>
+  <colgroup>
+    <col class="c-idx"><col class="c-name"><col class="c-dept"><col class="c-pos"><col class="c-table"><col class="c-sign">
+  </colgroup>
+  <thead>
+    <tr><th class="c-idx">ลำดับ</th><th>ชื่อ-นามสกุล</th><th>ฝ่าย/กลุ่มงาน</th><th>ตำแหน่ง</th><th>โต๊ะที่นั่ง</th><th>ลายเซ็น</th></tr>
+  </thead>
+  <tbody>${bodyRows}</tbody>
+</table>
+<script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script>
+</body></html>`;
+}
+
+function printSignInSheet(){
+  if(!people.length){ toast('ยังไม่มีรายชื่อให้พิมพ์','warn'); return; }
+  _printWindowHTML(buildSignInSheetPrintHTML());
 }
 
 // ══════════════════════════════════════════════════════════════════
