@@ -116,7 +116,7 @@ body.view-only .mobile-sidebar-toggle,body.view-only .sidebar-backdrop{display:n
 .top-acts{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .btn-t{padding:6px 12px;border:1px solid rgba(255,255,255,.22);border-radius:var(--r-sm);
   background:rgba(255,255,255,.06);color:#fff;font-family:var(--sans);font-size:11.5px;font-weight:500;
-  cursor:pointer;transition:background .15s,border-color .15s;white-space:nowrap;display:flex;align-items:center;gap:5px}
+  cursor:pointer;transition:background .15s,border-color .15s;white-space:nowrap;display:flex;align-items:center;gap:5px;text-decoration:none}
 .btn-t:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35)}
 .btn-t.gold{background:rgba(150,112,47,.4);border-color:rgba(212,178,120,.6)}
 .btn-t.green{background:rgba(28,107,82,.4);border-color:rgba(120,200,175,.5)}
@@ -202,6 +202,8 @@ body.view-only .mobile-sidebar-toggle,body.view-only .sidebar-backdrop{display:n
 .pool-chip:active{cursor:grabbing}
 .pool-chip.dragging-src{opacity:.3;transform:scale(.94)}
 .pool-chip.armed{border-color:var(--gold);background:var(--gold-lt);box-shadow:0 0 0 2px var(--gold-glow);animation:armpulse 1s ease infinite}
+.pool-chip.checked-in{border-color:var(--green);background:var(--green-lt)}
+.pool-chip.checked-in:hover{border-color:var(--green)}
 @keyframes armpulse{0%,100%{box-shadow:0 0 0 2px var(--gold-glow)}50%{box-shadow:0 0 0 4px var(--gold-glow)}}
 .pc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pc-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -534,6 +536,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
         <span id="api-txt">กำลังเชื่อมต่อ...</span>
       </div>
       <button class="btn-t vo-visible" onclick="loadFromGAS()">รีโหลด</button>
+      <a class="btn-t vo-visible" href="checkin.html" target="_blank" rel="noopener" title="เปิดหน้าเช็คอินหน้างาน (checkin.html) ในแท็บใหม่ — ใช้คู่กับหน้านี้เวลาจัดที่นั่งจริงหน้างาน">📋 หน้าเช็คอิน</a>
       <button class="btn-t" id="autosave-btn" onclick="toggleAutoSave()" title="เมื่อเปิดไว้ ทุกการแก้ไขจะถูกบันทึกขึ้น Google Sheet ให้อัตโนมัติหลังหยุดแก้ไข 3 วินาที">🟢 บันทึกอัตโนมัติ: เปิด</button>
 
       <div class="menu-group" id="mg-manage">
@@ -1267,7 +1270,7 @@ function drawTable(t){
       let shown=lbl,lw=ctx.measureText(shown).width;
       if(lw>maxW){ shown=clipText(ctx,lbl,maxW); lw=ctx.measureText(shown).width; }
       ctx.fillText(shown,sc.x+(sc.w-lw)/2,sc.y+sc.h/2);
-      if(isCI&&zoom>0.65){ctx.fillStyle='#1c6b52';ctx.font=`700 ${Math.max(7,9*zoom)}px Arial`;ctx.textBaseline='bottom';ctx.fillText('',sc.x+2*zoom,sc.y+sc.h-1*zoom);}
+      if(isCI&&zoom>0.55){ctx.fillStyle='#1c6b52';ctx.font=`700 ${Math.max(9,11*zoom)}px Arial`;ctx.textBaseline='bottom';ctx.fillText('✓',sc.x+3*zoom,sc.y+sc.h-2*zoom);}
     } else if(zoom>0.5){
       ctx.fillStyle='rgba(26,95,122,.25)';ctx.font=`400 ${Math.max(8,11*zoom)}px Arial`;ctx.fillText('·',sc.x+sc.w/2-2,sc.y+sc.h/2);
     }
@@ -2643,14 +2646,15 @@ function renderPool(){
   if(!list.length){el.innerHTML=`<div class="pool-empty">${q?'ไม่พบ':(attendOnly||deptFilter?'ไม่พบตามตัวกรองที่เลือก':'ทุกคนมีที่นั่งแล้ว')}</div>`;return;}
   el.innerHTML=list.map(p=>{
     const noAttend=p.intent==='ไม่เข้าร่วม';
-    const dotColor=noAttend?'var(--red)':(p.status==='checkin'?'var(--green)':'var(--gold)');
+    const isCI=!noAttend&&p.status==='checkin';
+    const dotColor=noAttend?'var(--red)':(isCI?'var(--green)':'var(--gold)');
     return `
-    <div class="pool-chip${String(p.id)===String(assignArm)?' armed':''}" id="pc-${p.id}" draggable="true"
+    <div class="pool-chip${String(p.id)===String(assignArm)?' armed':''}${isCI?' checked-in':''}" id="pc-${p.id}" draggable="true"
          onclick="openEditPerson('${p.id}')"
          onmouseenter="showTip(event,'${p.id}')" onmouseleave="hideTip()">
       <div class="pc-dot" style="background:${dotColor}"></div>
       <div style="flex:1;min-width:0">
-        <div class="pc-name">${esc(p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}</div>
+        <div class="pc-name">${esc(p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}${isCI?' <span style="color:var(--green);font-size:9.5px;font-weight:800">✓ มาแล้ว</span>':''}</div>
         <div class="pc-dept">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</div>
       </div>
       <button type="button" class="pc-seat-btn${String(p.id)===String(assignArm)?' on':''}"
@@ -3578,13 +3582,14 @@ thead{display:table-header-group;break-inside:avoid;} /* หัวตารา�
 tr{break-inside:avoid;}
 th,td{border:1px solid #000;padding:8px 10px;vertical-align:middle;text-align:left;overflow-wrap:break-word;color:#000;}
 th{background:#e7e7e7;font-weight:700;text-align:center;font-size:13px;}
-col.c-idx,th.c-idx,td.c-idx{width:4%;text-align:center;}
+col.c-idx,th.c-idx,td.c-idx{width:5.5%;text-align:center;}
 col.c-name{width:19%;}
-col.c-dept{width:19%;}
-col.c-pos{width:19%;}
+col.c-dept{width:18.5%;}
+col.c-pos{width:18.5%;}
 col.c-table{width:10%;}
-col.c-sign{width:29%;}
-td.c-idx{text-align:center;font-weight:600;}
+col.c-sign{width:28.5%;}
+td.c-idx{text-align:center;font-weight:600;white-space:nowrap;}
+td.c-table{text-align:center;}
 td.c-sign{height:34px;}
 .no-print{position:fixed;top:12px;right:12px;display:flex;gap:8px;}
 .no-print button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #c7cacd;background:#fff;cursor:pointer;}
