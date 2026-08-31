@@ -211,6 +211,47 @@ header .sub{font-size:11.5px;color:rgba(255,255,255,.72);font-weight:400;margin-
   transition:border-color .15s,box-shadow .15s;
 }
 #dash-q:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+.btn-deptmap{
+  font-family:inherit;font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:99px;
+  border:1.5px solid var(--border2);background:var(--surface);color:var(--text-2);cursor:pointer;
+  transition:all .15s;
+}
+.btn-deptmap:hover{border-color:var(--primary);color:var(--primary)}
+
+/* ── Modal: จัดกลุ่มงาน ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(20,24,28,.5);z-index:80;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.modal-card{
+  background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--sh-lg);
+  width:100%;max-width:620px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;
+}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 0}
+.modal-hd h3{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--text)}
+.modal-close{background:none;border:none;font-size:16px;color:var(--text-3);cursor:pointer;padding:4px 8px;border-radius:6px}
+.modal-close:hover{background:var(--surface3);color:var(--text)}
+.modal-sub{font-size:12.5px;color:var(--text-2);line-height:1.6;padding:8px 22px 14px}
+.deptmap-list{overflow-y:auto;padding:0 22px;flex:1;display:flex;flex-direction:column;gap:8px}
+.deptmap-row{display:flex;align-items:center;gap:10px}
+.dmr-raw{flex:1;min-width:0;font-size:13px;color:var(--text)}
+.dmr-raw b{font-weight:600}
+.dmr-count{display:block;font-size:10.5px;color:var(--text-3);margin-top:1px;font-family:var(--mono)}
+.dmr-arrow{color:var(--text-3);font-size:14px;flex-shrink:0}
+.dmr-input{
+  flex:1;min-width:0;font-family:inherit;font-size:13px;padding:8px 12px;
+  border:1.5px solid var(--border2);border-radius:var(--r);background:var(--surface2);
+  transition:border-color .15s,box-shadow .15s;
+}
+.dmr-input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px var(--primary-glow)}
+.deptmap-empty{padding:30px 0;text-align:center;color:var(--text-3);font-size:13px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border);margin-top:14px}
+.modal-btn{font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border-radius:var(--r);cursor:pointer;transition:all .15s}
+.modal-btn.ghost{background:none;border:1.5px solid var(--border2);color:var(--text-2)}
+.modal-btn.ghost:hover{border-color:var(--text-3);color:var(--text)}
+.modal-btn.primary{background:var(--primary);border:1.5px solid var(--primary);color:#fff}
+.modal-btn.primary:hover{background:var(--primary-dk)}
+.modal-btn:disabled{opacity:.6;cursor:default}
 
 #dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .dept-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh);
@@ -368,6 +409,7 @@ tbody tr:hover td{background:var(--surface2)}
         <button id="dt-table" onclick="setDashTab('table')">แยกตามโต๊ะ</button>
       </div>
       <input id="dash-q" type="text" placeholder="ค้นหากลุ่มงาน..." oninput="renderDashboard()">
+      <button class="btn-deptmap" onclick="openDeptMapEditor()" title="ผู้ลงทะเบียนพิมพ์ชื่อกลุ่มงานมาไม่ตรงกัน — จัดกลุ่มให้ตรงกันที่นี่ครั้งเดียว ใช้ได้ทุกเครื่อง">⚙️ จัดกลุ่มงาน</button>
     </div>
 
     <div id="dept-grid"></div>
@@ -389,6 +431,23 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
+<!-- ═══ Modal: จัดกลุ่มงาน ═══ -->
+<div id="modal-deptmap" class="modal-overlay" style="display:none" onclick="if(event.target===this) closeDeptMapEditor()">
+  <div class="modal-card">
+    <div class="modal-hd">
+      <h3>จัดกลุ่มงาน</h3>
+      <button class="modal-close" onclick="closeDeptMapEditor()">✕</button>
+    </div>
+    <div class="modal-sub">ผู้ลงทะเบียนพิมพ์ชื่อกลุ่มงานมาไม่ตรงกัน (เช่น "การพยาบาล" กับ "กลุ่มการพยาบาล" หมายถึงกลุ่มเดียวกัน) — กำหนดชื่อกลุ่มงานที่จะใช้จริงให้แต่ละข้อความทางซ้าย ข้อความที่กำหนดชื่อเดียวกันจะถูกนับรวมกันใน Dashboard เก็บครั้งเดียวใช้ได้ทุกเครื่อง</div>
+    <div id="deptmap-list" class="deptmap-list"></div>
+    <datalist id="deptmap-suggestions"></datalist>
+    <div class="modal-actions">
+      <button class="modal-btn ghost" onclick="closeDeptMapEditor()">ยกเลิก</button>
+      <button class="modal-btn primary" id="deptmap-save-btn" onclick="saveDeptMapping()">บันทึกการจัดกลุ่ม</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -398,6 +457,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwzimtNiUsNPYelNocjhzsh
 
 let people = [];
 let tables = [];
+let deptMap = {};            // ผังแปลงชื่อกลุ่มงานดิบ → ชื่อกลุ่มงานที่ใช้จริง (จาก DeptMap sheet)
 let mainView = 'checkin';    // checkin | dashboard
 let ciFilter = 'wait';       // รอเช็คอิน | เช็คอินแล้ว | ทั้งหมด (สำหรับ view เช็คอิน)
 let dashTab  = 'dept';       // dept | table (สำหรับ view dashboard)
@@ -405,6 +465,14 @@ let sortKey = 'pct', sortDir = 'asc';
 let busyIds = new Set();     // กันแตะรัว ๆ ระหว่างรอ request ค้าง
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// คืนชื่อกลุ่มงานที่ "ใช้จริง" ของคนคนหนึ่ง — ถ้ามีการจัดกลุ่มไว้ใน
+// deptMap ให้ใช้ค่านั้น (รวมข้อความดิบหลายแบบให้เป็นกลุ่มเดียวกัน) ถ้ายัง
+// ไม่ได้จัดกลุ่มก็ใช้ข้อความดิบไปก่อน กันไม่ให้ข้อมูลหายจากหน้าจอ
+function canonDept(raw){
+  const k=String(raw||'').trim();
+  if(!k) return 'ไม่ระบุฝ่ายงาน';
+  return deptMap[k] || k;
+}
 function initials(name){
   const s=String(name||'').trim();
   return s ? s.charAt(0).toUpperCase() : '?';
@@ -459,6 +527,7 @@ async function loadData(){
     if(d.status!=='ok') throw new Error(d.message||'โหลดข้อมูลไม่สำเร็จ');
     people=d.people||[];
     tables=(d.layout&&d.layout.tables)||[];
+    deptMap=d.deptMap||{};
     document.getElementById('load-overlay').classList.add('hidden');
     document.getElementById('last-updated').textContent='อัปเดตล่าสุด '+new Date().toLocaleTimeString('th-TH');
     renderAll();
@@ -662,12 +731,77 @@ function computeDeptStats(){
   const map={};
   people.forEach(p=>{
     if(p.intent==='ไม่เข้าร่วม') return;
-    const dept=(p.dept||'').trim()||'ไม่ระบุฝ่ายงาน';
+    const dept=canonDept(p.dept);
     if(!map[dept]) map[dept]={dept,total:0,arrived:0};
     map[dept].total++;
     if(p.status==='checkin') map[dept].arrived++;
   });
   return Object.values(map).map(d=>({...d,pct:d.total?Math.round(d.arrived/d.total*100):0}));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// จัดกลุ่มงาน — แปลงข้อความกลุ่มงานดิบ (พิมพ์เองตอนลงทะเบียน จึงสะกด/
+// เขียนไม่ตรงกัน) ให้เป็นชื่อกลุ่มงานที่ใช้จริงชุดเดียว บันทึกขึ้น GAS
+// ให้ทุกเครื่องเห็นตรงกัน ทั้ง checkin.html และ seat.html
+// ══════════════════════════════════════════════════════════════════
+function openDeptMapEditor(){
+  const counts={};
+  people.forEach(p=>{
+    const raw=String(p.dept||'').trim();
+    if(!raw) return;
+    counts[raw]=(counts[raw]||0)+1;
+  });
+  const rawList=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+
+  const box=document.getElementById('deptmap-list');
+  if(!rawList.length){
+    box.innerHTML=`<div class="deptmap-empty">ยังไม่มีข้อมูลกลุ่มงานให้จัดกลุ่ม</div>`;
+  }else{
+    box.innerHTML=rawList.map(raw=>{
+      const current=deptMap[raw]||raw;
+      return `<div class="deptmap-row">
+        <div class="dmr-raw"><b>${esc(raw)}</b><span class="dmr-count">${counts[raw]} คน</span></div>
+        <div class="dmr-arrow">→</div>
+        <input class="dmr-input" list="deptmap-suggestions" data-raw="${esc(raw)}" value="${esc(current)}">
+      </div>`;
+    }).join('');
+  }
+
+  // ตัวเลือกอัตโนมัติตอนพิมพ์ — รวมชื่อกลุ่มที่ตั้งไว้แล้วทั้งหมด (ไม่ซ้ำ)
+  const canonSet=new Set(Object.values(deptMap));
+  rawList.forEach(r=>canonSet.add(deptMap[r]||r));
+  document.getElementById('deptmap-suggestions').innerHTML=
+    Array.from(canonSet).filter(Boolean).sort((a,b)=>a.localeCompare(b,'th')).map(c=>`<option value="${esc(c)}">`).join('');
+
+  document.getElementById('modal-deptmap').style.display='flex';
+}
+function closeDeptMapEditor(){
+  document.getElementById('modal-deptmap').style.display='none';
+}
+async function saveDeptMapping(){
+  const inputs=document.querySelectorAll('#deptmap-list .dmr-input');
+  const pairs=Array.from(inputs).map(inp=>({
+    raw: inp.dataset.raw,
+    canon: (inp.value||'').trim()
+  })).filter(p=>p.canon);
+
+  if(!pairs.length){ closeDeptMapEditor(); return; }
+
+  const btn=document.getElementById('deptmap-save-btn');
+  const origLbl=btn.textContent;
+  btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  try{
+    const d=await gasPost({action:'save_dept_map',pairs});
+    if(d.status!=='ok') throw new Error(d.message||'บันทึกไม่สำเร็จ');
+    deptMap=d.deptMap||{};
+    toast('บันทึกการจัดกลุ่มงานแล้ว','ok');
+    closeDeptMapEditor();
+    renderDashboard();
+  }catch(err){
+    toast('บันทึกไม่สำเร็จ: '+err.message,'err');
+  }finally{
+    btn.disabled=false; btn.textContent=origLbl;
+  }
 }
 function computeTableStats(){
   const byId={};people.forEach(p=>byId[String(p.id)]=p);
