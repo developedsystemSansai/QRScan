@@ -3436,18 +3436,24 @@ function printAttendeeList(){
 // เรียงตามโต๊ะก่อน (ตามลำดับที่นั่งจริงในโต๊ะ) แล้วต่อท้ายด้วยคนที่ยังไม่มี
 // ที่นั่ง — ให้ลำดับการเซ็นชื่อสอดคล้องกับโต๊ะจริงหน้างาน ใช้ร่วมกันทั้ง
 // เวอร์ชัน Excel และเวอร์ชันพิมพ์ PDF เพื่อไม่ให้ลำดับสองไฟล์ไม่ตรงกัน
+//
+// ตัดผู้ที่แจ้ง "ไม่เข้าร่วม" (p.intent==='ไม่เข้าร่วม') ออกจากใบเซ็นชื่อ
+// เสมอ — คนกลุ่มนี้ไม่ควรต้องเซ็นชื่อหรือมีที่นั่งในใบเซ็นชื่อจริง แม้จะ
+// ยังค้างอยู่ในระบบ (people) เพื่อให้แก้ไข/ย้ายสถานะย้อนหลังได้ก็ตาม
 function buildSignInRows(){
   const rowsData=[];
+  const noAttend=p=>p.intent==='ไม่เข้าร่วม';
   tables.forEach(t=>{
     t.seats.forEach(pid=>{
       if(!pid) return;
       const p=getPerson(pid);
-      if(!p) return;
+      if(!p||noAttend(p)) return;
       rowsData.push({p,tableName:t.name});
     });
   });
   const seated=seatedSet();
   people.forEach(p=>{
+    if(noAttend(p)) return;
     if(!seated.has(String(p.id))) rowsData.push({p,tableName:'ยังไม่มีที่นั่ง'});
   });
   return rowsData;
@@ -3455,6 +3461,7 @@ function buildSignInRows(){
 
 async function exportSignInSheet(){
   if(!people.length){ toast('ยังไม่มีรายชื่อให้สร้างใบเซ็นชื่อ','warn'); return; }
+  if(!people.some(p=>p.intent!=='ไม่เข้าร่วม')){ toast('ทุกคนแจ้งไม่เข้าร่วม — ไม่มีรายชื่อให้สร้างใบเซ็นชื่อ','warn'); return; }
   if(typeof ExcelJS==='undefined'){
     toast('โหลดไลบรารีสร้างไฟล์ Excel ไม่สำเร็จ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่','err');
     return;
@@ -3493,9 +3500,11 @@ async function exportSignInSheet(){
     title.alignment={horizontal:'center',vertical:'middle'};
     ws.getRow(1).height=30;
 
+    const rowsData=buildSignInRows();
+
     ws.mergeCells(2,1,2,COLS);
     const sub=ws.getCell(2,1);
-    sub.value=`พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}    รวมทั้งหมด ${people.length} คน`;
+    sub.value=`พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}    รวมทั้งหมด ${rowsData.length} คน`;
     sub.font={size:11,name:'Sarabun'};
     sub.alignment={horizontal:'center'};
     ws.getRow(2).height=16;
@@ -3510,8 +3519,6 @@ async function exportSignInSheet(){
       c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7F0F2'}};
       c.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
     });
-
-    const rowsData=buildSignInRows();
 
     let r=5;
     rowsData.forEach((item,idx)=>{
@@ -3602,7 +3609,7 @@ td.c-sign{height:34px;}
 <header>
   <div class="h-title">ใบเซ็นชื่อผู้เข้าร่วมงาน</div>
   <div class="h-sub">${esc(EVENT_TITLE)}</div>
-  <div class="h-sub">พิมพ์เมื่อ ${esc(genTime)} · รวมทั้งหมด ${people.length} คน</div>
+  <div class="h-sub">พิมพ์เมื่อ ${esc(genTime)} · รวมทั้งหมด ${rowsData.length} คน</div>
 </header>
 <table>
   <colgroup>
@@ -3619,6 +3626,7 @@ td.c-sign{height:34px;}
 
 function printSignInSheet(){
   if(!people.length){ toast('ยังไม่มีรายชื่อให้พิมพ์','warn'); return; }
+  if(!people.some(p=>p.intent!=='ไม่เข้าร่วม')){ toast('ทุกคนแจ้งไม่เข้าร่วม — ไม่มีรายชื่อให้พิมพ์','warn'); return; }
   _printWindowHTML(buildSignInSheetPrintHTML());
 }
 
