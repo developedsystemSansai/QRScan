@@ -21,6 +21,7 @@
   --red:#a13d3d;--red-lt:#f6ecec;--red-glow:rgba(161,61,61,.14);
   --amber:#8c5a1f;--amber-lt:#f2ebdf;
   --purple:#5b4b9e;--purple-lt:#eae7f5;
+  --blue:#2f5aa1;--blue-lt:#e8eef6;--blue-glow:rgba(47,90,161,.16);
   --text:#25282b;--text-2:#565b60;--text-3:#8b9096;
   --serif:'Noto Sans Thai','Tahoma',sans-serif;--sans:'Noto Sans Thai','Tahoma',sans-serif;--mono:'IBM Plex Mono',monospace;
   --r-sm:6px;--r:8px;--r-lg:12px;--r-xl:16px;
@@ -181,6 +182,7 @@ body.view-only .mobile-sidebar-toggle,body.view-only .sidebar-backdrop{display:n
 .ldot.empty{background:var(--primary-lt);border-color:var(--primary)}
 .ldot.occ{background:var(--gold-lt);border-color:var(--gold)}
 .ldot.ci{background:var(--green-lt);border-color:var(--green)}
+.ldot.rsv{background:var(--blue-lt);border-color:var(--blue)}
 .ldot.stg{background:#0f172a;border-color:#475569}
 .ldot.shape{background:var(--purple-lt);border-color:var(--purple)}
 .ldot.txt{background:#fff3f3;border-color:#e89090}
@@ -204,6 +206,8 @@ body.view-only .mobile-sidebar-toggle,body.view-only .sidebar-backdrop{display:n
 .pool-chip.armed{border-color:var(--gold);background:var(--gold-lt);box-shadow:0 0 0 2px var(--gold-glow);animation:armpulse 1s ease infinite}
 .pool-chip.checked-in{border-color:var(--green);background:var(--green-lt)}
 .pool-chip.checked-in:hover{border-color:var(--green)}
+.pool-chip.reserved{border-color:var(--blue);background:var(--blue-lt)}
+.pool-chip.reserved:hover{border-color:var(--blue)}
 @keyframes armpulse{0%,100%{box-shadow:0 0 0 2px var(--gold-glow)}50%{box-shadow:0 0 0 4px var(--gold-glow)}}
 .pc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pc-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -393,6 +397,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
 .lst tr:last-child td{border-bottom:none}.lst tr:hover td{background:var(--surface2)}
 .badge{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
 .badge.ci{background:var(--green-lt);color:var(--green)}.badge.reg{background:var(--primary-lt);color:var(--primary)}
+.badge.rsv{background:var(--blue-lt);color:var(--blue)}.badge.na{background:var(--red-lt);color:var(--red)}
 
 /* ── INSPECTOR ── */
 .insp{position:absolute;right:10px;top:10px;width:220px;background:var(--surface);
@@ -543,6 +548,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
         <button class="btn-t" onclick="toggleMenu(this)">จัดการรายชื่อ <span class="care">▾</span></button>
         <div class="menu-dropdown">
           <button class="menu-item" onclick="closeAllMenus();openAddPerson()">➕ เพิ่มรายชื่อ</button>
+          <button class="menu-item" onclick="closeAllMenus();openAddReservedGuest()" title="เพิ่มแขกผู้ได้รับเชิญที่ยังไม่ลงทะเบียน แต่ต้องสำรองที่นั่งไว้ล่วงหน้า เช่น ข้าราชการบำนาญ — เติมกลุ่มงานและสถานะให้อัตโนมัติ">🎗️ เพิ่มแขกรับเชิญ (สำรองที่นั่ง)</button>
           <button class="menu-item" onclick="closeAllMenus();autoAssign()" title="เติมที่นั่งว่างตามลำดับ ไม่สนใจกลุ่มงาน">🔀 จัดอัตโนมัติ</button>
           <button class="menu-item" onclick="closeAllMenus();autoAssignByDept()" title="จัดคนแต่ละกลุ่มงานไปนั่งโต๊ะเดียวกัน สร้างโต๊ะใหม่อัตโนมัติถ้าที่ไม่พอ">🏷️ จัดตามกลุ่มงาน</button>
         </div>
@@ -625,6 +631,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
         <div class="leg-title">สัญลักษณ์</div>
         <div class="leg-row"><div class="ldot empty"></div>ที่นั่งว่าง</div>
         <div class="leg-row"><div class="ldot occ"></div>มีผู้นั่ง (ยังไม่เช็คอิน)</div>
+        <div class="leg-row"><div class="ldot rsv"></div>สำรองไว้ (แขกรับเชิญ ยังไม่ลงทะเบียน)</div>
         <div class="leg-row"><div class="ldot ci"></div>เช็คอินแล้ว </div>
         <div class="leg-row"><div class="ldot stg"></div>เวที / จอ / แท่น</div>
         <div class="leg-row"><div class="ldot shape"></div>รูปร่าง / เส้น</div>
@@ -889,6 +896,7 @@ body.view-only .canvas-outer .map-search-wrap{display:block}
     <div class="mf"><label class="ml">กลุ่มงาน</label><input class="mi" id="mp-dept" placeholder="เช่น งานผู้ป่วยนอก" oninput="mpUpdatePreview()"></div>
     <div class="mf"><label class="ml">สถานะ</label>
       <select class="mi" id="mp-status" onchange="mpUpdatePreview()">
+        <option value="reserved">สำรองที่นั่ง (แขกรับเชิญ ยังไม่ลงทะเบียน)</option>
         <option value="registered">ลงทะเบียนแล้ว</option>
         <option value="checkin">เช็คอินแล้ว </option>
       </select>
@@ -1256,14 +1264,14 @@ function drawTable(t){
   ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=`700 ${Math.max(12,14*zoom)}px "IBM Plex Mono",monospace`;
   ctx.fillText(cntTxt,sr.x+sr.w-ctx.measureText(cntTxt).width-10*zoom,sr.y+HEADER*zoom/2);
   for(let si=0;si<t.cap;si++){
-    const sc=seatScreenRect(t,si),pid=t.seats[si],p=pid?getPerson(pid):null,isCI=p&&p.status==='checkin';
-    ctx.fillStyle=pid?(isCI?'#e6f4f0':'#fdf3e3'):'#e8f4f8';
-    ctx.strokeStyle=pid?(isCI?'#1c6b52':'#96702f'):'#175f72'; ctx.lineWidth=1.5*zoom;
+    const sc=seatScreenRect(t,si),pid=t.seats[si],p=pid?getPerson(pid):null,sCol=p?seatStatusColors(p):null,isCI=p&&p.status==='checkin';
+    ctx.fillStyle=pid?sCol.fill:'#e8f4f8';
+    ctx.strokeStyle=pid?sCol.stroke:'#175f72'; ctx.lineWidth=1.5*zoom;
     roundRect(sc.x,sc.y,sc.w,sc.h,6*zoom); ctx.fill(); ctx.stroke();
     if(zoom>0.55){ctx.fillStyle='rgba(100,90,80,.4)';ctx.font=`400 ${Math.max(8,9*zoom)}px "IBM Plex Mono",monospace`;ctx.textBaseline='top';ctx.fillText(si+1,sc.x+sc.w-11*zoom,sc.y+2*zoom);}
     ctx.textBaseline='middle';
     if(p){
-      ctx.fillStyle=isCI?'#1c6b52':'#96702f';
+      ctx.fillStyle=sCol.text;
       const lbl=seatLabel(p),maxW=sc.w-4*zoom;
       const fz=fitFontSize(lbl,maxW,'700',Math.max(13,18*zoom),10);
       ctx.font=`700 ${fz}px "Noto Sans Thai",Tahoma,sans-serif`;
@@ -2459,7 +2467,7 @@ function selectMapSearchPerson(pid){
     const members=loc.table.seats.filter(Boolean).map(id=>getPerson(id)).filter(Boolean);
     membersEl.innerHTML=members.map(m=>{
       const isMe=String(m.id)===String(pid);
-      const dot=m.status==='checkin'?'var(--green)':'var(--gold)';
+      const dot=personStatusMeta(m).color;
       return `<div class="mrc-member${isMe?' me':''}"><div class="mrc-mdot" style="background:${dot}"></div>${esc(m.name)}${isMe?' (คุณ)':''}</div>`;
     }).join('')||'<div class="mrc-member" style="color:var(--text-3)">ยังไม่มีใครอื่นที่โต๊ะนี้</div>';
     focusOnTable(loc.table);
@@ -2546,12 +2554,12 @@ function renderSeatList(){
   const el=document.getElementById('seat-list');
   if(!list.length){el.innerHTML='<div style="padding:12px;font-size:12px;color:var(--text-3);text-align:center">ไม่พบ</div>';return;}
   el.innerHTML=list.slice(0,30).map(p=>{
-    const noAttend=p.intent==='ไม่เข้าร่วม';
+    const meta=personStatusMeta(p);
     return `
     <div class="seat-opt" onclick="assignSeat('${p.id}')">
-      <div class="pc-dot" style="background:${noAttend?'var(--red)':(p.status==='checkin'?'var(--green)':'var(--gold)')}"></div>
+      <div class="pc-dot" style="background:${meta.color}"></div>
       <div style="flex:1;min-width:0">
-        <div class="seat-opt-name">${esc(p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}</div>
+        <div class="seat-opt-name">${esc(p.name)}${meta.short?` <span style="color:${meta.color};font-size:9.5px;font-weight:800">· ${esc(meta.short)}</span>`:''}</div>
         <div class="seat-opt-dept">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</div>
       </div>
       ${seated.has(String(p.id))&&p.id!==t?.seats[seatModalSi]?'<span class="seat-opt-tag">มีที่นั่งแล้ว</span>':''}
@@ -2589,15 +2597,14 @@ function openTableDetails(tid){
   } else {
     seated.sort((a,b)=>a.idx-b.idx);
     body.innerHTML=seated.map(s=>{
-      const noAttend=s.p.intent==='ไม่เข้าร่วม';
-      const dotColor=noAttend?'var(--red)':(s.p.status==='checkin'?'var(--green)':'var(--gold)');
+      const meta=personStatusMeta(s.p);
       const actions=viewOnly?'':`
         <button type="button" class="insp-btn" title="แก้ไขรายชื่อ" onclick="closeModal('modal-table-details');openEditPerson('${s.p.id}')">แก้ไข</button>
         <button type="button" class="insp-btn d" title="ถอดออกจากโต๊ะ" onclick="removeSeatFromDetails(${tid},${s.idx})">ถอด</button>`;
       return `<div class="td-row">
-        <div class="pc-dot" style="background:${dotColor};flex-shrink:0"></div>
+        <div class="pc-dot" style="background:${meta.color};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
-          <div class="td-row-name">ที่นั่ง ${s.idx+1} · ${esc(s.p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}</div>
+          <div class="td-row-name">ที่นั่ง ${s.idx+1} · ${esc(s.p.name)}${meta.short?` <span style="color:${meta.color};font-size:9.5px;font-weight:800">· ${esc(meta.short)}</span>`:''}</div>
           <div class="td-row-sub">${esc(s.p.mission||'')}${s.p.dept?' · '+esc(s.p.dept):''}</div>
         </div>${actions}
       </div>`;
@@ -2645,16 +2652,16 @@ function renderPool(){
   const el=document.getElementById('pool-list');
   if(!list.length){el.innerHTML=`<div class="pool-empty">${q?'ไม่พบ':(attendOnly||deptFilter?'ไม่พบตามตัวกรองที่เลือก':'ทุกคนมีที่นั่งแล้ว')}</div>`;return;}
   el.innerHTML=list.map(p=>{
-    const noAttend=p.intent==='ไม่เข้าร่วม';
-    const isCI=!noAttend&&p.status==='checkin';
-    const dotColor=noAttend?'var(--red)':(isCI?'var(--green)':'var(--gold)');
+    const meta=personStatusMeta(p);
+    const isCI=meta.key==='checkin';
+    const isRsv=meta.key==='reserved';
     return `
-    <div class="pool-chip${String(p.id)===String(assignArm)?' armed':''}${isCI?' checked-in':''}" id="pc-${p.id}" draggable="true"
+    <div class="pool-chip${String(p.id)===String(assignArm)?' armed':''}${isCI?' checked-in':''}${isRsv?' reserved':''}" id="pc-${p.id}" draggable="true"
          onclick="openEditPerson('${p.id}')"
          onmouseenter="showTip(event,'${p.id}')" onmouseleave="hideTip()">
-      <div class="pc-dot" style="background:${dotColor}"></div>
+      <div class="pc-dot" style="background:${meta.color}"></div>
       <div style="flex:1;min-width:0">
-        <div class="pc-name">${esc(p.name)}${noAttend?' <span style="color:var(--red);font-size:9.5px;font-weight:800">· ไม่เข้าร่วม</span>':''}${isCI?' <span style="color:var(--green);font-size:9.5px;font-weight:800">✓ มาแล้ว</span>':''}</div>
+        <div class="pc-name">${esc(p.name)}${meta.short?` <span style="color:${meta.color};font-size:9.5px;font-weight:800">· ${esc(meta.short)}</span>`:''}${isCI?' <span style="color:var(--green);font-size:9.5px;font-weight:800">✓ มาแล้ว</span>':''}</div>
         <div class="pc-dept">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</div>
       </div>
       <button type="button" class="pc-seat-btn${String(p.id)===String(assignArm)?' on':''}"
@@ -2714,7 +2721,7 @@ canvas.addEventListener('drop',e=>{
 // PERSON CRUD
 // ══════════════════════════════════════════════════════════════════
 function mpInitials(name){const t=String(name||'').trim();if(!t)return'-';const parts=t.split(/\s+/).filter(Boolean);if(parts.length>=2)return(parts[0][0]+parts[1][0]).toUpperCase();return t.slice(0,2).toUpperCase();}
-function mpUpdatePreview(){const name=document.getElementById('mp-name').value.trim();const mission=document.getElementById('mp-mission').value.trim();const dept=document.getElementById('mp-dept').value.trim();const status=document.getElementById('mp-status').value;document.getElementById('mp-avatar').textContent=mpInitials(name);document.getElementById('mp-preview-name').textContent=name||'ยังไม่ระบุชื่อ';const subParts=[dept,mission].filter(Boolean);document.getElementById('mp-preview-sub').textContent=subParts.length?subParts.join(' · '):(status==='checkin'?'เช็คอินแล้ว':'ลงทะเบียนแล้ว');}
+function mpUpdatePreview(){const name=document.getElementById('mp-name').value.trim();const mission=document.getElementById('mp-mission').value.trim();const dept=document.getElementById('mp-dept').value.trim();const status=document.getElementById('mp-status').value;document.getElementById('mp-avatar').textContent=mpInitials(name);document.getElementById('mp-preview-name').textContent=name||'ยังไม่ระบุชื่อ';const subParts=[dept,mission].filter(Boolean);const statusTxt=status==='checkin'?'เช็คอินแล้ว':(status==='reserved'?'สำรองที่นั่งไว้ (แขกรับเชิญ)':'ลงทะเบียนแล้ว');document.getElementById('mp-preview-sub').textContent=subParts.length?subParts.join(' · '):statusTxt;}
 function openAddPerson(){['mp-name','mp-mission','mp-dept'].forEach(id=>document.getElementById(id).value='');document.getElementById('mp-status').value='registered';document.getElementById('mp-edit-id').value='';document.getElementById('mp-del-btn').style.display='none';document.getElementById('mp-preview').style.display='none';document.getElementById('mperson-title').textContent='เพิ่มรายชื่อ';document.getElementById('mperson-sub').textContent='กรอกข้อมูลผู้เข้าร่วมงานเพื่อเพิ่มลงในผังที่นั่ง';openModal('modal-person');}
 function openEditPerson(pid){const p=getPerson(pid);if(!p) return;document.getElementById('mp-name').value=p.name;document.getElementById('mp-mission').value=p.mission||'';document.getElementById('mp-dept').value=p.dept||'';document.getElementById('mp-status').value=p.status||'registered';document.getElementById('mp-edit-id').value=pid;document.getElementById('mp-del-btn').style.display='';document.getElementById('mp-preview').style.display='flex';mpUpdatePreview();document.getElementById('mperson-title').textContent='แก้ไขรายชื่อ';document.getElementById('mperson-sub').textContent='แก้ไขข้อมูลหรือลบรายชื่อนี้ออกจากระบบ';openModal('modal-person');}
 // หมายเหตุ: การ "เพิ่มรายชื่อ" ใหม่ (ไม่ใช่แก้ไขคนเดิม) จะถูกบันทึกขึ้น
@@ -2732,16 +2739,25 @@ async function savePerson(){
 
   // แก้ไขคนเดิม — ยังคงเป็นการแก้ไขในเครื่องนี้เท่านั้นเหมือนเดิม (ไม่แตะ
   // ข้อมูลต้นทางไม่ว่าจะเป็นแบบสำรวจหรือ Walk-in ที่เพิ่มไปแล้ว)
+  // สถานะ "reserved" เก็บสำรองไว้ใน localStorage ของเครื่องนี้ด้วย (ดู
+  // หมายเหตุที่ personStatusMeta ด้านล่าง) เพื่อให้รอดจากการรีเฟรช/ซิงก์
   if(editId){
     const p=getPerson(editId);
-    if(p){p.name=name;p.mission=mission;p.dept=dept;p.status=status;}
+    if(p){
+      p.name=name;p.mission=mission;p.dept=dept;p.status=status;
+      if(status==='reserved'){ p.walkin=false; setReservedFlag(editId,true); }
+      else{ setReservedFlag(editId,false); }
+    }
     toast(`แก้ไข "${name}" แล้ว`,'ok');
     closeModal('modal-person');drawAll();renderPool();
     return;
   }
 
   // เพิ่มคนใหม่ — บันทึกขึ้น GAS ให้จริง เพื่อให้ id คงที่และซิงก์ข้าม
-  // หน้า/เครื่องได้ (เหมือนกับที่ checkin.html ทำ)
+  // หน้า/เครื่องได้ (เหมือนกับที่ checkin.html ทำ) — ฝั่งเซิร์ฟเวอร์รู้จัก
+  // แค่ action "add_walkin" เท่านั้น จึงยังต้องเรียกอันนี้เสมอไม่ว่าจะตั้ง
+  // สถานะเป็นอะไร ส่วนสถานะ "reserved" (ที่เซิร์ฟเวอร์ไม่รู้จัก) จะถูก
+  // จัดการทับในฝั่งเบราว์เซอร์ + จำไว้ใน localStorage ของเครื่องนี้
   const saveBtn=document.querySelector('#modal-person .btn-p');
   const origLbl=saveBtn?saveBtn.textContent:'';
   if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='กำลังบันทึก...';}
@@ -2754,11 +2770,14 @@ async function savePerson(){
       const ci=await gasPost({action:'checkin',personId:person.id,personName:person.name});
       if(ci.status==='ok'){person.status='checkin';person.checkinTime=ci.time||'';}
       else{person.status='registered';}
+    }else if(status==='reserved'){
+      person.status='reserved'; person.walkin=false;
+      setReservedFlag(person.id,true);
     }else{
       person.status='registered';
     }
     people.push(person);
-    toast(`เพิ่ม "${name}" แล้ว (ซิงก์กับเช็คอินหน้างานแล้ว)`,'ok');
+    toast(status==='reserved'?`สำรองที่นั่งให้ "${name}" แล้ว (แขกรับเชิญ)`:`เพิ่ม "${name}" แล้ว (ซิงก์กับเช็คอินหน้างานแล้ว)`,'ok');
     closeModal('modal-person');drawAll();renderPool();
   }catch(err){
     toast('เพิ่มรายชื่อไม่สำเร็จ: '+err.message,'err');
@@ -2766,7 +2785,7 @@ async function savePerson(){
     if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=origLbl;}
   }
 }
-function deletePerson(){const editId=document.getElementById('mp-edit-id').value,p=getPerson(editId);if(!p) return;confirm2('ลบรายชื่อ',`ต้องการลบ "${p.name}"?`,()=>{saveHist();people=people.filter(x=>String(x.id)!==String(editId));tables.forEach(t=>{t.seats=t.seats.map(s=>String(s)===String(editId)?null:s);});closeModal('modal-person');drawAll();renderPool();toast(`ลบ "${p.name}" แล้ว`,'ok');});}
+function deletePerson(){const editId=document.getElementById('mp-edit-id').value,p=getPerson(editId);if(!p) return;confirm2('ลบรายชื่อ',`ต้องการลบ "${p.name}"?`,()=>{saveHist();people=people.filter(x=>String(x.id)!==String(editId));tables.forEach(t=>{t.seats=t.seats.map(s=>String(s)===String(editId)?null:s);});setReservedFlag(editId,false);closeModal('modal-person');drawAll();renderPool();toast(`ลบ "${p.name}" แล้ว`,'ok');});}
 
 // ══════════════════════════════════════════════════════════════════
 // AUTO ASSIGN
@@ -2936,7 +2955,7 @@ function renderList(){
         const loc=findSeat(p.id);
         return `<tr><td style="font-weight:600">${esc(p.name)}</td><td style="color:var(--text-2);font-size:11px">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</td>`+
           `<td style="font-weight:700;color:var(--primary)">${loc?''+esc(loc.table.name):'<span style="color:var(--text-3);font-weight:400">ยังไม่มีที่นั่ง</span>'}</td>`+
-          `<td>${p.status==='checkin'?'<span class="badge ci">เช็คอิน</span>':'<span class="badge reg">ลงทะเบียน</span>'}</td></tr>`;
+          `<td>${statusBadgeHTML(p)}</td></tr>`;
       }).join('')+`</tbody></table>`;
     body.innerHTML=html;
     return;
@@ -2952,7 +2971,7 @@ function renderList(){
     html+=`<div class="list-sec"><div class="list-hd"><span class="list-hd-name">${esc(t.name)}</span><span class="list-hd-cnt">${members.length}/${t.cap}</span></div>`;
     if(!members.length) html+=`<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-3)">ยังว่าง</div>`;
     else html+=`<table class="lst"><thead><tr><th>#</th><th>ชื่อ-นามสกุล</th><th>กลุ่มงาน</th><th>สถานะ</th></tr></thead><tbody>`+
-      members.map((p,i)=>`<tr><td style="color:var(--text-3)">${i+1}</td><td style="font-weight:600">${esc(p.name)}</td><td style="color:var(--text-2);font-size:11px">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</td><td>${p.status==='checkin'?'<span class="badge ci">เช็คอิน</span>':'<span class="badge reg">ลงทะเบียน</span>'}</td></tr>`).join('')+
+      members.map((p,i)=>`<tr><td style="color:var(--text-3)">${i+1}</td><td style="font-weight:600">${esc(p.name)}</td><td style="color:var(--text-2);font-size:11px">${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}</td><td>${statusBadgeHTML(p)}</td></tr>`).join('')+
       `</tbody></table>`;
     html+=`</div>`;
   });
@@ -3052,7 +3071,7 @@ function setSideTab(name,btn){
 // TOOLTIP
 // ══════════════════════════════════════════════════════════════════
 const tipEl=()=>document.getElementById('tip');
-function showTip(e,pid){const p=getPerson(pid);if(!p) return;const loc=findSeat(pid);const code=personCode(p);const intentLine=p.intent?(p.intent==='ไม่เข้าร่วม'?'<br><span style="color:#fca5a5">แจ้งไม่เข้าร่วม</span>':'<br>แจ้งเข้าร่วม'):'';tipEl().innerHTML=`<b>${code?esc(code)+' · ':''}${esc(p.name)}</b><br>${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}${p.position?' · '+esc(p.position):''}<br>${loc?esc(loc.table.name):'ยังไม่มีที่นั่ง'}${intentLine}`;tipEl().classList.add('show');moveTip(e);}
+function showTip(e,pid){const p=getPerson(pid);if(!p) return;const loc=findSeat(pid);const code=personCode(p);const meta=personStatusMeta(p);const intentLine=(meta.key==='noattend'||meta.key==='reserved')?`<br><span style="color:${meta.key==='noattend'?'#fca5a5':'#9ec1f0'}">${esc(meta.label)}</span>`:(p.intent?'<br>แจ้งเข้าร่วม':'');tipEl().innerHTML=`<b>${code?esc(code)+' · ':''}${esc(p.name)}</b><br>${esc(p.mission||'')}${p.dept?' · '+esc(p.dept):''}${p.position?' · '+esc(p.position):''}<br>${loc?esc(loc.table.name):'ยังไม่มีที่นั่ง'}${intentLine}`;tipEl().classList.add('show');moveTip(e);}
 function hideTip(){tipEl().classList.remove('show');}
 document.addEventListener('mousemove',e=>{if(tipEl().classList.contains('show'))moveTip(e);});
 function moveTip(e){let x=e.clientX+14,y=e.clientY-10;if(x+240>window.innerWidth)x=e.clientX-244;if(y+110>window.innerHeight)y=e.clientY-115;tipEl().style.left=x+'px';tipEl().style.top=y+'px';}
@@ -3134,6 +3153,7 @@ async function loadFromGAS(){
     const gasIds=new Set(d.people.map(p=>String(p.id)));
     const localOnly=people.filter(p=>String(p.id).startsWith('L')&&!gasIds.has(String(p.id)));
     people=[...d.people,...localOnly];
+    applyReservedOverlay();
     if(d.layout&&d.layout.tables){
       tables=d.layout.tables;stages=d.layout.stages||[];
       textboxes=d.layout.textboxes||[];shapes=d.layout.shapes||[];
@@ -3328,6 +3348,16 @@ function buildAttendeeListPrintHTML(){
   const seated=seatedSet();
   const genTime=new Date().toLocaleString('th-TH');
   const totalCI=people.filter(p=>p.status==='checkin').length;
+  const totalRsv=people.filter(p=>p.status==='reserved').length;
+  // คลาส/ข้อความสถานะสำหรับหน้าพิมพ์นี้ (หน้าต่างแยก ไม่ได้ใช้ personStatusMeta
+  // โดยตรงเพราะสีที่นี่เป็นชุด CSS class เฉพาะของเอกสารพิมพ์ .pstat.*)
+  function printStat(p){
+    const meta=personStatusMeta(p);
+    if(meta.key==='checkin') return {cls:'ci',txt:'✓ เช็คอิน'};
+    if(meta.key==='reserved') return {cls:'rsv',txt:'☆ สำรอง VIP'};
+    if(meta.key==='noattend') return {cls:'na',txt:'✕ ไม่เข้าร่วม'};
+    return {cls:'reg',txt:'○ ลงทะเบียน'};
+  }
 
   let byTableHTML='';
   tables.forEach(t=>{
@@ -3337,8 +3367,8 @@ function buildAttendeeListPrintHTML(){
       byTableHTML+=`<div class="tsec-empty">ยังไม่มีผู้เข้าร่วมที่โต๊ะนี้</div>`;
     }else{
       byTableHTML+=members.map(m=>{
-        const p=m.p, ci=p.status==='checkin';
-        return `<div class="prow"><span class="pnum">${m.seatNo}</span><span class="pname">${esc(p.name)}${p.walkin?' <span class="pwalkin">Walk-in</span>':''}</span><span class="pdept">${esc(p.dept||p.mission||'')}</span><span class="pstat ${ci?'ci':'reg'}">${ci?'✓ เช็คอิน':'○ ลงทะเบียน'}</span></div>`;
+        const p=m.p, st=printStat(p);
+        return `<div class="prow"><span class="pnum">${m.seatNo}</span><span class="pname">${esc(p.name)}${p.walkin?' <span class="pwalkin">Walk-in</span>':''}</span><span class="pdept">${esc(p.dept||p.mission||'')}</span><span class="pstat ${st.cls}">${st.txt}</span></div>`;
       }).join('');
     }
     byTableHTML+=`</div>`;
@@ -3349,8 +3379,8 @@ function buildAttendeeListPrintHTML(){
   if(unassigned.length){
     unassignedHTML=`<div class="tsec unassigned"><div class="tsec-hd"><span>ยังไม่มีที่นั่ง</span><span class="tsec-cnt">${unassigned.length} คน</span></div>`+
       unassigned.map((p,i)=>{
-        const ci=p.status==='checkin';
-        return `<div class="prow"><span class="pnum">${i+1}</span><span class="pname">${esc(p.name)}${p.walkin?' <span class="pwalkin">Walk-in</span>':''}</span><span class="pdept">${esc(p.dept||p.mission||'')}</span><span class="pstat ${ci?'ci':'reg'}">${ci?'✓ เช็คอิน':'○ ลงทะเบียน'}</span></div>`;
+        const st=printStat(p);
+        return `<div class="prow"><span class="pnum">${i+1}</span><span class="pname">${esc(p.name)}${p.walkin?' <span class="pwalkin">Walk-in</span>':''}</span><span class="pdept">${esc(p.dept||p.mission||'')}</span><span class="pstat ${st.cls}">${st.txt}</span></div>`;
       }).join('')+`</div>`;
   }
 
@@ -3388,6 +3418,8 @@ header{display:flex;align-items:flex-end;justify-content:space-between;border-bo
 .pstat{font-size:9px;font-weight:700;flex-shrink:0;width:60px;text-align:right;}
 .pstat.ci{color:#1c6b52;}
 .pstat.reg{color:#96702f;}
+.pstat.rsv{color:#2f5aa1;}
+.pstat.na{color:#a13d3d;}
 .idx-title{font-family:'Noto Serif Thai',serif;font-size:15px;font-weight:700;margin:16px 0 8px;border-top:2px solid #dcdee1;padding-top:12px;break-before:column;}
 .idx-cols{column-count:3;column-gap:16px;font-size:10px;}
 .arow{display:flex;justify-content:space-between;gap:6px;padding:2px 0;border-bottom:1px dotted #dcdee1;break-inside:avoid;}
@@ -3403,11 +3435,12 @@ footer{margin-top:14px;font-size:9px;color:#8b9096;text-align:center;}
 <div class="no-print"><button onclick="window.print()" class="primary">🖨️ พิมพ์ / บันทึกเป็น PDF</button><button onclick="window.close()">ปิด</button></div>
 <header>
   <div><div class="h-title">รายชื่อผู้เข้าร่วมงาน</div><div class="h-sub">${esc(EVENT_TITLE)}</div></div>
-  <div class="h-meta">พิมพ์เมื่อ ${esc(genTime)}<br>ทั้งหมด ${people.length} คน · เช็คอินแล้ว ${totalCI} คน</div>
+  <div class="h-meta">พิมพ์เมื่อ ${esc(genTime)}<br>ทั้งหมด ${people.length} คน · เช็คอินแล้ว ${totalCI} คน${totalRsv?` · สำรอง VIP ${totalRsv} คน`:''}</div>
 </header>
 <div class="legend">
   <span><span class="sw" style="background:#1c6b52"></span>✓ เช็คอินแล้ว</span>
   <span><span class="sw" style="background:#96702f"></span>○ ลงทะเบียนแล้ว ยังไม่เช็คอิน</span>
+  <span><span class="sw" style="background:#2f5aa1"></span>☆ สำรอง VIP (แขกรับเชิญ ยังไม่ลงทะเบียน)</span>
   <span><span class="pwalkin">Walk-in</span> = ไม่ได้ลงทะเบียนล่วงหน้า</span>
 </div>
 <div class="cols">${byTableHTML}${unassignedHTML}</div>
@@ -3501,10 +3534,11 @@ async function exportSignInSheet(){
     ws.getRow(1).height=30;
 
     const rowsData=buildSignInRows();
+    const rsvCountXlsx=rowsData.filter(item=>item.p.status==='reserved').length;
 
     ws.mergeCells(2,1,2,COLS);
     const sub=ws.getCell(2,1);
-    sub.value=`พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}    รวมทั้งหมด ${rowsData.length} คน`;
+    sub.value=`พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}    รวมทั้งหมด ${rowsData.length} คน${rsvCountXlsx?`    สำรอง VIP ${rsvCountXlsx} คน`:''}`;
     sub.font={size:11,name:'Sarabun'};
     sub.alignment={horizontal:'center'};
     ws.getRow(2).height=16;
@@ -3523,18 +3557,20 @@ async function exportSignInSheet(){
     let r=5;
     rowsData.forEach((item,idx)=>{
       const p=item.p;
+      const isRsv=p.status==='reserved';
       const row=ws.getRow(r);
       row.getCell(1).value=idx+1;
-      row.getCell(2).value=p.name;
+      row.getCell(2).value=p.name+(isRsv?' (สำรอง VIP - ยังไม่ลงทะเบียน)':'');
       row.getCell(3).value=p.dept||p.mission||'';
       row.getCell(4).value=p.position||'';
       row.getCell(5).value=item.tableName;
       row.getCell(6).value='';
       row.height=48;
       row.eachCell({includeEmpty:true},(c,colNum)=>{
-        c.font={size:13,name:'Sarabun'};
+        c.font={size:13,name:'Sarabun',italic:isRsv,color:isRsv?{argb:'FF2F5AA1'}:undefined};
         c.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
         c.alignment={vertical:'middle',horizontal:colNum===1?'center':'left',wrapText:true};
+        if(isRsv) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE8EEF6'}};
       });
       r++;
     });
@@ -3560,11 +3596,13 @@ async function exportSignInSheet(){
 function buildSignInSheetPrintHTML(){
   const rowsData=buildSignInRows();
   const genTime=new Date().toLocaleString('th-TH');
+  const rsvCount=rowsData.filter(item=>item.p.status==='reserved').length;
 
   const bodyRows=rowsData.map((item,idx)=>{
     const p=item.p;
-    const name=esc(p.name);
-    return `<tr>
+    const isRsv=p.status==='reserved';
+    const name=esc(p.name)+(isRsv?' <span class="tag-rsv">สำรอง VIP</span>':'');
+    return `<tr${isRsv?' class="row-rsv"':''}>
       <td class="c-idx">${idx+1}</td>
       <td class="c-name">${name}</td>
       <td>${esc(p.dept||p.mission||'')}</td>
@@ -3599,6 +3637,8 @@ td.c-idx{text-align:center;font-weight:600;white-space:nowrap;}
 td.c-pos{white-space:nowrap;} /* ตำแหน่งห้ามตัดขึ้นบรรทัดใหม่ — คอลัมน์นี้กว้างขึ้นเพื่อรองรับแล้ว */
 td.c-table{text-align:center;}
 td.c-sign{height:34px;}
+tr.row-rsv td{background:#eef3fa;}
+.tag-rsv{display:inline-block;color:#2f5aa1;font-weight:700;font-size:10px;background:#dbe6f5;padding:1px 6px;border-radius:99px;margin-left:4px;}
 .no-print{position:fixed;top:12px;right:12px;display:flex;gap:8px;}
 .no-print button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #c7cacd;background:#fff;cursor:pointer;}
 .no-print button.primary{background:#175f72;color:#fff;border-color:#175f72;}
@@ -3609,7 +3649,7 @@ td.c-sign{height:34px;}
 <header>
   <div class="h-title">ใบเซ็นชื่อผู้เข้าร่วมงาน</div>
   <div class="h-sub">${esc(EVENT_TITLE)}</div>
-  <div class="h-sub">พิมพ์เมื่อ ${esc(genTime)} · รวมทั้งหมด ${rowsData.length} คน</div>
+  <div class="h-sub">พิมพ์เมื่อ ${esc(genTime)} · รวมทั้งหมด ${rowsData.length} คน${rsvCount?` · สำรอง VIP ${rsvCount} คน`:''}</div>
 </header>
 <table>
   <colgroup>
@@ -3650,6 +3690,76 @@ function initDefaultLayout(){
 // ══════════════════════════════════════════════════════════════════
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function getPerson(id){return people.find(p=>String(p.id)===String(id));}
+
+// ══════════════════════════════════════════════════════════════════
+// สถานะบุคคล — "reserved" (สำรองที่นั่ง/แขกรับเชิญ ยังไม่ลงทะเบียน)
+// ══════════════════════════════════════════════════════════════════
+// สถานะที่ใช้ได้ทั้งหมด: 'reserved' | 'registered' | 'checkin'
+// 'reserved' ใช้กับแขกผู้ได้รับเชิญที่ยังไม่ได้ลงทะเบียนผ่านระบบ (เช่น
+// ข้าราชการบำนาญที่เป็นแขกเกียรติยศของงาน) แต่ผู้จัดงานต้องการสำรอง
+// ที่นั่งไว้ล่วงหน้าให้แน่นอน — แยกออกจาก 'ไม่เข้าร่วม' (p.intent) ซึ่ง
+// หมายถึงแจ้งปฏิเสธแล้วชัดเจน และแยกจาก Walk-in (p.walkin) ซึ่งหมายถึง
+// คนที่โผล่มาหน้างานโดยไม่ได้วางแผนล่วงหน้า
+//
+// ข้อจำกัดสำคัญ: โปรเจกต์นี้ไม่มีซอร์สฝั่ง Apps Script (Code.gs) มาด้วย
+// จึงไม่สามารถเพิ่มคอลัมน์ "reserved" ลง Google Sheet ได้ตรงๆ จากที่นี่
+// ทางแก้ที่ใช้งานได้จริงในเบราว์เซอร์เดียวกันคือเก็บสถานะนี้ไว้ใน
+// localStorage แล้ว "แปะทับ" (overlay) ให้ people ทุกครั้งที่ซิงก์ข้อมูล
+// ใหม่จากเซิร์ฟเวอร์ — ดู applyReservedOverlay(). ถ้าต้องการให้สถานะนี้
+// เห็นตรงกันทุกเครื่อง/ทุกคนที่เปิดระบบ ต้องเพิ่มคอลัมน์ในชีตตอบกลับ
+// และรองรับใน Apps Script ฝั่งเซิร์ฟเวอร์ด้วย (ดูคำแนะนำท้ายไฟล์ README)
+const RESV_LS_KEY='qrscan_reserved_guests_v1';
+function readReservedMap(){try{return JSON.parse(localStorage.getItem(RESV_LS_KEY)||'{}');}catch(e){return{};}}
+function writeReservedMap(m){try{localStorage.setItem(RESV_LS_KEY,JSON.stringify(m));}catch(e){}}
+function setReservedFlag(id,on){const m=readReservedMap();if(on){m[String(id)]=true;}else{delete m[String(id)];}writeReservedMap(m);}
+// เรียกทุกครั้งหลัง people ถูกสร้าง/ซิงก์ใหม่ — ใครที่เคยถูกทำเครื่องหมาย
+// "สำรอง" ไว้ในเครื่องนี้ จะได้สถานะ reserved กลับคืนอัตโนมัติ เว้นแต่
+// เช็คอินจริงไปแล้ว (checkin ถือเป็นสถานะที่แท้จริงกว่าเสมอ)
+function applyReservedOverlay(){
+  const m=readReservedMap();
+  const ids=Object.keys(m);
+  if(!ids.length) return;
+  people.forEach(p=>{
+    if(m[String(p.id)]&&p.status!=='checkin'){ p.status='reserved'; p.walkin=false; }
+  });
+}
+
+// ข้อมูลสี/ป้ายกำกับสำหรับสถานะของคนคนหนึ่ง รวมศูนย์ไว้ที่เดียวเพื่อให้
+// ทุกจุดในแอป (ผังที่นั่ง, พูลรายชื่อ, ทูลทิป, ใบเซ็นชื่อ, แดชบอร์ด) แสดง
+// ตรงกันเสมอ — ไม่ต้องเขียนเงื่อนไข status ซ้ำกระจายไปทั่วไฟล์
+// ป้ายสถานะแบบ HTML สำเร็จรูป ใช้ในตารางรายชื่อ (renderList) ทั้งสองที่
+function statusBadgeHTML(p){
+  const meta=personStatusMeta(p);
+  const cls=meta.key==='checkin'?'ci':(meta.key==='reserved'?'rsv':(meta.key==='noattend'?'na':'reg'));
+  const txt=meta.key==='checkin'?'เช็คอิน':(meta.key==='reserved'?'สำรอง VIP':(meta.key==='noattend'?'ไม่เข้าร่วม':'ลงทะเบียน'));
+  return `<span class="badge ${cls}">${txt}</span>`;
+}
+function personStatusMeta(p){
+  if(!p) return {key:'unknown',color:'var(--gold)',bg:'var(--gold-lt)',label:'ลงทะเบียนแล้ว',short:''};
+  if(p.intent==='ไม่เข้าร่วม') return {key:'noattend',color:'var(--red)',bg:'var(--red-lt)',label:'แจ้งไม่เข้าร่วม',short:'ไม่เข้าร่วม'};
+  if(p.status==='checkin') return {key:'checkin',color:'var(--green)',bg:'var(--green-lt)',label:'เช็คอินแล้ว',short:'เช็คอิน'};
+  if(p.status==='reserved') return {key:'reserved',color:'var(--blue)',bg:'var(--blue-lt)',label:'สำรองที่นั่ง (แขกรับเชิญ ยังไม่ลงทะเบียน)',short:'สำรอง VIP'};
+  return {key:'registered',color:'var(--gold)',bg:'var(--gold-lt)',label:'ลงทะเบียนแล้ว',short:'ลงทะเบียน'};
+}
+// สีสำหรับวาดที่นั่งบน canvas (ต้องเป็นค่าฮาร์ดโค้ด ใช้ CSS var ไม่ได้ใน
+// context 2D) — สอดคล้องกับชุดสีเดียวกับ personStatusMeta() ข้างต้น
+function seatStatusColors(p){
+  if(p&&p.status==='checkin') return {fill:'#e6f4f0',stroke:'#1c6b52',text:'#1c6b52'};
+  if(p&&p.status==='reserved') return {fill:'#e8eef7',stroke:'#2f5aa1',text:'#2f5aa1'};
+  return {fill:'#fdf3e3',stroke:'#96702f',text:'#96702f'};
+}
+// ปุ่มลัด "เพิ่มแขกผู้ได้รับเชิญ" — เปิดโมดัลเดิมแต่ตั้งค่าล่วงหน้าให้ตรง
+// กับกรณีใช้บ่อยที่สุด (ข้าราชการบำนาญ) เพื่อลดจำนวนคลิก/พิมพ์ซ้ำ
+function openAddReservedGuest(){
+  openAddPerson();
+  document.getElementById('mp-dept').value='ข้าราชการบำนาญ';
+  document.getElementById('mp-status').value='reserved';
+  document.getElementById('mperson-title').textContent='เพิ่มแขกผู้ได้รับเชิญ';
+  document.getElementById('mperson-sub').textContent='สำหรับแขกที่ยังไม่ได้ลงทะเบียน แต่ต้องการสำรองที่นั่งไว้ล่วงหน้า (เช่น ข้าราชการบำนาญ)';
+  document.getElementById('mp-name').focus();
+  mpUpdatePreview();
+}
+
 function seatedSet(){const s=new Set();tables.forEach(t=>t.seats.forEach(pid=>{if(pid)s.add(String(pid));}));return s;}
 function abbr(name){const w=String(name||'').trim().split(/\s+/);return w.length>=2?(w[0][0]||'')+(w[1][0]||''):(w[0]||'').substring(0,2);}
 function clipText(ctx,text,maxW){let t=text;while(ctx.measureText(t).width>maxW&&t.length>2)t=t.slice(0,-1);return t===text?t:t+'…';}
