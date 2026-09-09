@@ -17,6 +17,7 @@
   --primary:#175f72;--primary-dk:#0f4552;--primary-lt:#e7f0f2;--primary-glow:rgba(23,95,114,.16);
   --gold:#96702f;--gold-dk:#7a5a25;--gold-lt:#f3ede3;--gold-glow:rgba(150,112,47,.18);
   --green:#1c6b52;--green-lt:#e5f0eb;--green-glow:rgba(28,107,82,.16);
+  --blue:#2f5aa1;--blue-lt:#e8eef6;
   --red:#a13d3d;--red-lt:#f6ecec;--red-glow:rgba(161,61,61,.16);
   --amber:#8c5a1f;--amber-lt:#f2ebdf;
   --purple:#5b4b9e;--purple-lt:#eae7f5;
@@ -136,6 +137,7 @@ header .sub{font-size:11.5px;color:rgba(255,255,255,.72);font-weight:400;margin-
 @keyframes cardIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 .card.done{border-color:var(--green);background:var(--green-lt)}
 .card.declined{opacity:.55}
+.card.reserved{border-color:var(--blue);background:var(--blue-lt)}
 
 .avatar{
   width:38px;height:38px;border-radius:50%;flex-shrink:0;
@@ -145,12 +147,15 @@ header .sub{font-size:11.5px;color:rgba(255,255,255,.72);font-weight:400;margin-
 }
 .avatar.done{background:var(--green)}
 .avatar.declined{background:var(--text-3)}
+.avatar.reserved{background:var(--blue)}
 
 .info{flex:1;min-width:0}
 .name{font-size:15.5px;font-weight:700;line-height:1.3;color:var(--text)}
 .sub{font-size:12px;color:var(--text-2);margin-top:2px}
 .tag-declined{color:var(--red);font-weight:700;font-size:11px}
 .tag-walkin{display:inline-block;color:var(--gold-dk);font-weight:700;font-size:10.5px;background:var(--gold-lt);
+  padding:1px 8px;border-radius:99px;margin-left:4px;vertical-align:1px}
+.tag-reserved{display:inline-block;color:var(--blue);font-weight:700;font-size:10.5px;background:#dbe6f5;
   padding:1px 8px;border-radius:99px;margin-left:4px;vertical-align:1px}
 .ci-time{font-size:11px;color:var(--green);font-weight:600;margin-top:2px;font-family:var(--mono)}
 
@@ -465,6 +470,19 @@ let sortKey = 'pct', sortDir = 'asc';
 let busyIds = new Set();     // กันแตะรัว ๆ ระหว่างรอ request ค้าง
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// ══════════════════════════════════════════════════════════════════
+// สถานะ "reserved" (สำรองที่นั่ง/แขกรับเชิญ ยังไม่ลงทะเบียน) — ใช้ key
+// localStorage เดียวกับ seat.html (คนละหน้าแต่โดเมนเดียวกันจึงอ่านร่วม
+// กันได้) เพื่อให้หน้าเช็คอินหน้างานเห็นแขกกลุ่มนี้ตรงกับผังที่นั่ง
+// ดูรายละเอียด/ข้อจำกัดเพิ่มเติมได้ที่ seat.html คอมเมนต์เดียวกันนี้
+const RESV_LS_KEY='qrscan_reserved_guests_v1';
+function readReservedMap(){try{return JSON.parse(localStorage.getItem(RESV_LS_KEY)||'{}');}catch(e){return{};}}
+function applyReservedOverlay(){
+  const m=readReservedMap();
+  if(!Object.keys(m).length) return;
+  people.forEach(p=>{ if(m[String(p.id)]&&p.status!=='checkin'){ p.status='reserved'; p.walkin=false; } });
+}
 // คืนชื่อกลุ่มงานที่ "ใช้จริง" ของคนคนหนึ่ง — ถ้ามีการจัดกลุ่มไว้ใน
 // deptMap ให้ใช้ค่านั้น (รวมข้อความดิบหลายแบบให้เป็นกลุ่มเดียวกัน) ถ้ายัง
 // ไม่ได้จัดกลุ่มก็ใช้ข้อความดิบไปก่อน กันไม่ให้ข้อมูลหายจากหน้าจอ
@@ -526,6 +544,7 @@ async function loadData(){
     const d=await gasPost({action:'get_seat_data'});
     if(d.status!=='ok') throw new Error(d.message||'โหลดข้อมูลไม่สำเร็จ');
     people=d.people||[];
+    applyReservedOverlay();
     tables=(d.layout&&d.layout.tables)||[];
     deptMap=d.deptMap||{};
     document.getElementById('load-overlay').classList.add('hidden');
@@ -591,8 +610,9 @@ function renderCheckin(){
 
   box.innerHTML = `<div class="list-inner">` + list.map(p=>{
     const declined = p.intent==='ไม่เข้าร่วม';
+    const reserved = p.status==='reserved';
     const done = p.status==='checkin';
-    const avatarClass = declined ? 'declined' : (done ? 'done' : '');
+    const avatarClass = declined ? 'declined' : (done ? 'done' : (reserved ? 'reserved' : ''));
     const subParts = [p.position, p.dept].filter(Boolean).join(' · ');
     const busy = busyIds.has(String(p.id));
     let action;
@@ -603,10 +623,10 @@ function renderCheckin(){
         ? `<button class="action-btn checkin" disabled><span class="mini-spin"></span>บันทึก...</button>`
         : `<button class="action-btn checkin" onclick="doCheckin('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">กดเช็คอิน ✓</button>`;
     }
-    return `<div class="card ${done?'done':''} ${declined?'declined':''}">
+    return `<div class="card ${done?'done':''} ${declined?'declined':''} ${reserved&&!done?'reserved':''}">
       <div class="avatar ${avatarClass}">${esc(initials(p.name))}</div>
       <div class="info">
-        <div class="name">${esc(p.name)}${p.walkin?' <span class="tag-walkin">Walk-in</span>':''}${declined?' <span class="tag-declined">· แจ้งไม่เข้าร่วม</span>':''}</div>
+        <div class="name">${esc(p.name)}${p.walkin?' <span class="tag-walkin">Walk-in</span>':''}${reserved&&!done?' <span class="tag-reserved">สำรอง VIP · ยังไม่ลงทะเบียน</span>':''}${declined?' <span class="tag-declined">· แจ้งไม่เข้าร่วม</span>':''}</div>
         <div class="sub">${esc(subParts)||'&nbsp;'}</div>
         ${done && p.checkinTime ? `<div class="ci-time">เช็คอินเมื่อ ${esc(p.checkinTime)}</div>` : ''}
       </div>
